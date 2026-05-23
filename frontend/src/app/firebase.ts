@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, GithubAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "placeholder_api_key",
@@ -17,15 +17,17 @@ const isPlaceholder =
 
 let auth: any = null;
 let googleProvider: any = null;
+let githubProvider: any = null;
 
 if (!isPlaceholder) {
   try {
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    githubProvider = new GithubAuthProvider();
   } catch (error) {
     console.error("Firebase initialization failed:", error);
   }
 }
 
-export { auth, googleProvider, signInWithPopup, signOut, isPlaceholder };
+export { auth, googleProvider, githubProvider, signInWithPopup, signOut, isPlaceholder };

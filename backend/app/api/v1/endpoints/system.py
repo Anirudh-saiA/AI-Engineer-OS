@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.core.config import settings
 from app.schemas.system import HealthCheck, SystemStatus
-from app.api.deps import get_db
+from app.api.deps import get_db, verify_token
 
 router = APIRouter()
 
@@ -14,13 +14,15 @@ start_time = time.time()
 def get_health() -> HealthCheck:
     """
     Perform a simple health check to ensure the service is running.
+    (Kept public for infrastructure load balancer checks).
     """
     return HealthCheck(status="ok")
 
 @router.get("/status", response_model=SystemStatus, summary="System Status")
-def get_status() -> SystemStatus:
+def get_status(current_user: dict = Depends(verify_token)) -> SystemStatus:
     """
     Get detailed system status, including uptime and environment state.
+    (Protected: Requires valid Bearer Token).
     """
     uptime = time.time() - start_time
     return SystemStatus(
@@ -36,9 +38,10 @@ def get_status() -> SystemStatus:
     )
 
 @router.get("/db-check", summary="Database Connection Check")
-def check_db_connection(db: Session = Depends(get_db)):
+def check_db_connection(db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
     """
     Perform a live transaction check against PostgreSQL to ensure reachability.
+    (Protected: Requires valid Bearer Token).
     """
     try:
         # Execute raw SQL query SELECT 1

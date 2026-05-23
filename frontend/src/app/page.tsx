@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 
 export default function Home() {
-  const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { user, loading: authLoading, signInWithGoogle, signInWithGithub, signOut } = useAuth();
   const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
   const [backendStatus, setBackendStatus] = useState<any>(null);
   
@@ -25,7 +25,11 @@ export default function Home() {
     setFastapiOnline(null);
     addLog("[API] Querying REST API gateway status from http://localhost:8000/api/v1/system/status...", "system");
     try {
-      const res = await fetch("http://localhost:8000/api/v1/system/status");
+      const res = await fetch("http://localhost:8000/api/v1/system/status", {
+        headers: {
+          "Authorization": `Bearer ${user.uid}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setBackendStatus(data);
@@ -132,18 +136,31 @@ export default function Home() {
                 Unlock Your Autonomous Developer Stack
               </h2>
               <p className="text-slate-600 text-sm mt-3 leading-relaxed max-w-2xl">
-                Please authenticate using your Google Developer credentials via Firebase Popup to authorize the central agentic controllers, container sandbox pipelines, vector indices, and database control maps.
+                Please authenticate using your Google or GitHub credentials via Firebase Popup to access the central agentic controls, container sandbox pipelines, vector indices, and database control maps.
               </p>
               
-              <button 
-                onClick={signInWithGoogle}
-                className="mt-8 py-3 px-6 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-98 text-white font-semibold text-xs tracking-wide transition-all shadow-sm border border-slate-950 flex items-center gap-2.5 cursor-pointer glow-btn"
-              >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
-                </svg>
-                Sign In with Google (Firebase)
-              </button>
+              {/* Authentications Grid (Google + GitHub) */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
+                <button 
+                  onClick={signInWithGoogle}
+                  className="w-full sm:w-auto py-3 px-6 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-98 text-white font-semibold text-xs tracking-wide transition-all shadow-sm border border-slate-950 flex items-center justify-center gap-2.5 cursor-pointer glow-btn"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
+                  </svg>
+                  Sign In with Google
+                </button>
+
+                <button 
+                  onClick={signInWithGithub}
+                  className="w-full sm:w-auto py-3 px-6 rounded-xl bg-white hover:bg-slate-50 active:scale-98 text-slate-800 font-semibold text-xs tracking-wide transition-all shadow-xs border border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2.5 cursor-pointer glow-btn"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                  </svg>
+                  Sign In with GitHub
+                </button>
+              </div>
             </section>
           ) : (
             /* Welcome Info Card */
@@ -244,7 +261,7 @@ export default function Home() {
               </div>
               <h4 className="text-xs font-bold text-slate-900">Workspace Locked</h4>
               <p className="text-[10px] text-slate-500 leading-relaxed mt-2">
-                Awaiting developer OAuth credentials. Sign in using your Google account via Firebase Popup to authorize vector search index mapping and DB control dashboards.
+                Awaiting developer OAuth credentials. Sign in using your Google or GitHub account via Firebase Popup to authorize vector search index mapping and DB control dashboards.
               </p>
             </section>
           )}

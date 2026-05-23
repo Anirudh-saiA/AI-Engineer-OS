@@ -1,13 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, googleProvider, signInWithPopup, signOut as fbSignOut, isPlaceholder } from "../firebase";
+import { auth, googleProvider, githubProvider, signInWithPopup, signOut as fbSignOut, isPlaceholder } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -42,6 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGithub = async () => {
+    if (isPlaceholder || !auth || !githubProvider) {
+      alert("⚠️ Firebase is currently in Restricted Demo Mode because your public environment variables inside 'frontend/.env.local' are still placeholders.\n\nPlease replace them with your actual Firebase project keys to enable live GitHub Authentication popups!");
+      return;
+    }
+    try {
+      await signInWithPopup(auth, githubProvider);
+    } catch (error) {
+      console.error("Firebase Auth GitHub Error:", error);
+    }
+  };
+
   const signOut = async () => {
     if (!auth) {
       setUser(null);
@@ -55,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithGithub, signOut }}>
       {children}
     </AuthContext.Provider>
   );
