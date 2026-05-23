@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Home() {
+  const { data: session, status: sessionStatus } = useSession();
+  const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
+  const [backendStatus, setBackendStatus] = useState<any>(null);
+  
   const [logs, setLogs] = useState<Array<{ text: string; type: "system" | "success" | "config" | "info" | "error" }>>([
     { text: "[SYSTEM] Initializing AI-Engineer-OS developer stack...", type: "system" },
     { text: "[SUCCESS] Git repository initialized locally. Active: user.name=\"Anirudh-saiA\"", type: "success" },
@@ -10,14 +15,13 @@ export default function Home() {
     { text: "[SUCCESS] Bootstrapped Next.js Frontend Framework.", type: "success" },
     { text: "[CONFIG] Tailwind CSS v4 and TypeScript configured in /frontend.", type: "config" },
   ]);
-  const [backendStatus, setBackendStatus] = useState<any>(null);
-  const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
 
   const addLog = (text: string, type: "system" | "success" | "config" | "info" | "error") => {
     setLogs((prev) => [...prev, { text, type }]);
   };
 
   const fetchStatus = async () => {
+    if (sessionStatus !== "authenticated") return;
     setFastapiOnline(null);
     addLog("[API] Querying REST API gateway status from http://localhost:8000/api/v1/system/status...", "system");
     try {
@@ -37,9 +41,30 @@ export default function Home() {
     }
   };
 
+  // Fetch backend status when session becomes authenticated
   useEffect(() => {
-    fetchStatus();
-  }, []);
+    if (sessionStatus === "authenticated") {
+      addLog(`[SUCCESS] Developer identity verified: ${session.user?.email}`, "success");
+      addLog("[SYSTEM] Connection to AI-Engineer-OS API gateway unlocked.", "system");
+      fetchStatus();
+    } else if (sessionStatus === "unauthenticated") {
+      setLogs((prev) => [
+        ...prev,
+        { text: "[WARNING] RESTRICTED ACCESS: Developer authentication credentials required.", type: "error" }
+      ]);
+    }
+  }, [sessionStatus]);
+
+  if (sessionStatus === "loading") {
+    return (
+      <div className="min-h-screen bg-[#030712] text-gray-100 flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-t-2 border-r-2 border-violet-500 animate-spin"></div>
+          <p className="font-mono text-xs text-gray-400 tracking-wider">Validating User Session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#030712] text-gray-100 flex flex-col font-sans relative overflow-hidden">
@@ -77,9 +102,13 @@ export default function Home() {
           <div className="h-4 w-[1px] bg-white/10"></div>
           <div className="flex items-center gap-2">
             <span className="text-gray-400">Services:</span>
-            <span className={fastapiOnline ? "text-cyan-400 font-semibold" : "text-rose-400 font-semibold"}>
-              {fastapiOnline ? "4 / 4 Healthy" : "3 / 4 Healthy"}
-            </span>
+            {sessionStatus === "authenticated" ? (
+              <span className={fastapiOnline ? "text-cyan-400 font-semibold" : "text-rose-400 font-semibold"}>
+                {fastapiOnline ? "4 / 4 Healthy" : "3 / 4 Healthy"}
+              </span>
+            ) : (
+              <span className="text-amber-400 font-semibold">Locked</span>
+            )}
           </div>
         </div>
       </header>
@@ -90,24 +119,49 @@ export default function Home() {
         {/* LEFT COLUMN (8 Cols): System Console & Folder Directory */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           
-          {/* Welcome Info Card */}
-          <section className="glass-card rounded-2xl p-6 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <svg className="w-24 h-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
-            </div>
-            
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-violet-500/10 text-violet-400 border border-violet-500/20 uppercase">
-              Phase 1 — Day 2
-            </span>
-            <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">
-              Welcome to your Autonomous Agent Workspace
-            </h2>
-            <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
-              AI-Engineer-OS has bootstrapped successfully. The monorepo has been mapped, git configurations are locked to <code className="text-violet-300 font-mono">Anirudh-saiA</code>, and Next.js is connected dynamically with our FastAPI core backend services.
-            </p>
-          </section>
+          {sessionStatus === "unauthenticated" ? (
+            /* Welcome Connect Identity Info Card */
+            <section className="glass-card rounded-2xl p-8 relative overflow-hidden group border border-violet-500/20">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-violet-500/10 text-violet-400 border border-violet-500/20 uppercase">
+                Secure Authentication Required
+              </span>
+              <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">
+                Unlock Your Autonomous Developer Stack
+              </h2>
+              <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
+                Please authenticate using your Google Developer credentials to access the central agentic controls, container sandbox pipelines, vector indices, and relational configurations.
+              </p>
+              
+              <button 
+                onClick={() => signIn("google")}
+                className="mt-6 py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-95 text-white font-semibold text-sm tracking-wide transition-all shadow-md shadow-violet-600/20 border border-violet-500/20 flex items-center gap-3 cursor-pointer glow-btn"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
+                </svg>
+                Sign In with Google
+              </button>
+            </section>
+          ) : (
+            /* Welcome Info Card */
+            <section className="glass-card rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <svg className="w-24 h-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-violet-500/10 text-violet-400 border border-violet-500/20 uppercase">
+                Active Developer Workspace
+              </span>
+              <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">
+                Welcome back, {session?.user?.name || "Developer"}
+              </h2>
+              <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
+                Identity verified successfully. AI-Engineer-OS has established dynamic connections. The REST APIs are running on port 8000 and the PostgreSQL database container is active on host port 5434.
+              </p>
+            </section>
+          )}
 
           {/* Core System Dashboard Console */}
           <section className="glass-card rounded-2xl p-6 flex flex-col flex-1 min-h-[350px]">
@@ -140,12 +194,14 @@ export default function Home() {
                   </div>
                 );
               })}
-              {fastapiOnline === null && (
+              {fastapiOnline === null && sessionStatus === "authenticated" && (
                 <div className="text-gray-500 animate-pulse">[WAITING] Querying REST API gateway status...</div>
               )}
               <div className="pt-2 border-t border-white/5 flex items-center gap-1 text-white">
                 <span className="text-violet-500 font-bold">$</span>
-                <span className="border-r-2 border-white animate-pulse pr-1">aios-agent --active</span>
+                <span className="border-r-2 border-white animate-pulse pr-1">
+                  {sessionStatus === "authenticated" ? "aios-agent --active" : "aios-agent --restricted-mode"}
+                </span>
               </div>
             </div>
           </section>
@@ -154,6 +210,42 @@ export default function Home() {
         {/* RIGHT COLUMN (4 Cols): Monorepo Layout & Service Check */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           
+          {sessionStatus === "authenticated" ? (
+            /* User Identity Card */
+            <section className="glass-card rounded-2xl p-6 flex flex-col items-center gap-4 text-center border border-violet-500/20">
+              <div className="relative w-16 h-16 rounded-full border-2 border-violet-500/50 p-1 bg-gray-950 overflow-hidden shadow-lg shadow-violet-500/10">
+                {session.user?.image ? (
+                  <img src={session.user.image} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-violet-600 flex items-center justify-center text-lg font-bold text-white">
+                    {session.user?.name?.[0] || "D"}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-white">{session.user?.name || "Developer"}</h4>
+                <p className="text-[10px] text-gray-500 font-mono mt-0.5">{session.user?.email}</p>
+              </div>
+              <button 
+                onClick={() => signOut()}
+                className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-rose-500/10 active:bg-rose-500/5 text-gray-300 hover:text-rose-400 font-semibold text-xs tracking-wide transition-all border border-white/5 hover:border-rose-500/20 cursor-pointer"
+              >
+                Disconnect Session
+              </button>
+            </section>
+          ) : (
+            /* Identity Lock Panel */
+            <section className="glass-card rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 mx-auto text-lg mb-3 border border-amber-500/20">
+                🔒
+              </div>
+              <h4 className="text-xs font-bold text-white">Workspace Locked</h4>
+              <p className="text-[10px] text-gray-500 leading-relaxed mt-2">
+                Awaiting developer OAuth credentials. Sign in using your Google account to authorize vector search index mapping and DB control dashboards.
+              </p>
+            </section>
+          )}
+
           {/* Services Health Monitor */}
           <section className="glass-card rounded-2xl p-6">
             <h3 className="font-mono text-xs text-gray-300 font-semibold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
@@ -173,9 +265,9 @@ export default function Home() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
-                  fastapiOnline ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  sessionStatus === "authenticated" && fastapiOnline ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                 }`}>
-                  {fastapiOnline ? "Online" : "Offline"}
+                  {sessionStatus === "authenticated" && fastapiOnline ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -187,11 +279,13 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-xs font-semibold text-white">PostgreSQL DB</h4>
-                    <p className="text-[10px] text-gray-500 font-mono">Port 5432</p>
+                    <p className="text-[10px] text-gray-500 font-mono">Port 5434</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Online
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
+                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                }`}>
+                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -206,8 +300,10 @@ export default function Home() {
                     <p className="text-[10px] text-gray-500 font-mono">Port 6333</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Online
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
+                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                }`}>
+                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -222,8 +318,10 @@ export default function Home() {
                     <p className="text-[10px] text-gray-500 font-mono">Port 6379</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Online
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
+                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                }`}>
+                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -267,11 +365,23 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               <button 
                 onClick={fetchStatus}
-                className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-xs tracking-wide transition-all shadow-md shadow-violet-600/10 glow-btn border border-violet-500/20 cursor-pointer"
+                disabled={sessionStatus !== "authenticated"}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-violet-500/20 glow-btn ${
+                  sessionStatus === "authenticated"
+                    ? "bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white cursor-pointer shadow-md shadow-violet-600/10"
+                    : "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
+                }`}
               >
                 Refresh API Gateway Status
               </button>
-              <button className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/5 text-gray-200 font-semibold text-xs tracking-wide transition-all border border-white/5 hover:border-white/10 cursor-pointer glow-btn">
+              <button 
+                disabled={sessionStatus !== "authenticated"}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-white/5 glow-btn ${
+                  sessionStatus === "authenticated"
+                    ? "bg-white/5 hover:bg-white/10 active:bg-white/5 text-gray-200 cursor-pointer"
+                    : "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
+                }`}
+              >
                 Launch Sandbox Container
               </button>
             </div>
