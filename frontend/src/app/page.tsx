@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useAuth } from "./context/AuthContext";
 
 export default function Home() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
   const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
   const [backendStatus, setBackendStatus] = useState<any>(null);
   
@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   const fetchStatus = async () => {
-    if (sessionStatus !== "authenticated") return;
+    if (!user) return;
     setFastapiOnline(null);
     addLog("[API] Querying REST API gateway status from http://localhost:8000/api/v1/system/status...", "system");
     try {
@@ -43,24 +43,26 @@ export default function Home() {
 
   // Fetch backend status when session becomes authenticated
   useEffect(() => {
-    if (sessionStatus === "authenticated") {
-      addLog(`[SUCCESS] Developer identity verified: ${session.user?.email}`, "success");
-      addLog("[SYSTEM] Connection to AI-Engineer-OS API gateway unlocked.", "system");
-      fetchStatus();
-    } else if (sessionStatus === "unauthenticated") {
-      setLogs((prev) => [
-        ...prev,
-        { text: "[WARNING] RESTRICTED ACCESS: Developer authentication credentials required.", type: "error" }
-      ]);
+    if (!authLoading) {
+      if (user) {
+        addLog(`[SUCCESS] Developer identity verified (Firebase): ${user.email}`, "success");
+        addLog("[SYSTEM] Connection to AI-Engineer-OS API gateway unlocked.", "system");
+        fetchStatus();
+      } else {
+        setLogs((prev) => [
+          ...prev,
+          { text: "[WARNING] RESTRICTED ACCESS: Developer authentication credentials required.", type: "error" }
+        ]);
+      }
     }
-  }, [sessionStatus]);
+  }, [user, authLoading]);
 
-  if (sessionStatus === "loading") {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#030712] text-gray-100 flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-t-2 border-r-2 border-violet-500 animate-spin"></div>
-          <p className="font-mono text-xs text-gray-400 tracking-wider">Validating User Session...</p>
+          <p className="font-mono text-xs text-gray-400 tracking-wider">Validating Firebase Session...</p>
         </div>
       </div>
     );
@@ -102,7 +104,7 @@ export default function Home() {
           <div className="h-4 w-[1px] bg-white/10"></div>
           <div className="flex items-center gap-2">
             <span className="text-gray-400">Services:</span>
-            {sessionStatus === "authenticated" ? (
+            {user ? (
               <span className={fastapiOnline ? "text-cyan-400 font-semibold" : "text-rose-400 font-semibold"}>
                 {fastapiOnline ? "4 / 4 Healthy" : "3 / 4 Healthy"}
               </span>
@@ -119,7 +121,7 @@ export default function Home() {
         {/* LEFT COLUMN (8 Cols): System Console & Folder Directory */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           
-          {sessionStatus === "unauthenticated" ? (
+          {!user ? (
             /* Welcome Connect Identity Info Card */
             <section className="glass-card rounded-2xl p-8 relative overflow-hidden group border border-violet-500/20">
               <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-violet-500/10 text-violet-400 border border-violet-500/20 uppercase">
@@ -129,17 +131,17 @@ export default function Home() {
                 Unlock Your Autonomous Developer Stack
               </h2>
               <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
-                Please authenticate using your Google Developer credentials to access the central agentic controls, container sandbox pipelines, vector indices, and relational configurations.
+                Please authenticate using your Google Developer credentials via Firebase Popup to access the central agentic controls, container sandbox pipelines, vector indices, and database control maps.
               </p>
               
               <button 
-                onClick={() => signIn("google")}
+                onClick={signInWithGoogle}
                 className="mt-6 py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-95 text-white font-semibold text-sm tracking-wide transition-all shadow-md shadow-violet-600/20 border border-violet-500/20 flex items-center gap-3 cursor-pointer glow-btn"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
                 </svg>
-                Sign In with Google
+                Sign In with Google (Firebase)
               </button>
             </section>
           ) : (
@@ -155,10 +157,10 @@ export default function Home() {
                 Active Developer Workspace
               </span>
               <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">
-                Welcome back, {session?.user?.name || "Developer"}
+                Welcome back, {user.displayName || "Developer"}
               </h2>
               <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
-                Identity verified successfully. AI-Engineer-OS has established dynamic connections. The REST APIs are running on port 8000 and the PostgreSQL database container is active on host port 5434.
+                Firebase Identity verified successfully. AI-Engineer-OS has established dynamic connections. The REST APIs are running on port 8000 and the PostgreSQL database container is active on host port 5434.
               </p>
             </section>
           )}
@@ -194,13 +196,13 @@ export default function Home() {
                   </div>
                 );
               })}
-              {fastapiOnline === null && sessionStatus === "authenticated" && (
+              {fastapiOnline === null && user && (
                 <div className="text-gray-500 animate-pulse">[WAITING] Querying REST API gateway status...</div>
               )}
               <div className="pt-2 border-t border-white/5 flex items-center gap-1 text-white">
                 <span className="text-violet-500 font-bold">$</span>
                 <span className="border-r-2 border-white animate-pulse pr-1">
-                  {sessionStatus === "authenticated" ? "aios-agent --active" : "aios-agent --restricted-mode"}
+                  {user ? "aios-agent --active" : "aios-agent --restricted-mode"}
                 </span>
               </div>
             </div>
@@ -210,24 +212,24 @@ export default function Home() {
         {/* RIGHT COLUMN (4 Cols): Monorepo Layout & Service Check */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           
-          {sessionStatus === "authenticated" ? (
+          {user ? (
             /* User Identity Card */
             <section className="glass-card rounded-2xl p-6 flex flex-col items-center gap-4 text-center border border-violet-500/20">
               <div className="relative w-16 h-16 rounded-full border-2 border-violet-500/50 p-1 bg-gray-950 overflow-hidden shadow-lg shadow-violet-500/10">
-                {session.user?.image ? (
-                  <img src={session.user.image} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <div className="w-full h-full rounded-full bg-violet-600 flex items-center justify-center text-lg font-bold text-white">
-                    {session.user?.name?.[0] || "D"}
+                    {user.displayName?.[0] || "D"}
                   </div>
                 )}
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">{session.user?.name || "Developer"}</h4>
-                <p className="text-[10px] text-gray-500 font-mono mt-0.5">{session.user?.email}</p>
+                <h4 className="text-sm font-semibold text-white">{user.displayName || "Developer"}</h4>
+                <p className="text-[10px] text-gray-500 font-mono mt-0.5">{user.email}</p>
               </div>
               <button 
-                onClick={() => signOut()}
+                onClick={signOut}
                 className="w-full py-2 px-4 rounded-xl bg-white/5 hover:bg-rose-500/10 active:bg-rose-500/5 text-gray-300 hover:text-rose-400 font-semibold text-xs tracking-wide transition-all border border-white/5 hover:border-rose-500/20 cursor-pointer"
               >
                 Disconnect Session
@@ -241,7 +243,7 @@ export default function Home() {
               </div>
               <h4 className="text-xs font-bold text-white">Workspace Locked</h4>
               <p className="text-[10px] text-gray-500 leading-relaxed mt-2">
-                Awaiting developer OAuth credentials. Sign in using your Google account to authorize vector search index mapping and DB control dashboards.
+                Awaiting developer OAuth credentials. Sign in using your Google account via Firebase Popup to authorize vector search index mapping and DB control dashboards.
               </p>
             </section>
           )}
@@ -265,9 +267,9 @@ export default function Home() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
-                  sessionStatus === "authenticated" && fastapiOnline ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  user && fastapiOnline ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                 }`}>
-                  {sessionStatus === "authenticated" && fastapiOnline ? "Online" : "Offline / Locked"}
+                  {user && fastapiOnline ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -283,9 +285,9 @@ export default function Home() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
-                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  user ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                 }`}>
-                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
+                  {user ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -301,9 +303,9 @@ export default function Home() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
-                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  user ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                 }`}>
-                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
+                  {user ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -319,9 +321,9 @@ export default function Home() {
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
-                  sessionStatus === "authenticated" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  user ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                 }`}>
-                  {sessionStatus === "authenticated" ? "Online" : "Offline / Locked"}
+                  {user ? "Online" : "Offline / Locked"}
                 </span>
               </div>
 
@@ -365,9 +367,9 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               <button 
                 onClick={fetchStatus}
-                disabled={sessionStatus !== "authenticated"}
+                disabled={!user}
                 className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-violet-500/20 glow-btn ${
-                  sessionStatus === "authenticated"
+                  user
                     ? "bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white cursor-pointer shadow-md shadow-violet-600/10"
                     : "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
                 }`}
@@ -375,9 +377,9 @@ export default function Home() {
                 Refresh API Gateway Status
               </button>
               <button 
-                disabled={sessionStatus !== "authenticated"}
+                disabled={!user}
                 className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-white/5 glow-btn ${
-                  sessionStatus === "authenticated"
+                  user
                     ? "bg-white/5 hover:bg-white/10 active:bg-white/5 text-gray-200 cursor-pointer"
                     : "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
                 }`}
