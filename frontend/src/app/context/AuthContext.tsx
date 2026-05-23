@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, googleProvider, signInWithPopup, signOut as fbSignOut } from "../firebase";
+import { auth, googleProvider, signInWithPopup, signOut as fbSignOut, isPlaceholder } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 
 interface AuthContextType {
@@ -18,6 +18,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -26,6 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (isPlaceholder || !auth || !googleProvider) {
+      alert("⚠️ Firebase is currently in Restricted Demo Mode because your public environment variables inside 'frontend/.env.local' are still placeholders.\n\nPlease replace them with your actual Firebase project keys to enable live Google Authentication popups!");
+      return;
+    }
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
@@ -34,6 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!auth) {
+      setUser(null);
+      return;
+    }
     try {
       await fbSignOut(auth);
     } catch (error) {

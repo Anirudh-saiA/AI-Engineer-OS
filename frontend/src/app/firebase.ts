@@ -10,9 +10,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "placeholder_app_id"
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+// Check if credentials are placeholders or invalid
+const isPlaceholder = 
+  !process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "placeholder_api_key";
 
-export { auth, googleProvider, signInWithPopup, signOut };
+let auth: any = null;
+let googleProvider: any = null;
+
+if (!isPlaceholder) {
+  try {
+    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+  }
+}
+
+export { auth, googleProvider, signInWithPopup, signOut, isPlaceholder };
