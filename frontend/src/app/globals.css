@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.08);
-  --border: rgba(15, 23, 42, 0.06);
+  --background: #020205;
+  --foreground: #f8fafc;
+  --accent: #d946ef;
+  --accent-glow: rgba(217, 70, 239, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -20,8 +20,8 @@
 
 /* Base resets & styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background) !important;
+  color: var(--foreground) !important;
   font-family: var(--font-sans);
   overflow-x: hidden;
   letter-spacing: -0.01em;
@@ -34,47 +34,47 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.5);
+  background: rgba(5, 5, 12, 0.6) !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.08) !important;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(168, 85, 247, 0.4) !important;
 }
 
 /* Glowing animations */
 @keyframes pulseGlow {
   0%, 100% {
     transform: scale(1);
-    opacity: 0.4;
+    opacity: 0.3;
   }
   50% {
-    transform: scale(1.03);
-    opacity: 0.6;
+    transform: scale(1.02);
+    opacity: 0.55;
   }
 }
 
 .animate-pulse-glow {
-  animation: pulseGlow 5s infinite ease-in-out;
+  animation: pulseGlow 6s infinite ease-in-out;
 }
 
-/* Premium Minimalist Card styling inspired by Magic UI */
+/* Premium Dark Minimalist Card styling inspired by Magic UI */
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 1px 2px -1px rgba(0, 0, 0, 0.02), 0 10px 30px -10px rgba(0, 0, 0, 0.03);
+  background: rgba(10, 10, 22, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 20px 40px -15px rgba(99, 102, 241, 0.08);
+  border-color: rgba(168, 85, 247, 0.35) !important;
+  box-shadow: 0 0 35px rgba(168, 85, 247, 0.15) !important;
 }
 
 .glow-btn {
@@ -90,7 +90,7 @@ body {
   left: 50%;
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
   transform: translate(-50%, -50%) scale(0);
   transition: transform 0.5s ease;
   pointer-events: none;
@@ -101,6 +101,151 @@ body {
 }
 
 .glow-btn:hover {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+}
+
+/* ================= DARK CYBERPUNK AUTOMATIC OVERRIDES ================= */
+
+/* Form controls */
+input, select, textarea {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(168, 85, 247, 0.6) !important;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.25) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Sidebar & Header panels */
+aside {
+  background-color: rgba(5, 5, 12, 0.75) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px);
+}
+
+header {
+  background-color: rgba(5, 5, 12, 0.4) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+  backdrop-filter: blur(20px);
+}
+
+footer {
+  border-top-color: rgba(255, 255, 255, 0.07) !important;
+  background-color: rgba(5, 5, 12, 0.3) !important;
+}
+
+/* Overriding hardcoded tailwind text classes */
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff !important;
+}
+
+p, span, td, th, li, label, div {
+  /* Only target general text layers, leaving highlighted text colors like emerald, fuchsia and indigo */
+}
+
+/* Core Slate Replacements */
+.text-slate-800, .text-slate-900, .text-slate-750, .text-slate-950, .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+.text-slate-600, .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.text-slate-400 {
+  color: #64748b !important;
+}
+
+.bg-white {
+  background-color: rgba(10, 10, 22, 0.6) !important;
+}
+
+.bg-slate-50, .bg-slate-50\/50, .bg-slate-50\/80, .bg-slate-50\/40, .bg-slate-50\/60 {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.bg-slate-950 {
+  background-color: #020205 !important;
+}
+
+.border-slate-200, .border-slate-200\/60, .border-slate-250, .border-slate-100, .border-slate-200\/50 {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Highlight elements */
+.bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.1) !important;
+}
+.text-indigo-600 {
+  color: #818cf8 !important;
+}
+.border-indigo-100 {
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+.text-emerald-600 {
+  color: #34d399 !important;
+}
+
+.bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+}
+.text-rose-600 {
+  color: #fb7185 !important;
+}
+
+.bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+.text-amber-600 {
+  color: #fbbf24 !important;
+}
+
+/* Glow highlights */
+.glow-highlight {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.2);
+}
+
+/* Buttons style sync */
+button.bg-slate-950, button.bg-slate-950:hover {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+}
+
+button.bg-slate-950:hover {
+  background-color: #4f46e5 !important;
+}
+
+button.bg-white {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+button.bg-white:hover {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Custom telemetry logs style */
+.bg-slate-50\/80.rounded-xl {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #94a3b8 !important;
+}
+
+.divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+tr:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
 }

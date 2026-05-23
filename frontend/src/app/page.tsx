@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./context/AuthContext";
+import OnboardingWizard from "./onboarding/OnboardingWizard";
+import ProfileTab from "./components/ProfileTab";
 
-type Tab = "dashboard" | "agent" | "database" | "vector" | "settings";
+type Tab = "dashboard" | "agent" | "database" | "vector" | "settings" | "profile";
 
 interface Message {
   id: string;
@@ -26,6 +28,11 @@ export default function Home() {
   // Navigation State
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+// Onboarding flow state
+const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+const [onboardingStep, setOnboardingStep] = useState<number>(1);
+const [onboardingData, setOnboardingData] = useState<any>({});
+const [profileExists, setProfileExists] = useState<boolean>(true);
 
   // Infrastructure / Status States
   const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
@@ -103,7 +110,34 @@ export default function Home() {
       addLog(`[ERROR] Gateway Connection Failed. Ensure uvicorn dev server is running on port 8000.`, "error");
     }
   };
-
+// Fetch user profile to determine onboarding status
+const fetchProfile = async () => {
+  if (!user) return;
+  try {
+    const res = await fetch("http://localhost:8000/api/v1/profile/me", {
+      headers: { Authorization: `Bearer ${user.uid}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.onboarded) {
+        setProfileExists(true);
+        setShowOnboarding(false);
+      } else {
+        setProfileExists(false);
+        setShowOnboarding(true);
+      }
+    } else if (res.status === 404) {
+      setProfileExists(false);
+      setShowOnboarding(true);
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.error("Profile fetch error", err);
+    setProfileExists(false);
+    setShowOnboarding(true);
+  }
+};
   // Sync auth updates
   useEffect(() => {
     if (!authLoading) {
@@ -111,6 +145,7 @@ export default function Home() {
         addLog(`[SUCCESS] Developer identity verified (Firebase): ${user.email}`, "success");
         addLog("[SYSTEM] Connection to AI-Engineer-OS API gateway unlocked.", "system");
         fetchStatus();
+    fetchProfile();
       } else {
         setLogs((prev) => [
           ...prev,
@@ -289,7 +324,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans relative overflow-hidden">
       
       {/* Background Soft Glow Effects (Inspired by Magic UI Light Theme) */}
       <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tr from-indigo-200/20 via-violet-100/10 to-fuchsia-100/15 blur-[130px] pointer-events-none animate-pulse-glow"></div>
@@ -341,8 +376,22 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        /* ================= PREMIUM SIDEBAR LAYOUT ================= */
-        <div className="flex-1 min-h-screen flex relative z-10">
+        <>
+        {/* ================= PREMIUM SIDEBAR LAYOUT ================= */}
+          {showOnboarding && (
+            <OnboardingWizard
+              step={onboardingStep}
+              data={onboardingData}
+              setStep={setOnboardingStep}
+              setData={setOnboardingData}
+              close={() => {
+                setShowOnboarding(false);
+                setProfileExists(true);
+                setActiveTab("dashboard");
+              }}
+            />
+          )}
+          <div className="flex-1 min-h-screen flex relative z-10">
           
           {/* LEFT PERSISTENT SIDEBAR */}
           <aside className={`border-r border-slate-200/60 bg-white/80 backdrop-blur-md flex flex-col transition-all duration-300 z-30 sticky top-0 h-screen ${
@@ -455,7 +504,21 @@ export default function Home() {
                 {!sidebarCollapsed && <span>Settings & Config</span>}
               </button>
 
-            </nav>
+            {/* Tab 6: Developer Profile */}
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              activeTab === "profile"
+                ? "bg-slate-950 text-white shadow-md"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
+            }`}
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+            {!sidebarCollapsed && <span>Developer Profile</span>}
+          </button>
+          </nav>
 
             {/* Sidebar User Identity Profile Card */}
             <div className="p-3 border-t border-slate-100 bg-slate-50/50">
@@ -1166,6 +1229,11 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ================= TAB 6: DEVELOPER PROFILE ================= */}
+              {activeTab === "profile" && (
+                <ProfileTab user={user} />
+              )}
+
             </main>
 
             {/* Premium Minimalistic Footer */}
@@ -1174,8 +1242,8 @@ export default function Home() {
             </footer>
 
           </div>
-
         </div>
+      </>
       )}
 
     </div>
