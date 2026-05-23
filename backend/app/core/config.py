@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # DATABASE_URL points to the PostgreSQL service container or localhost
-    DATABASE_URL: str = "postgresql://postgres:aiospassword@localhost:5432/aios_db"
+    DATABASE_URL: str = "postgresql://postgres:aiospassword@127.0.0.1:5434/aios_db"
     
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost:3000", "http://localhost:8000"]'
