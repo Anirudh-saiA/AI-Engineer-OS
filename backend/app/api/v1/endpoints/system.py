@@ -1,7 +1,10 @@
 import time
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.core.config import settings
 from app.schemas.system import HealthCheck, SystemStatus
+from app.api.deps import get_db
 
 router = APIRouter()
 
@@ -31,3 +34,23 @@ def get_status() -> SystemStatus:
             "project": settings.PROJECT_NAME
         }
     )
+
+@router.get("/db-check", summary="Database Connection Check")
+def check_db_connection(db: Session = Depends(get_db)):
+    """
+    Perform a live transaction check against PostgreSQL to ensure reachability.
+    """
+    try:
+        # Execute raw SQL query SELECT 1
+        db.execute(text("SELECT 1"))
+        return {
+            "status": "connected",
+            "database": "PostgreSQL",
+            "message": "Database is fully online and responding."
+        }
+    except Exception as e:
+        return {
+            "status": "failed",
+            "database": "PostgreSQL",
+            "error": str(e)
+        }

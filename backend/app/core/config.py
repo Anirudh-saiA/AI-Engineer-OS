@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI-Engineer-OS Backend"
     ENVIRONMENT: str = "development"
     
+    # DATABASE_URL points to the PostgreSQL service container or localhost
+    DATABASE_URL: str = "postgresql://postgres:aiospassword@localhost:5432/aios_db"
+    
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost:3000", "http://localhost:8000"]'
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
