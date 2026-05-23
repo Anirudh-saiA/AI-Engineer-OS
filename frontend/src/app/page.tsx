@@ -1,6 +1,46 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 
 export default function Home() {
+  const [logs, setLogs] = useState<Array<{ text: string; type: "system" | "success" | "config" | "info" | "error" }>>([
+    { text: "[SYSTEM] Initializing AI-Engineer-OS developer stack...", type: "system" },
+    { text: "[SUCCESS] Git repository initialized locally. Active: user.name=\"Anirudh-saiA\"", type: "success" },
+    { text: "[SUCCESS] Generated 9-tier core monorepo folder layouts.", type: "success" },
+    { text: "[SUCCESS] Bootstrapped Next.js Frontend Framework.", type: "success" },
+    { text: "[CONFIG] Tailwind CSS v4 and TypeScript configured in /frontend.", type: "config" },
+  ]);
+  const [backendStatus, setBackendStatus] = useState<any>(null);
+  const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
+
+  const addLog = (text: string, type: "system" | "success" | "config" | "info" | "error") => {
+    setLogs((prev) => [...prev, { text, type }]);
+  };
+
+  const fetchStatus = async () => {
+    setFastapiOnline(null);
+    addLog("[API] Querying REST API gateway status from http://localhost:8000/api/v1/system/status...", "system");
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/system/status");
+      if (res.ok) {
+        const data = await res.json();
+        setBackendStatus(data);
+        setFastapiOnline(true);
+        addLog(`[SUCCESS] API Connection Established. Project: ${data.details.project}, Environment: ${data.environment}, Version: ${data.version}, Uptime: ${data.uptime_seconds}s`, "success");
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err: any) {
+      setFastapiOnline(false);
+      setBackendStatus(null);
+      addLog(`[ERROR] Gateway Connection Failed. Ensure uvicorn dev server is running on port 8000.`, "error");
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#030712] text-gray-100 flex flex-col font-sans relative overflow-hidden">
       
@@ -37,7 +77,9 @@ export default function Home() {
           <div className="h-4 w-[1px] bg-white/10"></div>
           <div className="flex items-center gap-2">
             <span className="text-gray-400">Services:</span>
-            <span className="text-cyan-400 font-semibold">3 / 3 Healthy</span>
+            <span className={fastapiOnline ? "text-cyan-400 font-semibold" : "text-rose-400 font-semibold"}>
+              {fastapiOnline ? "4 / 4 Healthy" : "3 / 4 Healthy"}
+            </span>
           </div>
         </div>
       </header>
@@ -57,13 +99,13 @@ export default function Home() {
             </div>
             
             <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-violet-500/10 text-violet-400 border border-violet-500/20 uppercase">
-              Phase 1 — Day 1
+              Phase 1 — Day 2
             </span>
             <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">
               Welcome to your Autonomous Agent Workspace
             </h2>
             <p className="text-gray-400 text-sm mt-2 leading-relaxed max-w-2xl">
-              AI-Engineer-OS has bootstrapped successfully. The monorepo has been mapped, git configurations are locked to <code className="text-violet-300 font-mono">Anirudh-saiA</code>, and Next.js is configured with TypeScript and Tailwind CSS.
+              AI-Engineer-OS has bootstrapped successfully. The monorepo has been mapped, git configurations are locked to <code className="text-violet-300 font-mono">Anirudh-saiA</code>, and Next.js is connected dynamically with our FastAPI core backend services.
             </p>
           </section>
 
@@ -84,13 +126,23 @@ export default function Home() {
             </div>
 
             {/* Pseudo Logs Terminal */}
-            <div className="flex-1 bg-gray-950/80 rounded-xl p-4 font-mono text-xs leading-6 text-gray-400 border border-white/5 overflow-y-auto space-y-3">
-              <div className="text-violet-400">[SYSTEM] Initializing AI-Engineer-OS developer stack...</div>
-              <div className="text-emerald-400">[SUCCESS] Git repository initialized locally. Active: user.name="Anirudh-saiA"</div>
-              <div className="text-emerald-400">[SUCCESS] Generated 9-tier core monorepo folder layouts.</div>
-              <div className="text-emerald-400">[SUCCESS] Bootstrapped Next.js Frontend Framework.</div>
-              <div className="text-cyan-400">[CONFIG] Tailwind CSS v4 and TypeScript configured in /frontend.</div>
-              <div className="text-gray-500 animate-pulse">[WAITING] Awaiting orchestration pipelines setup (Day 2)...</div>
+            <div className="flex-1 bg-gray-950/80 rounded-xl p-4 font-mono text-xs leading-6 text-gray-400 border border-white/5 overflow-y-auto space-y-3 max-h-[300px]">
+              {logs.map((log, idx) => {
+                let colorClass = "text-gray-400";
+                if (log.type === "system") colorClass = "text-violet-400";
+                else if (log.type === "success") colorClass = "text-emerald-400";
+                else if (log.type === "config") colorClass = "text-cyan-400";
+                else if (log.type === "error") colorClass = "text-rose-400";
+                else if (log.type === "info") colorClass = "text-amber-400";
+                return (
+                  <div key={idx} className={colorClass}>
+                    {log.text}
+                  </div>
+                );
+              })}
+              {fastapiOnline === null && (
+                <div className="text-gray-500 animate-pulse">[WAITING] Querying REST API gateway status...</div>
+              )}
               <div className="pt-2 border-t border-white/5 flex items-center gap-1 text-white">
                 <span className="text-violet-500 font-bold">$</span>
                 <span className="border-r-2 border-white animate-pulse pr-1">aios-agent --active</span>
@@ -109,6 +161,24 @@ export default function Home() {
             </h3>
             <div className="flex flex-col gap-3">
               
+              {/* FastAPI Status */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/20 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+                    ⚡
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-white">FastAPI Gateway</h4>
+                    <p className="text-[10px] text-gray-500 font-mono">Port 8000</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
+                  fastapiOnline ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                }`}>
+                  {fastapiOnline ? "Online" : "Offline"}
+                </span>
+              </div>
+
               {/* Postgres Status */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/20 transition-all">
                 <div className="flex items-center gap-3">
@@ -195,8 +265,11 @@ export default function Home() {
               Quick Actions
             </h3>
             <div className="flex flex-col gap-2">
-              <button className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-xs tracking-wide transition-all shadow-md shadow-violet-600/10 glow-btn border border-violet-500/20 cursor-pointer">
-                Run Local Development Dev
+              <button 
+                onClick={fetchStatus}
+                className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-xs tracking-wide transition-all shadow-md shadow-violet-600/10 glow-btn border border-violet-500/20 cursor-pointer"
+              >
+                Refresh API Gateway Status
               </button>
               <button className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/5 text-gray-200 font-semibold text-xs tracking-wide transition-all border border-white/5 hover:border-white/10 cursor-pointer glow-btn">
                 Launch Sandbox Container
