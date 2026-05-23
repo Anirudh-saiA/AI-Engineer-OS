@@ -38,8 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Firebase Auth Google Error:", error);
+      if (error.code === "auth/account-exists-with-different-credential") {
+        alert("🔒 Account exists with a different credential!\n\nYou have already signed in with a different provider (likely GitHub) using the same email address.\n\nTo allow both, please go to Firebase Console -> Authentication -> Settings -> User sign-in method -> Link accounts, and select 'Allow creation of multiple accounts with the same email address'.");
+      } else if (error.code !== "auth/popup-closed-by-user") {
+        alert(`❌ Authentication Error: ${error.message || "An unknown error occurred."}`);
+      }
     }
   };
 
@@ -50,8 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       await signInWithPopup(auth, githubProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Firebase Auth GitHub Error:", error);
+      if (error.code === "auth/account-exists-with-different-credential") {
+        alert("🔒 Account exists with a different credential!\n\nYou have already signed in with a different provider (likely Google) using the same email address.\n\nTo allow both, please go to Firebase Console -> Authentication -> Settings -> User sign-in method -> Link accounts, and select 'Allow creation of multiple accounts with the same email address'.");
+      } else if (error.code !== "auth/popup-closed-by-user") {
+        alert(`❌ Authentication Error: ${error.message || "An unknown error occurred."}`);
+      }
     }
   };
 
@@ -62,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       await fbSignOut(auth);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Firebase SignOut Error:", error);
     }
   };
