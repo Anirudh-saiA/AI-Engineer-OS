@@ -8,6 +8,8 @@
 
 > An open-source, autonomous AI Software Engineer Operating System & Agent Developer platform designed to construct, test, debug, and deploy enterprise applications seamlessly.
 
+![AI-Engineer-OS Premium Developer Workspace](docs/assets/workspace_preview.png)
+
 ---
 
 ## 🌌 Project Vision
