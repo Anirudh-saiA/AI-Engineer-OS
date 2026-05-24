@@ -24,7 +24,7 @@ interface TelemetryRow {
 }
 
 export default function Home() {
-  const { user, loading: authLoading, signInWithGoogle, signInWithGithub, signOut } = useAuth();
+  const { user, loading: authLoading, signInWithGoogle, signInWithGithub, signOut, signInMockDeveloper } = useAuth();
   
   // Navigation State
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -77,11 +77,34 @@ const [profileExists, setProfileExists] = useState<boolean>(true);
 
   // Tab 5: Settings States
   const [activeModel, setActiveModel] = useState("gemini-3.5-flash");
-const [theme, setTheme] = useState("cyberpunk");
+  const [theme, setTheme] = useState("dark");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
   const [debugMode, setDebugMode] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("You are Antigravity, a professional agentic developer working inside the AI-Engineer-OS platform.");
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  // Initialize theme from system preference
+  useEffect(() => {
+    const saved = localStorage.getItem("aios-theme");
+    if (saved === "light" || saved === "dark") {
+      setTheme(saved);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+    }
+  }, []);
+
+  // Persist theme choice
+  useEffect(() => {
+    localStorage.setItem("aios-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   // Helper log function
   const addLog = (text: string, type: "system" | "success" | "config" | "info" | "error") => {
@@ -317,186 +340,196 @@ const fetchProfile = async () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center font-sans">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-t-2 border-r-2 border-indigo-600 animate-spin"></div>
-          <p className="font-mono text-xs text-slate-500 tracking-wider">Validating Firebase Session...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
+        <div className="flex flex-col items-center gap-4 animate-fade-up">
+          <div className="w-14 h-14 rounded-full border-[3px] border-t-transparent animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}></div>
+          <p className="font-mono text-sm tracking-wider" style={{ color: "var(--text-muted)" }}>Validating Firebase Session...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen text-slate-100 flex font-sans relative overflow-hidden ${user ? "bg-slate-950 cyberpunk-theme" : "bg-[#f9fafb]"}`}>
+    <div className="min-h-screen flex font-sans relative overflow-hidden" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
       
-      {/* Background Soft Glow Effects (Inspired by Magic UI Light Theme) */}
+      {/* Background Ambient Glow Blobs */}
       {user && (
         <>
-          <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tr from-indigo-200/20 via-violet-100/10 to-fuchsia-100/15 blur-[130px] pointer-events-none animate-pulse-glow"></div>
-          <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-cyan-100/15 via-blue-100/10 to-indigo-100/20 blur-[130px] pointer-events-none animate-pulse-glow"></div>
+          <div className="blob-1" style={{ top: "-15%", left: "-10%" }}></div>
+          <div className="blob-2" style={{ bottom: "-15%", right: "-10%" }}></div>
         </>
       )}
-      {!user ? (
-        /* ================= AUTHENTICATION LOCK SCREEN (DUOLINGO-INSPIRED LIGHT TECH THEME) ================= */
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-6 md:py-10 bg-[#f9fafb] text-slate-900 font-sans overflow-y-auto light-theme">
-          {/* Subtle high-tech grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1.2px,transparent_1.2px),linear-gradient(to_bottom,#e2e8f0_1.2px,transparent_1.2px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-70 pointer-events-none"></div>
-          
-          {/* Pastel background soft aura glowing inside the lock screen */}
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-indigo-200/30 via-violet-100/20 to-fuchsia-100/20 blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-100/20 via-blue-100/20 to-indigo-200/30 blur-[120px] pointer-events-none"></div>
 
-          {/* REAL GEOMETRIC COLORFUL CIRCLES AT THE BORDERS (Duolingo Style with Playful Drifting Float Animations) */}
-          {/* Top-Left Indigo Circle */}
-          <div className="absolute top-4 left-4 md:top-8 md:left-8 w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-indigo-500 bg-indigo-50 flex flex-col items-center justify-center font-black text-2xl text-indigo-700 shadow-md rotate-[-6deg] select-none pointer-events-none z-10 animate-float-slow">
-            <span className="text-3xl">Ω</span>
-            <span className="text-[9px] uppercase tracking-wider mt-1 font-black opacity-80">AIOS</span>
+      {!user ? (
+        /* ═══════════════════════════════════════════════════════════
+           LANDING / LOGIN SCREEN — Nexus (dark) / ailingo (light)
+           ═══════════════════════════════════════════════════════════ */
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-6 md:py-10 overflow-y-auto" style={{ background: "var(--bg-primary)" }}>
+
+          {/* Background effects */}
+          <div className="blob-1" style={{ top: "-15%", left: "-10%" }}></div>
+          <div className="blob-2" style={{ bottom: "-20%", right: "-15%" }}></div>
+
+          {/* Subtle grid overlay for light mode texture */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-20 pointer-events-none"></div>
+
+          {/* Floating decorative elements */}
+          <div className="absolute top-6 left-6 md:top-10 md:left-12 w-20 h-20 md:w-28 md:h-28 rounded-2xl flex items-center justify-center text-3xl md:text-4xl select-none pointer-events-none z-10 animate-float rotate-[-6deg]"
+            style={{ background: "var(--accent-soft)", border: "2px solid var(--accent)", boxShadow: "var(--shadow-glow)" }}>
+            🚀
           </div>
-          {/* Top-Right Cyan Circle */}
-          <div className="absolute top-12 right-6 md:top-20 md:right-16 w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-cyan-500 bg-cyan-50 flex items-center justify-center font-black text-2xl text-cyan-600 shadow-md select-none pointer-events-none z-10 animate-float-medium">
+          <div className="absolute top-16 right-8 md:top-24 md:right-20 w-14 h-14 md:w-18 md:h-18 rounded-xl flex items-center justify-center text-2xl select-none pointer-events-none z-10 animate-float-reverse"
+            style={{ background: "var(--secondary-soft)", border: "2px solid var(--secondary)" }}>
             ⚡
           </div>
-          
-          {/* Bottom-Left Amber Circle */}
-          <div className="absolute bottom-6 left-12 md:bottom-16 md:left-24 w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-amber-500 bg-amber-50 flex items-center justify-center font-black text-2xl text-amber-600 shadow-md select-none pointer-events-none z-10 animate-float-medium">
-            🔥
+          <div className="absolute bottom-8 left-14 md:bottom-20 md:left-28 w-16 h-16 md:w-22 md:h-22 rounded-xl flex items-center justify-center text-2xl select-none pointer-events-none z-10 animate-float"
+            style={{ background: "var(--accent-soft)", border: "2px solid var(--accent)" }}>
+            🤖
           </div>
-          
-          {/* Bottom-Right Emerald Circle */}
-          <div className="absolute bottom-16 right-8 md:bottom-28 md:right-12 w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-emerald-500 bg-emerald-50 flex flex-col items-center justify-center font-black text-xs text-emerald-700 shadow-md select-none pointer-events-none z-10 animate-float-slow">
-            <span className="text-3xl">🤖</span>
-            <span className="text-[10px] uppercase tracking-wider mt-1.5 font-extrabold">CareerAI</span>
+          <div className="absolute bottom-20 right-10 md:bottom-32 md:right-16 w-24 h-24 md:w-32 md:h-32 rounded-2xl flex flex-col items-center justify-center select-none pointer-events-none z-10 animate-float-reverse"
+            style={{ background: "var(--secondary-soft)", border: "2px solid var(--secondary)" }}>
+            <span className="text-3xl">🔥</span>
+            <span className="text-[10px] font-black uppercase tracking-wider mt-1" style={{ color: "var(--accent-text)" }}>AI-OS</span>
           </div>
 
-          {/* Floating small circular bubbles for extra playfulness */}
-          <div className="absolute top-1/4 left-16 w-6 h-6 rounded-full bg-blue-300 border-2 border-blue-400/50 shadow-sm pointer-events-none select-none animate-float-medium"></div>
-          <div className="absolute top-2/3 right-16 w-8 h-8 rounded-full bg-emerald-300 border-2 border-emerald-400/50 shadow-sm pointer-events-none select-none animate-float-slow"></div>
-          <div className="absolute bottom-1/4 left-24 w-5 h-5 rounded-full bg-indigo-300 border-2 border-indigo-400/50 shadow-sm pointer-events-none select-none animate-float-slow"></div>
-          <div className="absolute top-1/3 right-1/4 w-7 h-7 rounded-full bg-amber-300 border-2 border-amber-400/50 shadow-sm pointer-events-none select-none animate-float-medium"></div>
+          {/* Small floating dots */}
+          <div className="absolute top-1/4 left-20 w-5 h-5 rounded-full animate-float-reverse" style={{ background: "var(--accent)", opacity: 0.3 }}></div>
+          <div className="absolute top-2/3 right-20 w-7 h-7 rounded-full animate-float" style={{ background: "var(--secondary)", opacity: 0.25 }}></div>
+          <div className="absolute bottom-1/3 left-1/4 w-4 h-4 rounded-full animate-float" style={{ background: "var(--accent)", opacity: 0.2 }}></div>
 
-          {/* 1. Header Pill Banner */}
-          <div className="z-10 mt-1 md:mt-2">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-extrabold bg-indigo-50/95 text-indigo-700 border-2 border-indigo-200 shadow-sm select-none hover:scale-102 transition-all">
-              <span className="text-[10px] animate-pulse">✨</span>
-              <span>AI-Powered Career Platform</span>
-              <span className="h-3 w-[1.5px] bg-indigo-200"></span>
-              <span>500K+ Users</span>
-              <span className="text-indigo-500 font-semibold">›</span>
+          {/* Header Badge */}
+          <div className="z-10 mt-1 md:mt-2 animate-fade-down">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-sm"
+              style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
+              <span className="animate-pulse">✨</span>
+              <span>AI-Powered Developer Platform</span>
+              <span className="h-3.5 w-[1.5px]" style={{ background: "var(--accent)" }}></span>
+              <span>Open Source</span>
             </div>
           </div>
 
-          {/* 2. Primary Content Card with Colorful Border Dots */}
-          <div className="z-10 max-w-4xl w-full text-center space-y-6 md:space-y-8 my-auto px-4 py-8 relative">
+          {/* Hero Content */}
+          <div className="z-10 max-w-5xl w-full text-center space-y-7 md:space-y-9 my-auto px-4 py-8 relative">
             
-            {/* Main Big Hero Title - High Contrast Slate-950/Black */}
-            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-slate-950 leading-[1.05] sm:leading-[1.05] md:leading-[1.05] font-sans select-none">
-              Use AI to <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-xs select-none">
-                land your dream job
-              </span>
+            {/* Massive Bold Hero Title */}
+            <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] font-black tracking-tight leading-[1.05] select-none animate-fade-up" style={{ color: "var(--text-primary)" }}>
+              Build AI agents<br className="hidden sm:inline" />
+              <span className="hero-gradient-text"> at warp speed</span>
+              <span className="accent-dot text-6xl sm:text-8xl">.</span>
             </h1>
             
-            {/* High Contrast description text */}
-            <p className="text-slate-800 text-sm sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto font-extrabold font-sans">
-              CareerAI combines cutting-edge artificial intelligence with gamified learning to help you build skills, optimize your resume, and land your dream job 3x faster.
+            {/* Subtitle */}
+            <p className="text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto font-semibold animate-fade-up delay-2" style={{ color: "var(--text-secondary)" }}>
+              AI-Engineer-OS is an autonomous developer workspace. Code, deploy, and manage intelligent agents with a single platform — powered by FastAPI, PostgreSQL, and vector search.
             </p>
 
-            {/* Explicit OAuth Google and GitHub sign-in buttons - Playful 3D bevel buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-md sm:max-w-xl mx-auto pt-2">
-              {/* Google Button - Solid Vibrant Indigo */}
+            {/* Auth Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-lg sm:max-w-2xl mx-auto pt-2 animate-fade-up delay-3">
               <button 
                 onClick={signInWithGoogle}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:translate-y-[2px] active:border-b-[2px] text-white font-extrabold text-sm tracking-wider transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer select-none border-b-[6px] border-indigo-800 text-shadow-xs"
+                className="btn-accent w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none"
+                style={{ fontSize: "14px" }}
               >
-                <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
                 </svg>
                 Sign In with Google
               </button>
 
-              {/* GitHub Button - Solid Vibrant Charcoal Black */}
               <button 
                 onClick={signInWithGithub}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 active:translate-y-[2px] active:border-b-[2px] text-white font-extrabold text-sm tracking-wider transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer select-none border-b-[6px] border-slate-950 text-shadow-xs"
+                className="btn-outline w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none"
+                style={{ fontSize: "14px" }}
               >
-                <svg className="w-4.5 h-4.5 fill-current text-white" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                 </svg>
                 Sign In with GitHub
               </button>
             </div>
 
-            {/* Description details card list - High Contrast Solid White Cards with thick borders */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6 text-left">
-              {/* Feature 1 */}
-              <div className="rounded-2xl p-5 border-[3px] border-indigo-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-indigo-400 transition-all cursor-pointer">
-                <span className="text-2xl p-2 bg-indigo-50 rounded-xl text-indigo-650 border border-indigo-200 flex-shrink-0">🤖</span>
-                <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Cognitive AI Workflows</h4>
-                  <p className="text-xs font-bold text-slate-700 font-sans mt-1">Autonomous code sandboxing, docker checking & lint fixes.</p>
-                </div>
-                {/* Neon dot at border */}
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_6px_#6366f1]"></span>
-              </div>
-              
-              {/* Feature 2 */}
-              <div className="rounded-2xl p-5 border-[3px] border-emerald-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-emerald-400 transition-all cursor-pointer">
-                <span className="text-2xl p-2 bg-emerald-50 rounded-xl text-emerald-650 border border-emerald-200 flex-shrink-0">🔥</span>
-                <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Gamified Heatmaps</h4>
-                  <p className="text-xs font-bold text-slate-700 font-sans mt-1">365-day commit calendar, milestones and XP awards.</p>
-                </div>
-                {/* Neon dot at border */}
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
-              </div>
-              
-              {/* Feature 3 */}
-              <div className="rounded-2xl p-5 border-[3px] border-blue-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-blue-400 transition-all cursor-pointer">
-                <span className="text-2xl p-2 bg-blue-50 rounded-xl text-blue-650 border border-blue-200 flex-shrink-0">⚡</span>
-                <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Semantic RAG Engine</h4>
-                  <p className="text-xs font-bold text-slate-750 font-sans mt-1">Nearest-neighbor vector matching of files inside Qdrant.</p>
-                </div>
-                {/* Neon dot at border */}
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]"></span>
-              </div>
+            {/* Mock Sandbox Bypass */}
+            <div className="pt-1 text-center max-w-md mx-auto animate-fade-up delay-4">
+              <button
+                onClick={signInMockDeveloper}
+                className="w-full sm:w-auto py-3.5 px-8 rounded-2xl font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer select-none border-2"
+                style={{ 
+                  background: "transparent", 
+                  color: "var(--text-muted)", 
+                  borderColor: "var(--border)" 
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent-text)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+              >
+                <span>🚀</span> Bypass to Mock Sandbox
+              </button>
             </div>
 
+            {/* Feature Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6 text-left animate-fade-up delay-5">
+              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
+                style={{ borderLeft: "4px solid var(--accent)" }}>
+                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "var(--accent-soft)" }}>🤖</span>
+                <div>
+                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Cognitive AI Workflows</h4>
+                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>Autonomous code sandboxing, docker checking & lint fixes.</p>
+                </div>
+              </div>
+              
+              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
+                style={{ borderLeft: "4px solid var(--secondary)" }}>
+                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "var(--secondary-soft)" }}>🔥</span>
+                <div>
+                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Gamified Heatmaps</h4>
+                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>365-day commit calendar, milestones and XP awards.</p>
+                </div>
+              </div>
+              
+              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
+                style={{ borderLeft: "4px solid var(--warning)" }}>
+                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)" }}>⚡</span>
+                <div>
+                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Semantic RAG Engine</h4>
+                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>Nearest-neighbor vector matching of files inside Qdrant.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* 3. Footer Telemetry & Badges */}
-          <div className="z-10 flex flex-wrap justify-center items-center gap-x-6 gap-y-4 text-xs font-mono font-semibold text-slate-500 border-t border-slate-200/50 pt-5 md:pt-6 w-full max-w-4xl select-none">
+          {/* Footer Stats Bar */}
+          <div className="z-10 flex flex-wrap justify-center items-center gap-x-6 gap-y-4 text-xs font-semibold pt-5 md:pt-6 w-full max-w-4xl select-none animate-fade-up delay-6"
+            style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2">
-              {/* Profile Avatars */}
               <div className="flex -space-x-2">
-                <span className="w-6 h-6 rounded-full border-2 border-white bg-indigo-500 text-[8px] font-black text-white flex items-center justify-center">A</span>
-                <span className="w-6 h-6 rounded-full border-2 border-white bg-emerald-500 text-[8px] font-black text-white flex items-center justify-center">M</span>
-                <span className="w-6 h-6 rounded-full border-2 border-white bg-cyan-500 text-[8px] font-black text-white flex items-center justify-center">S</span>
-                <span className="w-6 h-6 rounded-full border-2 border-white bg-amber-500 text-[8px] font-black text-white flex items-center justify-center">R</span>
+                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "var(--accent)" }}>A</span>
+                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "var(--secondary)" }}>M</span>
+                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "#06b6d4" }}>S</span>
               </div>
               <span>500,000+ professionals</span>
             </div>
             
-            <span className="hidden sm:inline h-3 w-[1.5px] bg-slate-300"></span>
+            <span className="hidden sm:inline h-4 w-[1.5px]" style={{ background: "var(--border)" }}></span>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-amber-500 text-sm">★★★★★</span>
-              <span className="text-slate-800 font-bold">4.9/5</span>
+              <span style={{ color: "var(--warning)" }}>★★★★★</span>
+              <span className="font-bold" style={{ color: "var(--text-primary)" }}>4.9/5</span>
             </div>
 
-            <span className="hidden sm:inline h-3 w-[1.5px] bg-slate-300"></span>
+            <span className="hidden sm:inline h-4 w-[1.5px]" style={{ background: "var(--border)" }}></span>
 
-            <div className="flex items-center gap-1.5 text-emerald-600">
+            <div className="flex items-center gap-1.5" style={{ color: "var(--success)" }}>
               <svg className="w-4 h-4 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              <span>No credit card required</span>
+              <span>Open source & free</span>
             </div>
           </div>
         </div>
       ) : (
         <>
-        {/* ================= PREMIUM SIDEBAR LAYOUT ================= */}
+        {/* ═══════════════════════════════════════════════════════════
+           AUTHENTICATED APP SHELL
+           ═══════════════════════════════════════════════════════════ */}
           {showOnboarding && (
             <OnboardingWizard
               step={onboardingStep}
@@ -510,189 +543,130 @@ const fetchProfile = async () => {
               }}
             />
           )}
-          {/* Mobile Sidebar Backdrop Overlay */}
+          {/* Mobile Sidebar Backdrop */}
           {mobileSidebarOpen && (
             <div 
-              className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-35 md:hidden transition-opacity duration-300"
+              className="fixed inset-0 z-35 md:hidden transition-opacity duration-300"
+              style={{ background: "var(--bg-overlay)", backdropFilter: "blur(4px)" }}
               onClick={() => setMobileSidebarOpen(false)}
             />
           )}
 
           <div className="flex-1 min-h-screen flex relative z-10">
           
-          {/* LEFT RESPONSIVE DRAWERS/SIDEBAR */}
-          <aside className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-screen border-r border-slate-200/60 bg-white/85 backdrop-blur-md flex flex-col transition-all duration-300 z-40 md:z-30 ${
+          {/* ═══════ LEFT SIDEBAR ═══════ */}
+          <aside className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-screen backdrop-blur-md flex flex-col transition-all duration-300 z-40 md:z-30 ${
             mobileSidebarOpen ? "translate-x-0 shadow-xl" : "-translate-x-full md:translate-x-0"
           } ${
             sidebarCollapsed ? "md:w-20" : "md:w-64 w-64"
-          }`}>
+          }`}
+          style={{ background: "var(--bg-sidebar)", borderRight: "1px solid var(--border)" }}>
             
-            {/* Sidebar Logo Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            {/* Sidebar Logo */}
+            <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center font-bold text-md text-white shadow-md flex-shrink-0 animate-pulse">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-md text-white shadow-md flex-shrink-0"
+                  style={{ background: "var(--accent)" }}>
                   Ω
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div>
-                    <h1 className="text-xs font-extrabold tracking-tight text-slate-900 leading-none">
+                    <h1 className="text-sm font-black tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
                       AI-ENGINEER-OS
                     </h1>
-                    <span className="text-[9px] text-indigo-600 font-mono font-semibold uppercase tracking-wider">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--accent-text)" }}>
                       Agent Console
                     </span>
                   </div>
                 )}
               </div>
               
-              {/* Collapse Button (Only visible on desktop) */}
               <button 
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden md:flex w-7 h-7 rounded-lg hover:bg-slate-50 items-center justify-center border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs"
+                className="hidden md:flex w-7 h-7 rounded-lg items-center justify-center cursor-pointer transition-all"
+                style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
               >
                 {sidebarCollapsed ? "→" : "←"}
               </button>
 
-              {/* Close Button (Only visible on mobile) */}
               <button 
                 onClick={() => setMobileSidebarOpen(false)}
-                className="md:hidden w-7 h-7 rounded-lg hover:bg-slate-50 flex items-center justify-center border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs"
+                className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer"
+                style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Sidebar Navigation Tabs */}
+            {/* Navigation Tabs */}
             <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
               
-              {/* Tab 1: Dashboard */}
-              <button
-                onClick={() => {
-                  setActiveTab("dashboard");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "dashboard"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Dashboard Overview</span>}
-              </button>
-
-              {/* Tab 2: Agent Terminal */}
-              <button
-                onClick={() => {
-                  setActiveTab("agent");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "agent"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Agent Chat Terminal</span>}
-              </button>
-
-              {/* Tab 3: Database Explorer */}
-              <button
-                onClick={() => {
-                  setActiveTab("database");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "database"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Database Explorer</span>}
-              </button>
-
-              {/* Tab 4: Vector Indexes */}
-              <button
-                onClick={() => {
-                  setActiveTab("vector");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "vector"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Vector Search Index</span>}
-              </button>
-
-              {/* Tab 5: Settings */}
-              <button
-                onClick={() => {
-                  setActiveTab("settings");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "settings"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Settings & Config</span>}
-              </button>
-
-              {/* Tab 6: Developer Profile */}
-              <button
-                onClick={() => {
-                  setActiveTab("profile");
-                  setMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === "profile"
-                    ? "bg-slate-950 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-                }`}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Developer Profile</span>}
-              </button>
+              {([
+                { id: "dashboard" as Tab, label: "Dashboard", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg> },
+                { id: "agent" as Tab, label: "Agent Terminal", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
+                { id: "database" as Tab, label: "Database Explorer", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg> },
+                { id: "vector" as Tab, label: "Vector Search", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> },
+                { id: "settings" as Tab, label: "Settings", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+                { id: "profile" as Tab, label: "Profile", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg> },
+              ]).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setMobileSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold tracking-wide transition-all cursor-pointer ${
+                    activeTab === tab.id ? "nav-active" : ""
+                  }`}
+                  style={activeTab === tab.id ? {} : { color: "var(--text-muted)" }}
+                  onMouseEnter={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = "var(--accent-soft)"; e.currentTarget.style.color = "var(--text-primary)"; } }}
+                  onMouseLeave={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; } }}
+                >
+                  {tab.icon}
+                  {(!sidebarCollapsed || mobileSidebarOpen) && <span>{tab.label}</span>}
+                </button>
+              ))}
             </nav>
 
-            {/* Sidebar User Identity Profile Card */}
-            <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+            {/* Theme Toggle + User Card */}
+            <div className="p-3" style={{ borderTop: "1px solid var(--border)" }}>
+
+              {/* Theme toggle */}
+              {(!sidebarCollapsed || mobileSidebarOpen) && (
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl mb-3 text-xs font-semibold cursor-pointer transition-all"
+                  style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}
+                >
+                  <span>{theme === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode"}</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                    {theme === "dark" ? "Dark" : "Light"}
+                  </span>
+                </button>
+              )}
+              {sidebarCollapsed && !mobileSidebarOpen && (
+                <button onClick={toggleTheme} className="w-full flex justify-center py-2 mb-3 rounded-xl cursor-pointer text-lg transition-all" style={{ background: "var(--accent-soft)" }}>
+                  {theme === "dark" ? "🌙" : "☀️"}
+                </button>
+              )}
+
+              {/* User avatar */}
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 rounded-full border border-slate-200 p-0.5 bg-white flex-shrink-0 overflow-hidden shadow-2xs">
+                <div className="w-9 h-9 rounded-full p-0.5 flex-shrink-0 overflow-hidden" style={{ border: "2px solid var(--border)" }}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                   ) : (
-                    <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xs font-semibold text-white">
+                    <div className="w-full h-full rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "var(--accent)" }}>
                       {user.displayName?.[0] || "D"}
                     </div>
                   )}
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">
+                    <p className="text-[12px] font-bold truncate leading-tight" style={{ color: "var(--text-primary)" }}>
                       {user.displayName || "Developer"}
                     </p>
-                    <p className="text-[9px] text-slate-400 font-mono truncate leading-none mt-0.5">
+                    <p className="text-[10px] font-mono truncate leading-none mt-0.5" style={{ color: "var(--text-muted)" }}>
                       {user.email}
                     </p>
                   </div>
@@ -702,7 +676,10 @@ const fetchProfile = async () => {
               {(!sidebarCollapsed || mobileSidebarOpen) && (
                 <button 
                   onClick={signOut}
-                  className="w-full mt-3 py-1.5 px-3 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-semibold text-[10px] tracking-wide transition-all border border-slate-200 hover:border-rose-100 cursor-pointer shadow-3xs text-center"
+                  className="w-full mt-3 py-1.5 px-3 rounded-lg font-semibold text-[11px] tracking-wide transition-all cursor-pointer text-center"
+                  style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--error)"; e.currentTarget.style.color = "var(--error)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
                 >
                   Disconnect Session
                 </button>
@@ -710,16 +687,17 @@ const fetchProfile = async () => {
             </div>
           </aside>
 
-          {/* MAIN CANVAS AREA */}
+          {/* ═══════ MAIN CONTENT AREA ═══════ */}
           <div className="flex-1 flex flex-col min-w-0">
             
-            {/* Dynamic Top Header Bar */}
-            <header className="h-16 border-b border-slate-200/60 bg-white/70 backdrop-blur-md sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between">
+            {/* Header Bar */}
+            <header className="h-16 sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between backdrop-blur-md"
+              style={{ background: "var(--bg-header)", borderBottom: "1px solid var(--border)" }}>
               <div className="flex items-center gap-3 min-w-0">
-                {/* Mobile Drawer Trigger hamburger menu */}
                 <button
                   onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                  className="md:hidden p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs flex-shrink-0"
+                  className="md:hidden p-1.5 rounded-lg cursor-pointer flex-shrink-0"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
                   aria-label="Toggle Sidebar Menu"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -727,42 +705,53 @@ const fetchProfile = async () => {
                   </svg>
                 </button>
                 <div className="min-w-0">
-                  <h2 className="text-xs md:text-sm font-bold text-slate-950 flex items-center gap-1.5 truncate">
-                    {activeTab === "dashboard" && "Dashboard Overview"}
-                    {activeTab === "agent" && "Cognitive Agent Terminal"}
-                    {activeTab === "database" && "PostgreSQL Database Explorer"}
-                    {activeTab === "vector" && "Semantic Vector Search Index"}
-                    {activeTab === "settings" && "OS System Configurations"}
-                    {activeTab === "profile" && "Developer Profile Overview"}
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-semibold bg-slate-100 text-slate-500 border border-slate-200/60 flex-shrink-0 hidden sm:inline-block">
+                  <h2 className="text-sm md:text-lg font-bold flex items-center gap-2 truncate" style={{ color: "var(--text-primary)" }}>
+                    {activeTab === "dashboard" && "Dashboard"}
+                    {activeTab === "agent" && "Agent Terminal"}
+                    {activeTab === "database" && "Database Explorer"}
+                    {activeTab === "vector" && "Vector Search"}
+                    {activeTab === "settings" && "Settings"}
+                    {activeTab === "profile" && "Developer Profile"}
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono flex-shrink-0 hidden sm:inline-block"
+                      style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
                       Live
                     </span>
                   </h2>
-                  <p className="text-[8px] md:text-[9px] text-slate-400 font-mono truncate">
-                    Path: /workspace/{activeTab}
+                  <p className="text-[10px] font-mono truncate" style={{ color: "var(--text-muted)" }}>
+                    /workspace/{activeTab}
                   </p>
                 </div>
               </div>
 
-              {/* Global system status telemetry */}
-              <div className="flex items-center gap-3 md:gap-4 text-[10px] font-mono flex-shrink-0">
+              <div className="flex items-center gap-3 md:gap-4 text-[11px] font-mono flex-shrink-0">
                 <div className="hidden sm:flex items-center gap-1.5">
-                  <span className="text-slate-400">Gateway:</span>
-                  <span className={`w-2 h-2 rounded-full ${fastapiOnline ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
-                  <span className="text-slate-700 font-semibold">{fastapiOnline ? "8000" : "Offline"}</span>
+                  <span style={{ color: "var(--text-muted)" }}>Gateway:</span>
+                  <span className={`w-2.5 h-2.5 rounded-full ${fastapiOnline ? "animate-pulse" : ""}`}
+                    style={{ background: fastapiOnline ? "var(--success)" : "var(--error)" }}></span>
+                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>{fastapiOnline ? "8000" : "Offline"}</span>
                 </div>
-                <div className="hidden sm:block h-3 w-[1px] bg-slate-200"></div>
+                <div className="hidden sm:block h-4 w-[1px]" style={{ background: "var(--border)" }}></div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-400 hidden xs:inline">Model:</span>
-                  <span className="text-indigo-600 font-semibold uppercase text-[9px] md:text-[10px] truncate max-w-[80px] sm:max-w-none">{activeModel.replace(/-/g, " ")}</span>
+                  <span className="hidden xs:inline" style={{ color: "var(--text-muted)" }}>Model:</span>
+                  <span className="font-bold uppercase text-[10px] md:text-[11px] truncate max-w-[80px] sm:max-w-none" style={{ color: "var(--accent-text)" }}>
+                    {activeModel.replace(/-/g, " ")}
+                  </span>
                 </div>
+                {/* Header theme toggle */}
+                <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all text-sm"
+                  style={{ border: "1px solid var(--border)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  {theme === "dark" ? "🌙" : "☀️"}
+                </button>
               </div>
             </header>
 
             {/* Dynamic Content Pane */}
             <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto space-y-6">
               
-              {/* ================= TAB 1: DASHBOARD PANEL ================= */}
+              {/* ═══════ TAB 1: DASHBOARD ═══════ */}
               {activeTab === "dashboard" && (
                 <div className="space-y-6 animate-fadeIn">
                   
@@ -770,115 +759,119 @@ const fetchProfile = async () => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     
                     {/* Stat Card 1 */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60 flex items-center justify-between">
+                    <div className="card stat-card-1 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-1">
                       <div>
-                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">FastAPI Gateway</p>
-                        <h3 className="text-xl font-bold mt-1 text-slate-900">Uvicorn Dev</h3>
-                        <p className="text-[9px] text-indigo-600 font-mono mt-1">Status: {fastapiOnline ? "Healthy" : "Locked/Closed"}</p>
+                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>FastAPI Gateway</p>
+                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Uvicorn</h3>
+                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: fastapiOnline ? "var(--success)" : "var(--error)" }}>
+                          {fastapiOnline ? "● Healthy" : "○ Locked"}
+                        </p>
                       </div>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${
-                        fastapiOnline ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
-                      }`}>
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
                         ⚡
                       </div>
                     </div>
 
                     {/* Stat Card 2 */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60 flex items-center justify-between">
+                    <div className="card stat-card-2 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-2">
                       <div>
-                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Postgres DB</p>
-                        <h3 className="text-xl font-bold mt-1 text-slate-900">Port 5434</h3>
-                        <p className="text-[9px] text-emerald-600 font-mono mt-1">Pool: Active</p>
+                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Postgres DB</p>
+                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Port 5434</h3>
+                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--success)" }}>● Pool Active</p>
                       </div>
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-lg">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        style={{ background: "var(--secondary-soft)", color: "var(--secondary-text)" }}>
                         🐘
                       </div>
                     </div>
 
                     {/* Stat Card 3 */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60 flex items-center justify-between">
+                    <div className="card stat-card-3 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-3">
                       <div>
-                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Qdrant Vector</p>
-                        <h3 className="text-xl font-bold mt-1 text-slate-900">Port 6333</h3>
-                        <p className="text-[9px] text-cyan-600 font-mono mt-1">Cosine similarity online</p>
+                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Qdrant Vector</p>
+                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Port 6333</h3>
+                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--accent-text)" }}>● Cosine online</p>
                       </div>
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 flex items-center justify-center text-lg">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        style={{ background: "rgba(245,158,11,0.1)", color: "var(--warning)" }}>
                         🎯
                       </div>
                     </div>
 
                     {/* Stat Card 4 */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60 flex items-center justify-between">
+                    <div className="card stat-card-4 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-4">
                       <div>
-                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Active Workspace</p>
-                        <h3 className="text-xl font-bold mt-1 text-slate-900">AI-Engineer-OS</h3>
-                        <p className="text-[9px] text-indigo-600 font-mono mt-1">Branch: main</p>
+                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Workspace</p>
+                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>AI-OS</h3>
+                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--secondary-text)" }}>Branch: main</p>
                       </div>
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-lg">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        style={{ background: "var(--secondary-soft)", color: "var(--secondary-text)" }}>
                         📂
                       </div>
                     </div>
-
                   </div>
 
-                  {/* Core Console Log Terminal & Quick Actions */}
+                  {/* Console + Quick Actions */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    {/* Log Console Terminal (8 Cols) */}
-                    <div className="lg:col-span-8 glass-card rounded-2xl p-6 flex flex-col min-h-[400px] border border-slate-200/60">
-                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                    {/* Console Terminal */}
+                    <div className="lg:col-span-8 card rounded-2xl p-6 flex flex-col min-h-[400px] animate-fade-up delay-3">
+                      <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: "1px solid var(--border)" }}>
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping"></span>
+                          <span className="w-3 h-3 rounded-full flex items-center justify-center" style={{ background: "var(--accent-soft)" }}>
+                            <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ background: "var(--accent)" }}></span>
                           </span>
-                          <h3 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Cognitive OS Console</h3>
+                          <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Cognitive OS Console</h3>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <button 
-                            onClick={() => setLogs([])}
-                            className="text-[9px] font-mono text-slate-400 hover:text-slate-600 cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => setLogs([])}
+                          className="text-[10px] font-mono cursor-pointer transition-colors"
+                          style={{ color: "var(--text-muted)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-text)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+                        >
+                          Clear
+                        </button>
                       </div>
 
-                      {/* Log Rows */}
-                      <div className="flex-1 bg-slate-50/80 rounded-xl p-4 font-mono text-[11px] leading-6 text-slate-600 border border-slate-200/50 overflow-y-auto space-y-2 max-h-[300px] shadow-inner">
+                      <div className="flex-1 rounded-xl p-4 font-mono text-[12px] leading-7 overflow-y-auto space-y-1 max-h-[300px]"
+                        style={{ background: "var(--bg-code)", color: "var(--text-code)", border: "1px solid rgba(255,255,255,0.06)" }}>
                         {logs.map((log, idx) => {
-                          let colorClass = "text-slate-600";
-                          if (log.type === "system") colorClass = "text-indigo-600 font-semibold";
-                          else if (log.type === "success") colorClass = "text-emerald-600";
-                          else if (log.type === "config") colorClass = "text-cyan-600";
-                          else if (log.type === "error") colorClass = "text-rose-600";
-                          else if (log.type === "info") colorClass = "text-amber-600";
+                          let color = "#a1a1aa";
+                          if (log.type === "system") color = "#818cf8";
+                          else if (log.type === "success") color = "#4ade80";
+                          else if (log.type === "config") color = "#22d3ee";
+                          else if (log.type === "error") color = "#f87171";
+                          else if (log.type === "info") color = "#fbbf24";
                           return (
-                            <div key={idx} className={colorClass}>
+                            <div key={idx} style={{ color }} className="font-semibold">
                               {log.text}
                             </div>
                           );
                         })}
-                        <div className="pt-2 border-t border-slate-200/40 flex items-center gap-1 text-slate-800">
-                          <span className="text-indigo-600 font-bold">$</span>
-                          <span className="border-r border-slate-600 animate-pulse pr-1">
+                        <div className="pt-2 flex items-center gap-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "#e2e8f0" }}>
+                          <span className="font-bold" style={{ color: "var(--accent)" }}>$</span>
+                          <span className="animate-cursor-blink">
                             aios-agent --active
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Developer Options & Telemetry Info (4 Cols) */}
+                    {/* Developer Tools + Module Maps */}
                     <div className="lg:col-span-4 flex flex-col gap-6">
                       
-                      {/* Interactive Actions */}
-                      <div className="glass-card rounded-2xl p-6 border border-slate-200/60 bg-gradient-to-b from-white to-slate-50/40">
-                        <h3 className="font-mono text-[10px] text-indigo-600 font-bold uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-                          OS Developer Tools
+                      <div className="card rounded-2xl p-6 animate-fade-up delay-4">
+                        <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" 
+                          style={{ color: "var(--accent-text)", borderBottom: "1px solid var(--border)" }}>
+                          Developer Tools
                         </h3>
                         <div className="space-y-3">
                           <button 
                             onClick={fetchStatus}
-                            className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-slate-950 bg-slate-950 hover:bg-slate-800 text-white cursor-pointer shadow-sm glow-btn"
+                            className="btn-accent w-full py-2.5 px-4 rounded-xl text-xs"
                           >
                             Sync API Gateway Status
                           </button>
@@ -887,7 +880,7 @@ const fetchProfile = async () => {
                               addLog("[SYSTEM] Instantiating Sandboxed Docker Container...", "system");
                               setTimeout(() => addLog("[SUCCESS] Sandbox online at localhost:9001 (Ubuntu 22.04)", "success"), 1000);
                             }}
-                            className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-slate-200 hover:border-slate-300 bg-white text-slate-700 cursor-pointer shadow-3xs glow-btn"
+                            className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs"
                           >
                             Launch Sandbox Container
                           </button>
@@ -896,49 +889,45 @@ const fetchProfile = async () => {
                               addLog("[SYSTEM] Running standard test execution suite...", "system");
                               setTimeout(() => addLog("[SUCCESS] Complete check passed. 0 errors, 12 warnings.", "success"), 800);
                             }}
-                            className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-slate-200 hover:border-slate-300 bg-white text-slate-700 cursor-pointer shadow-3xs glow-btn"
+                            className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs"
                           >
                             Run Test Suites
                           </button>
                         </div>
                       </div>
 
-                      {/* Monorepo layout details */}
-                      <div className="glass-card rounded-2xl p-6 border border-slate-200/60">
-                        <h3 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+                      <div className="card rounded-2xl p-6 animate-fade-up delay-5">
+                        <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" 
+                          style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
                           Module Maps
                         </h3>
-                        <ul className="space-y-3 font-mono text-[10px] text-slate-600">
-                          <li className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                            <span className="text-indigo-600 font-semibold">/frontend</span>
-                            <span className="text-slate-800 text-xs">Next.js v14</span>
+                        <ul className="space-y-3 font-mono text-[11px]">
+                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/frontend</span>
+                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>Next.js v14</span>
                           </li>
-                          <li className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                            <span className="text-indigo-600 font-semibold">/backend</span>
-                            <span className="text-slate-800 text-xs">FastAPI v0.100</span>
+                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/backend</span>
+                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>FastAPI v0.100</span>
                           </li>
-                          <li className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                            <span className="text-indigo-600 font-semibold">/rag-system</span>
-                            <span className="text-slate-800 text-xs">LlamaIndex/Qdrant</span>
+                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/rag-system</span>
+                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>LlamaIndex/Qdrant</span>
                           </li>
                         </ul>
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
               )}
 
-              {/* ================= TAB 2: AGENT TERMINAL (CHAT) ================= */}
+              {/* ═══════ TAB 2: AGENT TERMINAL ═══════ */}
               {activeTab === "agent" && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-190px)] animate-fadeIn">
                   
-                  {/* Left Chat Window Column (9 Cols) */}
-                  <div className="lg:col-span-9 glass-card rounded-3xl border border-slate-200/60 bg-white flex flex-col overflow-hidden h-full">
+                  {/* Chat Window */}
+                  <div className="lg:col-span-9 card rounded-3xl flex flex-col overflow-hidden h-full">
                     
-                    {/* Chat Messages Body */}
                     <div className="flex-1 p-6 overflow-y-auto space-y-4">
                       {messages.map((msg) => (
                         <div 
@@ -947,41 +936,40 @@ const fetchProfile = async () => {
                             msg.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                           }`}
                         >
-                          {/* Avatar Circle */}
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shadow-2xs border ${
-                            msg.sender === "user" 
-                              ? "bg-slate-950 text-white border-slate-950" 
-                              : "bg-indigo-50 text-indigo-600 border-indigo-100"
-                          }`}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm`}
+                            style={msg.sender === "user" 
+                              ? { background: "var(--accent)", color: "white" }
+                              : { background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }
+                            }>
                             {msg.sender === "user" ? (user.displayName?.[0] || "U") : "Ω"}
                           </div>
 
-                          {/* Chat Bubble Box */}
-                          <div className={`rounded-2xl p-4 text-xs leading-relaxed shadow-3xs border ${
-                            msg.sender === "user"
-                              ? "bg-slate-950 text-white border-slate-950 rounded-tr-none"
-                              : "bg-slate-50/60 text-slate-800 border-slate-200/60 rounded-tl-none"
-                          }`}>
+                          <div className={`rounded-2xl p-4 text-[13px] leading-relaxed shadow-sm ${
+                            msg.sender === "user" ? "rounded-tr-none" : "rounded-tl-none"
+                          }`}
+                          style={msg.sender === "user"
+                            ? { background: "var(--accent)", color: "white" }
+                            : { background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-primary)" }
+                          }>
                             <div className="whitespace-pre-line font-sans">{msg.text}</div>
-                            <span className={`block text-[8px] font-mono mt-2 text-right ${
-                              msg.sender === "user" ? "text-slate-400" : "text-slate-400"
-                            }`}>
+                            <span className="block text-[9px] font-mono mt-2 text-right" style={{ opacity: 0.6 }}>
                               {msg.timestamp}
                             </span>
                           </div>
                         </div>
                       ))}
 
-                      {/* Thinking Loader */}
                       {agentThinking && (
                         <div className="flex items-start gap-3.5 max-w-[80%] mr-auto">
-                          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold text-xs animate-pulse">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs animate-pulse"
+                            style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
                             Ω
                           </div>
-                          <div className="bg-slate-50/60 text-slate-400 border border-slate-200/60 rounded-2xl rounded-tl-none p-4 text-xs font-mono tracking-wider flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce"></span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce delay-75"></span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce delay-150"></span>
+                          <div className="rounded-2xl rounded-tl-none p-4 text-xs font-mono tracking-wider flex items-center gap-2"
+                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                            <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)" }}></span>
+                            <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)", animationDelay: "75ms" }}></span>
+                            <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--accent)", animationDelay: "150ms" }}></span>
                             <span>Agent parsing telemetry files...</span>
                           </div>
                         </div>
@@ -990,293 +978,267 @@ const fetchProfile = async () => {
                       <div ref={chatEndRef} />
                     </div>
 
-                    {/* Chat Input Footer Area */}
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/40">
+                    {/* Chat Input */}
+                    <div className="p-4" style={{ borderTop: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
                       
-                      {/* Suggestion Chips */}
                       <div className="flex flex-wrap gap-2 mb-3">
-                        <button 
-                          onClick={() => handleSendMessage("/code Build a FastAPI database model table")}
-                          className="px-2.5 py-1 rounded-full text-[9px] font-mono bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-800 transition-all cursor-pointer shadow-3xs"
-                        >
-                          ⚡ Generate DB Model code
-                        </button>
-                        <button 
-                          onClick={() => handleSendMessage("/db Trigger db-check route and verify migrations")}
-                          className="px-2.5 py-1 rounded-full text-[9px] font-mono bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-800 transition-all cursor-pointer shadow-3xs"
-                        >
-                          🐘 SQL Migration status
-                        </button>
-                        <button 
-                          onClick={() => handleSendMessage("/rag Query matching files inside Qdrant index")}
-                          className="px-2.5 py-1 rounded-full text-[9px] font-mono bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-800 transition-all cursor-pointer shadow-3xs"
-                        >
-                          🎯 Vector Search index docs
-                        </button>
+                        {[
+                          { text: "⚡ Generate DB Model code", cmd: "/code Build a FastAPI database model table" },
+                          { text: "🐘 SQL Migration status", cmd: "/db Trigger db-check route and verify migrations" },
+                          { text: "🎯 Vector Search index docs", cmd: "/rag Query matching files inside Qdrant index" },
+                        ].map((chip, i) => (
+                          <button 
+                            key={i}
+                            onClick={() => handleSendMessage(chip.cmd)}
+                            className="px-3 py-1.5 rounded-full text-[10px] font-bold cursor-pointer transition-all"
+                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent-text)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                          >
+                            {chip.text}
+                          </button>
+                        ))}
                       </div>
 
-                      {/* Real Text Input */}
-                      <form 
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }}
-                        className="flex gap-2"
-                      >
+                      <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
                         <input 
                           type="text"
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="Ask the AI-Engineer agent to write code, review container settings..."
-                          className="flex-1 bg-white border border-slate-200 hover:border-slate-300 focus:border-indigo-400 focus:outline-none rounded-xl px-4 py-2.5 text-xs text-slate-800 transition-all shadow-inner"
+                          placeholder="Ask the AI agent to write code, review containers..."
+                          className="flex-1 rounded-xl px-4 py-3 text-[13px] transition-all outline-none"
+                          style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-soft)"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
                         />
-                        <button 
-                          type="submit"
-                          className="px-4 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-98 text-white text-xs font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center cursor-pointer"
-                        >
+                        <button type="submit" className="btn-accent px-5 py-3 rounded-xl text-xs font-bold">
                           Send
                         </button>
                       </form>
                     </div>
-
                   </div>
 
-                  {/* Right Chat Parameters (3 Cols) */}
+                  {/* Chat Sidebar */}
                   <div className="lg:col-span-3 flex flex-col gap-5 h-full overflow-y-auto pr-1">
                     
-                    {/* Cognitive Presets Info */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60 bg-gradient-to-b from-white to-slate-50/20">
-                      <h4 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">
+                    <div className="card rounded-2xl p-5">
+                      <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-3 pb-1" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
                         Agent Topologies
                       </h4>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Currently using **Antigravity v0.1** custom developer configuration. Backed by Google Gemini 3.5 Flash context maps.
+                      <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                        Currently using <strong>Antigravity v0.1</strong> custom developer configuration. Backed by Google Gemini 3.5 Flash context maps.
                       </p>
                     </div>
 
-                    {/* Quick Command Reference */}
-                    <div className="glass-card rounded-2xl p-5 border border-slate-200/60">
-                      <h4 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">
+                    <div className="card rounded-2xl p-5">
+                      <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-3 pb-1" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
                         OS Command Tags
                       </h4>
-                      <ul className="space-y-2 font-mono text-[9px] text-slate-600">
-                        <li className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-indigo-600">/code [prompt]</span>
-                          <span className="text-slate-400">Generates code templates</span>
-                        </li>
-                        <li className="flex flex-col gap-0.5 mt-2">
-                          <span className="font-semibold text-indigo-600">/db [query]</span>
-                          <span className="text-slate-400">Checks Postgres schema logs</span>
-                        </li>
-                        <li className="flex flex-col gap-0.5 mt-2">
-                          <span className="font-semibold text-indigo-600">/rag [concept]</span>
-                          <span className="text-slate-400">Semantically queries files</span>
-                        </li>
+                      <ul className="space-y-3 font-mono text-[10px]">
+                        {[
+                          { cmd: "/code [prompt]", desc: "Generates code templates" },
+                          { cmd: "/db [query]", desc: "Checks Postgres schema logs" },
+                          { cmd: "/rag [concept]", desc: "Semantically queries files" },
+                        ].map((item, i) => (
+                          <li key={i} className="flex flex-col gap-0.5">
+                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>{item.cmd}</span>
+                            <span style={{ color: "var(--text-muted)" }}>{item.desc}</span>
+                          </li>
+                        ))}
                       </ul>
                     </div>
-
                   </div>
-
                 </div>
               )}
 
-              {/* ================= TAB 3: DATABASE EXPLORER ================= */}
+              {/* ═══════ TAB 3: DATABASE EXPLORER ═══════ */}
               {activeTab === "database" && (
                 <div className="space-y-6 animate-fadeIn">
                   
-                  {/* Database Actions Bar */}
-                  <div className="glass-card rounded-2xl p-5 border border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="card rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">PostgreSQL Transaction Relational logs</h3>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        Pool engine active on loopback 127.0.0.1:5434 • Base models synchronized automatically.
+                      <h3 className="text-base font-black" style={{ color: "var(--text-primary)" }}>PostgreSQL Transaction Logs</h3>
+                      <p className="text-[11px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        Pool engine on 127.0.0.1:5434 • Models synchronized.
                       </p>
                     </div>
-
                     <div className="flex gap-3 w-full sm:w-auto">
                       <button 
                         onClick={triggerDbCheck}
                         disabled={dbChecking}
-                        className="flex-1 sm:flex-none py-2 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-slate-950 bg-slate-950 hover:bg-slate-800 text-white cursor-pointer shadow-sm glow-btn flex items-center justify-center gap-2"
+                        className="btn-accent flex-1 sm:flex-none py-2.5 px-5 rounded-xl text-xs flex items-center justify-center gap-2"
                       >
-                        {dbChecking && <span className="w-3 h-3 rounded-full border-2 border-t-transparent border-white animate-spin"></span>}
-                        Trigger Live DB Check
+                        {dbChecking && <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin"></span>}
+                        Live DB Check
                       </button>
                       <button 
                         onClick={insertMockTelemetry}
-                        className="flex-1 sm:flex-none py-2 px-4 rounded-xl font-semibold text-xs tracking-wide transition-all border border-slate-200 hover:border-slate-300 bg-white text-slate-700 cursor-pointer shadow-3xs"
+                        className="btn-outline flex-1 sm:flex-none py-2.5 px-5 rounded-xl text-xs"
                       >
-                        Insert Mock Telemetry
+                        Insert Mock
                       </button>
                     </div>
                   </div>
 
-                  {/* Grid Table Container */}
-                  <div className="space-y-4">
-                    {/* Mobile Stacking Cards Representation */}
-                    <div className="sm:hidden space-y-3">
-                      {telemetryTable.map((row) => (
-                        <div key={row.id} className="glass-card rounded-xl p-4 border border-slate-200/60 bg-white space-y-3 shadow-3xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-[10px] text-slate-400">ID: <span className="text-slate-800 font-extrabold">{row.id}</span></span>
-                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold font-mono border ${
-                              row.status === "success" 
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                : row.status === "warning" 
-                                  ? "bg-amber-50 text-amber-600 border-amber-100"
-                                  : "bg-rose-50 text-rose-600 border-rose-100"
-                            }`}>
-                              {row.status.toUpperCase()}
-                            </span>
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <p className="text-[8px] font-mono text-slate-400 uppercase font-semibold">Telemetry Event</p>
-                            <p className="text-[11px] font-mono text-indigo-600 font-semibold break-all leading-normal">{row.event}</p>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 border-t border-slate-100 pt-2.5">
-                            <span>⏱️ {row.duration === 0 ? "timeout" : `${row.duration} ms`}</span>
-                            <span>📅 {row.timestamp}</span>
-                          </div>
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {telemetryTable.map((row) => (
+                      <div key={row.id} className="card rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-[11px]" style={{ color: "var(--text-muted)" }}>
+                            ID: <span className="font-extrabold" style={{ color: "var(--text-primary)" }}>{row.id}</span>
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono`}
+                            style={{
+                              background: row.status === "success" ? "rgba(34,197,94,0.1)" : row.status === "warning" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
+                              color: row.status === "success" ? "var(--success)" : row.status === "warning" ? "var(--warning)" : "var(--error)",
+                              border: `1px solid ${row.status === "success" ? "rgba(34,197,94,0.2)" : row.status === "warning" ? "rgba(245,158,11,0.2)" : "rgba(239,68,68,0.2)"}`
+                            }}>
+                            {row.status.toUpperCase()}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Tablet/Desktop Table View */}
-                    <div className="hidden sm:block glass-card rounded-2xl border border-slate-200/60 overflow-hidden bg-white">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-mono tracking-wider uppercase text-[9px]">
-                              <th className="p-4 font-bold">Transaction ID</th>
-                              <th className="p-4 font-bold">Telemetry Event Name</th>
-                              <th className="p-4 font-bold">Status Badge</th>
-                              <th className="p-4 font-bold">Execution Time (ms)</th>
-                              <th className="p-4 font-bold">Timestamp</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700">
-                            {telemetryTable.map((row) => (
-                              <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="p-4 font-mono font-semibold text-slate-900">{row.id}</td>
-                                <td className="p-4 font-mono text-indigo-600 font-semibold">{row.event}</td>
-                                <td className="p-4">
-                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold font-mono border ${
-                                    row.status === "success" 
-                                      ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                      : row.status === "warning" 
-                                        ? "bg-amber-50 text-amber-600 border-amber-100"
-                                        : "bg-rose-50 text-rose-600 border-rose-100"
-                                  }`}>
-                                    {row.status.toUpperCase()}
-                                  </span>
-                                </td>
-                                <td className="p-4 font-mono">{row.duration === 0 ? "timeout" : `${row.duration} ms`}</td>
-                                <td className="p-4 font-mono text-slate-400">{row.timestamp}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-mono uppercase font-bold" style={{ color: "var(--text-muted)" }}>Event</p>
+                          <p className="text-[12px] font-mono font-bold break-all" style={{ color: "var(--accent-text)" }}>{row.event}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-mono pt-2" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                          <span>⏱️ {row.duration === 0 ? "timeout" : `${row.duration} ms`}</span>
+                          <span>📅 {row.timestamp}</span>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
 
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block card rounded-2xl overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-[13px]">
+                        <thead>
+                          <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)" }}>
+                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Transaction ID</th>
+                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Event Name</th>
+                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Status</th>
+                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Duration</th>
+                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {telemetryTable.map((row) => (
+                            <tr key={row.id} className="transition-colors" style={{ borderBottom: "1px solid var(--border)" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            >
+                              <td className="p-4 font-mono font-bold" style={{ color: "var(--text-primary)" }}>{row.id}</td>
+                              <td className="p-4 font-mono font-bold" style={{ color: "var(--accent-text)" }}>{row.event}</td>
+                              <td className="p-4">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono"
+                                  style={{
+                                    background: row.status === "success" ? "rgba(34,197,94,0.1)" : row.status === "warning" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
+                                    color: row.status === "success" ? "var(--success)" : row.status === "warning" ? "var(--warning)" : "var(--error)",
+                                  }}>
+                                  {row.status.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="p-4 font-mono" style={{ color: "var(--text-secondary)" }}>{row.duration === 0 ? "timeout" : `${row.duration} ms`}</td>
+                              <td className="p-4 font-mono" style={{ color: "var(--text-muted)" }}>{row.timestamp}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* ================= TAB 4: VECTOR INDEX SEARCH ================= */}
+              {/* ═══════ TAB 4: VECTOR SEARCH ═══════ */}
               {activeTab === "vector" && (
                 <div className="space-y-6 animate-fadeIn">
-                  
-                  {/* Main Vector Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    {/* Vector Search Input Panel (7 Cols) */}
                     <div className="lg:col-span-7 flex flex-col gap-6">
                       
-                      {/* Search box card */}
-                      <div className="glass-card rounded-2xl p-6 border border-slate-200/60 bg-white">
-                        <h3 className="text-sm font-bold text-slate-900 mb-2">Qdrant Vector Embedding Search</h3>
-                        <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
-                          Search cognitive indices using cosine similarity matching. Enter keywords to query embedded workspace files.
+                      <div className="card rounded-2xl p-6">
+                        <h3 className="text-base font-black mb-2" style={{ color: "var(--text-primary)" }}>Qdrant Vector Search</h3>
+                        <p className="text-[12px] leading-relaxed mb-4" style={{ color: "var(--text-muted)" }}>
+                          Search cognitive indices using cosine similarity. Enter keywords to query embedded workspace files.
                         </p>
-
                         <form onSubmit={handleVectorSearch} className="flex gap-2">
                           <input 
                             type="text"
                             value={vectorQuery}
                             onChange={(e) => setVectorQuery(e.target.value)}
-                            placeholder="Type query to find nearest-neighbor documentation..."
-                            className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-400 focus:outline-none rounded-xl px-4 py-2 text-xs text-slate-800 transition-all shadow-inner"
+                            placeholder="Type query for nearest-neighbor docs..."
+                            className="flex-1 rounded-xl px-4 py-2.5 text-[13px] transition-all outline-none"
+                            style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
                           />
-                          <button 
-                            type="submit"
-                            disabled={vectorSearching}
-                            className="py-2 px-5 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-semibold text-xs tracking-wide transition-all border border-slate-950 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                          >
+                          <button type="submit" disabled={vectorSearching} className="btn-accent py-2.5 px-5 rounded-xl text-xs flex items-center justify-center gap-2">
                             {vectorSearching && <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin"></span>}
-                            Search Index
+                            Search
                           </button>
                         </form>
                       </div>
 
-                      {/* Embeddings Search results */}
-                      <div className="glass-card rounded-2xl p-6 border border-slate-200/60 bg-white flex-1 min-h-[250px]">
-                        <h4 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-                          Embeddings Match Results
+                      <div className="card rounded-2xl p-6 flex-1 min-h-[250px]">
+                        <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
+                          Match Results
                         </h4>
-
                         {vectorResults.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-10 text-center">
-                            <span className="text-2xl mb-2 text-slate-300">🔍</span>
-                            <p className="text-[11px] text-slate-400">No matching vectors found. Type a query above (e.g. "auth" or "postgres") to simulate.</p>
+                            <span className="text-3xl mb-3" style={{ opacity: 0.3 }}>🔍</span>
+                            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>No matching vectors. Type a query above to search.</p>
                           </div>
                         ) : (
                           <div className="space-y-4">
                             {vectorResults.map((res, i) => (
-                              <div key={i} className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 hover:border-indigo-200 transition-all flex items-start justify-between gap-4">
+                              <div key={i} className="p-4 rounded-xl flex items-start justify-between gap-4 transition-all"
+                                style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                              >
                                 <div className="space-y-1">
-                                  <span className="px-2 py-0.5 rounded text-[8px] font-mono font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase">
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase"
+                                    style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
                                     {res.category}
                                   </span>
-                                  <p className="text-xs font-mono text-slate-700 leading-relaxed mt-1">{res.doc}</p>
+                                  <p className="text-[12px] font-mono leading-relaxed mt-1" style={{ color: "var(--text-secondary)" }}>{res.doc}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0">
-                                  <span className="text-xs font-bold text-slate-900 font-mono">
+                                  <span className="text-sm font-black font-mono" style={{ color: "var(--text-primary)" }}>
                                     {(res.score * 100).toFixed(1)}%
                                   </span>
-                                  <p className="text-[8px] text-slate-400 font-mono">Similarity</p>
+                                  <p className="text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>Similarity</p>
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
-
                     </div>
 
-                    {/* Ingestion Drag & Drop Zone (5 Cols) */}
+                    {/* Drag & Drop Zone */}
                     <div className="lg:col-span-5 flex flex-col">
-                      
                       <div 
                         onDragEnter={handleDrag}
                         onDragLeave={handleDrag}
                         onDragOver={handleDrag}
                         onDrop={handleDrop}
-                        className={`flex-1 glass-card rounded-3xl border-2 border-dashed p-8 flex flex-col items-center justify-center text-center transition-all min-h-[350px] relative ${
-                          dragActive 
-                            ? "border-indigo-400 bg-indigo-50/20 scale-[1.01]" 
-                            : "border-slate-300/80 bg-white hover:border-indigo-300"
-                        }`}
+                        className="flex-1 rounded-3xl border-2 border-dashed p-8 flex flex-col items-center justify-center text-center transition-all min-h-[350px] relative"
+                        style={{ 
+                          borderColor: dragActive ? "var(--accent)" : "var(--border)", 
+                          background: dragActive ? "var(--accent-soft)" : "var(--bg-card)",
+                          transform: dragActive ? "scale(1.01)" : "scale(1)"
+                        }}
                       >
-                        <span className="text-4xl mb-4 animate-pulse">📁</span>
-                        <h4 className="text-xs font-bold text-slate-900">Drag & Drop Knowledge Base Files</h4>
-                        <p className="text-[10px] text-slate-500 leading-relaxed mt-2 max-w-xs mx-auto">
-                          Split, embed, and ingest PDF, Markdown, or text documentation files automatically into your Qdrant semantic storage.
+                        <span className="text-5xl mb-4 animate-float">📁</span>
+                        <h4 className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Drag & Drop Knowledge Base</h4>
+                        <p className="text-[11px] leading-relaxed mt-2 max-w-xs mx-auto" style={{ color: "var(--text-muted)" }}>
+                          Split, embed, and ingest PDF, Markdown, or text files into your Qdrant semantic storage.
                         </p>
                         
-                        <label className="mt-5 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer shadow-3xs transition-all">
+                        <label className="mt-5 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer transition-all"
+                          style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                           Browse System Files
                           <input type="file" className="hidden" onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
@@ -1287,32 +1249,30 @@ const fetchProfile = async () => {
                           }} />
                         </label>
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
               )}
 
-              {/* ================= TAB 5: SYSTEM CONFIG CONFIGURATIONS ================= */}
+              {/* ═══════ TAB 5: SETTINGS ═══════ */}
               {activeTab === "settings" && (<SettingsTab theme={theme} setTheme={setTheme} activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} />)}
 
-              {/* ================= TAB 6: DEVELOPER PROFILE ================= */}
+              {/* ═══════ TAB 6: PROFILE ═══════ */}
               {activeTab === "profile" && (
                 <ProfileTab user={user} />
               )}
 
             </main>
 
-            {/* Premium Minimalistic Footer */}
-            <footer className="w-full py-4 text-center text-[10px] text-slate-400 font-mono border-t border-slate-100 bg-white/40">
+            {/* Footer */}
+            <footer className="w-full py-4 text-center text-[11px] font-mono font-medium"
+              style={{ borderTop: "1px solid var(--border)", background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
               AI-Engineer-OS Monorepo Workspace • Configured to username: Anirudh-saiA
             </footer>
 
           </div>
-        </div>
-      </>
+          </div>
+        </>
       )}
 
     </div>

@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Fira_Code } from "next/font/google";
 import "./globals.css";
 
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const firaCode = Fira_Code({
+  variable: "--font-fira-code",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "AI-Engineer-OS | Workspace",
-  description: "Autonomous Agent Developer Platform & Workspace",
+  title: "AI-Engineer-OS | Autonomous Agent Developer Platform",
+  description: "Build, deploy, and manage AI-powered agents with an autonomous developer workspace. Powered by FastAPI, PostgreSQL, and Qdrant.",
 };
 
 export default function RootLayout({
@@ -27,9 +29,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${firaCode.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-inter), 'Inter', system-ui, sans-serif" }}>
         <Providers>{children}</Providers>
       </body>
     </html>

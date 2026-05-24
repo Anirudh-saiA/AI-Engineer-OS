@@ -307,7 +307,10 @@ def add_user_project(proj: schemas.ProjectDetails, db: Session = Depends(get_db)
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not onboarded yet.")
         
-    # 2. Add Project
+    # 2. Check if first project achievement is earned
+    count = db.query(models.Project).filter(models.Project.user_id == uid).count()
+
+    # 3. Add Project
     db_project = models.Project(
         user_id=uid,
         title=proj.title,
@@ -318,11 +321,9 @@ def add_user_project(proj: schemas.ProjectDetails, db: Session = Depends(get_db)
     )
     db.add(db_project)
     
-    # 3. Award XP Points
+    # 4. Award XP Points
     profile.xp_points += 150 # 150 XP starting reward!
     
-    # 4. Check if first project achievement is earned
-    count = db.query(models.Project).filter(models.Project.user_id == uid).count()
     if count == 0: # This is the first project
         db.add(models.Achievement(
             user_id=uid,
@@ -342,6 +343,19 @@ def get_user_settings(db: Session = Depends(get_db), current_user: dict = Depend
     """
     uid = current_user["uid"]
     
+    # Ensure user record exists first to prevent Foreign Key constraint violation
+    user_record = db.query(models.User).filter(models.User.id == uid).first()
+    if not user_record:
+        email = current_user.get("email", f"{uid}@example.com")
+        user_record = models.User(
+            id=uid,
+            email=email,
+            display_name=current_user.get("name"),
+            photo_url=current_user.get("picture")
+        )
+        db.add(user_record)
+        db.flush()
+
     settings_record = db.query(models.UserSetting).filter(models.UserSetting.user_id == uid).first()
     if not settings_record:
         # Create default settings if not exists
@@ -366,6 +380,19 @@ def update_user_settings(settings_data: schemas.UserSettingsSchema, db: Session 
     """
     uid = current_user["uid"]
     
+    # Ensure user record exists first to prevent Foreign Key constraint violation
+    user_record = db.query(models.User).filter(models.User.id == uid).first()
+    if not user_record:
+        email = current_user.get("email", f"{uid}@example.com")
+        user_record = models.User(
+            id=uid,
+            email=email,
+            display_name=current_user.get("name"),
+            photo_url=current_user.get("picture")
+        )
+        db.add(user_record)
+        db.flush()
+
     settings_record = db.query(models.UserSetting).filter(models.UserSetting.user_id == uid).first()
     if not settings_record:
         settings_record = models.UserSetting(user_id=uid)

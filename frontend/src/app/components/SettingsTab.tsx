@@ -25,19 +25,16 @@ export default function SettingsTab({
 
   // Load settings from localStorage first, then fetch from API if not present
   useEffect(() => {
-    // Attempt to load from localStorage
     const stored = localStorage.getItem('userSettings');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         setSettings(parsed);
-        // Sync theme if provided
         if (parsed.theme && setTheme) setTheme(parsed.theme);
       } catch (e) {
         console.error('Failed to parse stored settings', e);
       }
     }
-    // Fetch from API to get latest
     if (user) {
       fetch('http://localhost:8000/api/v1/profile/settings', {
         headers: { Authorization: `Bearer ${user.uid}` },
@@ -46,7 +43,6 @@ export default function SettingsTab({
         .then((data) => {
           setSettings(data);
           if (data.theme && setTheme) setTheme(data.theme);
-          // Update localStorage with fresh data
           localStorage.setItem('userSettings', JSON.stringify(data));
         })
         .catch((err) => {
@@ -58,105 +54,171 @@ export default function SettingsTab({
 
   const handleSave = async () => {
     if (!user) return;
+    const payload = {
+      ...settings,
+      theme,
+    };
     const res = await fetch('http://localhost:8000/api/v1/profile/settings', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user.uid}`,
       },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
-      addLog('[CONFIG] Settings saved', 'config');
-      // Persist to localStorage as well
-      localStorage.setItem('userSettings', JSON.stringify(settings));
+      addLog('[CONFIG] Settings saved successfully', 'config');
+      localStorage.setItem('userSettings', JSON.stringify(payload));
     } else {
       addLog('[ERROR] Save settings failed', 'error');
     }
   };
 
+  const selectTheme = (newTheme: string) => {
+    setTheme(newTheme);
+    addLog(`[CONFIG] UI theme switched to ${newTheme.toUpperCase()}`, "config");
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Controls Panel */}
-      <div className="lg:col-span-8 glass-card rounded-2xl p-6 border border-slate-200/60 bg-white space-y-6">
-        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-          UI Appearance
-        </h3>
-        <div className="space-y-2">
-          <label className="block text-[11px] font-bold text-slate-700 font-mono uppercase">
-            Theme
-          </label>
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800"
-          >
-            <option value="cyberpunk">Cyberpunk Dark</option>
-            <option value="slate">Slate Dark</option>
-            <option value="light">Light</option>
-          </select>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-up">
+      {/* Main Settings Panel */}
+      <div className="lg:col-span-8 glass-card rounded-3xl p-8 space-y-8">
+        <div>
+          <h2 className="text-xl font-extrabold tracking-tight">Appearance & Theme</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Customize the look and feel of your AI-Engineer-OS developer environment.
+          </p>
         </div>
 
-        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 mt-4">
-          System Configuration
-        </h3>
-        <div className="space-y-2">
-          <label className="block text-[11px] font-bold text-slate-700 font-mono uppercase">
-            Active LLM Model Topology
-          </label>
-          <select
-            value={activeModel}
-            onChange={(e) => {
-              setActiveModel(e.target.value);
-              addLog(`[CONFIG] System active model topology changed to: ${e.target.value}`, "config");
-            }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800"
+        {/* Dual Mode Large Visual Selectors */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Dark Mode Card (Nexus Inspired) */}
+          <button
+            onClick={() => selectTheme("dark")}
+            className={`p-6 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-44 cursor-pointer group ${
+              theme === "dark"
+                ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
+                : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+            }`}
           >
-            <option value="gemini-3.5-flash">Google Gemini 3.5 Flash (Recommended)</option>
-            <option value="gemini-1.5-pro">Google Gemini 1.5 Pro</option>
-            <option value="claude-3.5-sonnet">Anthropic Claude 3.5 Sonnet</option>
-            <option value="gpt-4o">OpenAI GPT-4o</option>
-          </select>
+            <div className="flex justify-between items-center w-full">
+              <span className="text-3xl p-2.5 rounded-xl bg-[var(--bg-primary)] group-hover:scale-110 transition-transform">
+                🌙
+              </span>
+              {theme === "dark" && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)] border border-[var(--accent)] font-mono uppercase tracking-wider">
+                  Active
+                </span>
+              )}
+            </div>
+            <div className="mt-4">
+              <h4 className="text-sm font-bold tracking-wide">Nexus Dark Mode</h4>
+              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                Warm charcoal canvas with vibrant coral-orange accents. Ideal for late-night programming sessions.
+              </p>
+            </div>
+          </button>
+
+          {/* Light Mode Card (ailingo Inspired) */}
+          <button
+            onClick={() => selectTheme("light")}
+            className={`p-6 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-44 cursor-pointer group ${
+              theme === "light"
+                ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[0_0_20px_rgba(34,197,94,0.15)]"
+                : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+            }`}
+          >
+            <div className="flex justify-between items-center w-full">
+              <span className="text-3xl p-2.5 rounded-xl bg-[var(--bg-primary)] group-hover:scale-110 transition-transform">
+                ☀️
+              </span>
+              {theme === "light" && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)] border border-[var(--accent)] font-mono uppercase tracking-wider">
+                  Active
+                </span>
+              )}
+            </div>
+            <div className="mt-4">
+              <h4 className="text-sm font-bold tracking-wide">ailingo Light Mode</h4>
+              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                Clean white and pastel gray canvas with dynamic emerald-green highlights. Beautiful and crisp.
+              </p>
+            </div>
+          </button>
         </div>
 
-        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 mt-4">
-          Preferences
-        </h3>
+        <hr className="border-[var(--border)]" />
+
+        {/* System Configuration */}
         <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-bold tracking-tight">AI Topology & Inference Models</h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Select the active model topology routing your agent cognitive workflows.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <select
+              value={activeModel}
+              onChange={(e) => {
+                setActiveModel(e.target.value);
+                addLog(`[CONFIG] System active model topology changed to: ${e.target.value}`, "config");
+              }}
+              className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--accent)] transition-all cursor-pointer font-medium"
+            >
+              <option value="gemini-3.5-flash">Google Gemini 3.5 Flash (Recommended)</option>
+              <option value="gemini-1.5-pro">Google Gemini 1.5 Pro (Analytical)</option>
+              <option value="claude-3.5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+              <option value="gpt-4o">OpenAI GPT-4o</option>
+            </select>
+          </div>
+        </div>
+
+        <hr className="border-[var(--border)]" />
+
+        {/* Preferences */}
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-sm font-bold tracking-tight">System Routing & Privacy</h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Manage telemetry parameters and learning session privacy.
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="flex items-start p-3.5 rounded-xl border border-slate-200/60 hover:bg-slate-50 transition-all cursor-pointer">
+            <label className="flex items-start p-4 rounded-xl border border-[var(--border)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer">
               <input
                 type="checkbox"
                 checked={settings.notifications_enabled}
                 onChange={(e) =>
                   setSettings((s) => ({ ...s, notifications_enabled: e.target.checked }))
                 }
-                className="mt-0.5 mr-3 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-350"
+                className="mt-1 mr-3 w-4 h-4 rounded accent-[var(--accent)] border-[var(--border)] focus:ring-[var(--accent)] cursor-pointer"
               />
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Enable System Alerts</p>
-                <p className="text-[10px] text-slate-400">Receive live push notifications and audio signals</p>
+              <div className="min-w-0">
+                <p className="text-xs font-bold">Enable System Alerts</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">Receive real-time push signals on container events.</p>
               </div>
             </label>
             
-            <label className="flex items-start p-3.5 rounded-xl border border-slate-200/60 hover:bg-slate-50 transition-all cursor-pointer">
+            <label className="flex items-start p-4 rounded-xl border border-[var(--border)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer">
               <input
                 type="checkbox"
                 checked={settings.privacy_private}
                 onChange={(e) =>
                   setSettings((s) => ({ ...s, privacy_private: e.target.checked }))
                 }
-                className="mt-0.5 mr-3 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-350"
+                className="mt-1 mr-3 w-4 h-4 rounded accent-[var(--accent)] border-[var(--border)] focus:ring-[var(--accent)] cursor-pointer"
               />
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Private Profile Sandbox</p>
-                <p className="text-[10px] text-slate-400">Restricts profile details from public routing gates</p>
+              <div className="min-w-0">
+                <p className="text-xs font-bold">Private Sandbox Isolation</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">Block learning roadmap benchmarks from public indexing.</p>
               </div>
             </label>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-[11px] font-bold text-slate-700 font-mono uppercase">
+            <label className="block text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">
               Language Preference
             </label>
             <select
@@ -164,21 +226,50 @@ export default function SettingsTab({
               onChange={(e) =>
                 setSettings((s) => ({ ...s, language_preference: e.target.value }))
               }
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[var(--accent)] transition-all cursor-pointer"
             >
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
+              <option value="en">English (US)</option>
+              <option value="es">Español (ES)</option>
+              <option value="fr">Français (FR)</option>
             </select>
           </div>
         </div>
 
-        <button
-          onClick={handleSave}
-          className="mt-6 py-2.5 px-5 rounded-xl bg-slate-950 text-white hover:bg-slate-800 transition-all active:scale-98 cursor-pointer font-semibold text-xs tracking-wider"
-        >
-          Save Preferences
-        </button>
+        <div className="pt-2">
+          <button
+            onClick={handleSave}
+            className="btn-accent cursor-pointer active:scale-98"
+          >
+            Save Preferences
+          </button>
+        </div>
+      </div>
+
+      {/* Info Panel / Side Card */}
+      <div className="lg:col-span-4 space-y-6">
+        <div className="glass-card rounded-3xl p-6 space-y-4">
+          <h4 className="text-xs font-mono font-bold text-[var(--accent)] uppercase tracking-wider">
+            System Topology Details
+          </h4>
+          <div className="space-y-3 font-mono text-[10px] text-slate-400">
+            <div className="flex justify-between border-b border-[var(--border)] pb-2">
+              <span>Database Engine:</span>
+              <span className="text-[var(--text-primary)] font-bold">SQLite / PostgreSQL fallback</span>
+            </div>
+            <div className="flex justify-between border-b border-[var(--border)] pb-2">
+              <span>Vector Client:</span>
+              <span className="text-[var(--text-primary)] font-bold">Qdrant Node v1.7</span>
+            </div>
+            <div className="flex justify-between border-b border-[var(--border)] pb-2">
+              <span>FastAPI Gateway:</span>
+              <span className="text-[var(--text-primary)] font-bold">Port 8000</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Active Auth:</span>
+              <span className="text-[var(--text-primary)] font-bold">Developer Sandbox</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

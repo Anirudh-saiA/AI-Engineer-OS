@@ -10,6 +10,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
+  signInMockDeveloper: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,8 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInMockDeveloper = () => {
+    const mockUser = {
+      uid: "mock_developer_uid",
+      email: "mock-developer@aios.dev",
+      displayName: "Mock Developer",
+      photoURL: null,
+    } as any;
+    setUser(mockUser);
+    setLoading(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithGithub, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithGithub, signOut, signInMockDeveloper }}>
       {children}
     </AuthContext.Provider>
   );

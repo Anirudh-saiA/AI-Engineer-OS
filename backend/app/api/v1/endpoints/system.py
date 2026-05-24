@@ -40,20 +40,31 @@ def get_status(current_user: dict = Depends(verify_token)) -> SystemStatus:
 @router.get("/db-check", summary="Database Connection Check")
 def check_db_connection(db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
     """
-    Perform a live transaction check against PostgreSQL to ensure reachability.
+    Perform a live transaction check against the database to ensure reachability.
     (Protected: Requires valid Bearer Token).
     """
+    db_type = "PostgreSQL"
+    try:
+        if db.bind and db.bind.dialect:
+            # e.g., 'postgresql' -> 'PostgreSQL', 'sqlite' -> 'SQLite'
+            if db.bind.dialect.name == "sqlite":
+                db_type = "SQLite"
+            else:
+                db_type = db.bind.dialect.name.capitalize()
+    except Exception:
+        pass
+
     try:
         # Execute raw SQL query SELECT 1
         db.execute(text("SELECT 1"))
         return {
             "status": "connected",
-            "database": "PostgreSQL",
-            "message": "Database is fully online and responding."
+            "database": db_type,
+            "message": f"Database ({db_type}) is fully online and responding."
         }
     except Exception as e:
         return {
             "status": "failed",
-            "database": "PostgreSQL",
+            "database": db_type,
             "error": str(e)
         }
