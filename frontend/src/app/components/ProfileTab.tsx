@@ -345,6 +345,11 @@ export default function ProfileTab({ user }: ProfileTabProps) {
           </div>
         )}
 
+        {/* Mobile horizontal scroll swipe indicator helper */}
+        <div className="sm:hidden flex items-center justify-center gap-1.5 text-[9px] font-mono text-indigo-500 bg-indigo-50/60 border border-indigo-100/50 rounded-full px-3 py-1 mb-4 animate-pulse w-fit">
+          <span>👈 Swipe horizontally to view full matrix 👉</span>
+        </div>
+
         {/* SVG/Div Heatmap wrapper */}
         <div className="overflow-x-auto py-1">
           <div className="min-w-[620px] flex gap-[3.5px]">

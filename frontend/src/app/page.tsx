@@ -29,6 +29,7 @@ export default function Home() {
   // Navigation State
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 // Onboarding flow state
 const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 const [onboardingStep, setOnboardingStep] = useState<number>(1);
@@ -393,11 +394,21 @@ const fetchProfile = async () => {
               }}
             />
           )}
+          {/* Mobile Sidebar Backdrop Overlay */}
+          {mobileSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-35 md:hidden transition-opacity duration-300"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+          )}
+
           <div className="flex-1 min-h-screen flex relative z-10">
           
-          {/* LEFT PERSISTENT SIDEBAR */}
-          <aside className={`border-r border-slate-200/60 bg-white/80 backdrop-blur-md flex flex-col transition-all duration-300 z-30 sticky top-0 h-screen ${
-            sidebarCollapsed ? "w-20" : "w-64"
+          {/* LEFT RESPONSIVE DRAWERS/SIDEBAR */}
+          <aside className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-screen border-r border-slate-200/60 bg-white/85 backdrop-blur-md flex flex-col transition-all duration-300 z-40 md:z-30 ${
+            mobileSidebarOpen ? "translate-x-0 shadow-xl" : "-translate-x-full md:translate-x-0"
+          } ${
+            sidebarCollapsed ? "md:w-20" : "md:w-64 w-64"
           }`}>
             
             {/* Sidebar Logo Header */}
@@ -406,7 +417,7 @@ const fetchProfile = async () => {
                 <div className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center font-bold text-md text-white shadow-md flex-shrink-0 animate-pulse">
                   Ω
                 </div>
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div>
                     <h1 className="text-xs font-extrabold tracking-tight text-slate-900 leading-none">
                       AI-ENGINEER-OS
@@ -418,12 +429,20 @@ const fetchProfile = async () => {
                 )}
               </div>
               
-              {/* Collapse Button */}
+              {/* Collapse Button (Only visible on desktop) */}
               <button 
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-7 h-7 rounded-lg hover:bg-slate-50 flex items-center justify-center border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs"
+                className="hidden md:flex w-7 h-7 rounded-lg hover:bg-slate-50 items-center justify-center border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs"
               >
                 {sidebarCollapsed ? "→" : "←"}
+              </button>
+
+              {/* Close Button (Only visible on mobile) */}
+              <button 
+                onClick={() => setMobileSidebarOpen(false)}
+                className="md:hidden w-7 h-7 rounded-lg hover:bg-slate-50 flex items-center justify-center border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs"
+              >
+                ✕
               </button>
             </div>
 
@@ -432,7 +451,10 @@ const fetchProfile = async () => {
               
               {/* Tab 1: Dashboard */}
               <button
-                onClick={() => setActiveTab("dashboard")}
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   activeTab === "dashboard"
                     ? "bg-slate-950 text-white shadow-md"
@@ -442,12 +464,15 @@ const fetchProfile = async () => {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
                 </svg>
-                {!sidebarCollapsed && <span>Dashboard Overview</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Dashboard Overview</span>}
               </button>
 
               {/* Tab 2: Agent Terminal */}
               <button
-                onClick={() => setActiveTab("agent")}
+                onClick={() => {
+                  setActiveTab("agent");
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   activeTab === "agent"
                     ? "bg-slate-950 text-white shadow-md"
@@ -457,12 +482,15 @@ const fetchProfile = async () => {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {!sidebarCollapsed && <span>Agent Chat Terminal</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Agent Chat Terminal</span>}
               </button>
 
               {/* Tab 3: Database Explorer */}
               <button
-                onClick={() => setActiveTab("database")}
+                onClick={() => {
+                  setActiveTab("database");
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   activeTab === "database"
                     ? "bg-slate-950 text-white shadow-md"
@@ -472,12 +500,15 @@ const fetchProfile = async () => {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                 </svg>
-                {!sidebarCollapsed && <span>Database Explorer</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Database Explorer</span>}
               </button>
 
               {/* Tab 4: Vector Indexes */}
               <button
-                onClick={() => setActiveTab("vector")}
+                onClick={() => {
+                  setActiveTab("vector");
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   activeTab === "vector"
                     ? "bg-slate-950 text-white shadow-md"
@@ -487,12 +518,15 @@ const fetchProfile = async () => {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                {!sidebarCollapsed && <span>Vector Search Index</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Vector Search Index</span>}
               </button>
 
               {/* Tab 5: Settings */}
               <button
-                onClick={() => setActiveTab("settings")}
+                onClick={() => {
+                  setActiveTab("settings");
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                   activeTab === "settings"
                     ? "bg-slate-950 text-white shadow-md"
@@ -503,24 +537,27 @@ const fetchProfile = async () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {!sidebarCollapsed && <span>Settings & Config</span>}
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Settings & Config</span>}
               </button>
 
-            {/* Tab 6: Developer Profile */}
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-              activeTab === "profile"
-                ? "bg-slate-950 text-white shadow-md"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
-            }`}
-          >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-            {!sidebarCollapsed && <span>Developer Profile</span>}
-          </button>
-          </nav>
+              {/* Tab 6: Developer Profile */}
+              <button
+                onClick={() => {
+                  setActiveTab("profile");
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === "profile"
+                    ? "bg-slate-950 text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent hover:border-slate-100"
+                }`}
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+                {(!sidebarCollapsed || mobileSidebarOpen) && <span>Developer Profile</span>}
+              </button>
+            </nav>
 
             {/* Sidebar User Identity Profile Card */}
             <div className="p-3 border-t border-slate-100 bg-slate-50/50">
@@ -534,7 +571,7 @@ const fetchProfile = async () => {
                     </div>
                   )}
                 </div>
-                {!sidebarCollapsed && (
+                {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">
                       {user.displayName || "Developer"}
@@ -546,7 +583,7 @@ const fetchProfile = async () => {
                 )}
               </div>
               
-              {!sidebarCollapsed && (
+              {(!sidebarCollapsed || mobileSidebarOpen) && (
                 <button 
                   onClick={signOut}
                   className="w-full mt-3 py-1.5 px-3 rounded-lg bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-semibold text-[10px] tracking-wide transition-all border border-slate-200 hover:border-rose-100 cursor-pointer shadow-3xs text-center"
@@ -561,34 +598,47 @@ const fetchProfile = async () => {
           <div className="flex-1 flex flex-col min-w-0">
             
             {/* Dynamic Top Header Bar */}
-            <header className="h-16 border-b border-slate-200/60 bg-white/70 backdrop-blur-md sticky top-0 z-20 px-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-bold text-slate-950 flex items-center gap-2">
-                  {activeTab === "dashboard" && "Dashboard Overview"}
-                  {activeTab === "agent" && "Cognitive Agent Terminal"}
-                  {activeTab === "database" && "PostgreSQL Database Explorer"}
-                  {activeTab === "vector" && "Semantic Vector Search Index"}
-                  {activeTab === "settings" && "OS System Configurations"}
-                  <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-semibold bg-slate-100 text-slate-500 border border-slate-200/60">
-                    Live
-                  </span>
-                </h2>
-                <p className="text-[9px] text-slate-400 font-mono">
-                  Path: /workspace/{activeTab}
-                </p>
+            <header className="h-16 border-b border-slate-200/60 bg-white/70 backdrop-blur-md sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Mobile Drawer Trigger hamburger menu */}
+                <button
+                  onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                  className="md:hidden p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/40 text-slate-500 cursor-pointer shadow-3xs flex-shrink-0"
+                  aria-label="Toggle Sidebar Menu"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <div className="min-w-0">
+                  <h2 className="text-xs md:text-sm font-bold text-slate-950 flex items-center gap-1.5 truncate">
+                    {activeTab === "dashboard" && "Dashboard Overview"}
+                    {activeTab === "agent" && "Cognitive Agent Terminal"}
+                    {activeTab === "database" && "PostgreSQL Database Explorer"}
+                    {activeTab === "vector" && "Semantic Vector Search Index"}
+                    {activeTab === "settings" && "OS System Configurations"}
+                    {activeTab === "profile" && "Developer Profile Overview"}
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-semibold bg-slate-100 text-slate-500 border border-slate-200/60 flex-shrink-0 hidden sm:inline-block">
+                      Live
+                    </span>
+                  </h2>
+                  <p className="text-[8px] md:text-[9px] text-slate-400 font-mono truncate">
+                    Path: /workspace/{activeTab}
+                  </p>
+                </div>
               </div>
 
               {/* Global system status telemetry */}
-              <div className="flex items-center gap-4 text-[10px] font-mono">
+              <div className="flex items-center gap-3 md:gap-4 text-[10px] font-mono flex-shrink-0">
                 <div className="hidden sm:flex items-center gap-1.5">
                   <span className="text-slate-400">Gateway:</span>
                   <span className={`w-2 h-2 rounded-full ${fastapiOnline ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
                   <span className="text-slate-700 font-semibold">{fastapiOnline ? "8000" : "Offline"}</span>
                 </div>
-                <div className="h-3 w-[1px] bg-slate-200"></div>
+                <div className="hidden sm:block h-3 w-[1px] bg-slate-200"></div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-400">Model:</span>
-                  <span className="text-indigo-600 font-semibold uppercase">{activeModel.replace(/-/g, " ")}</span>
+                  <span className="text-slate-400 hidden xs:inline">Model:</span>
+                  <span className="text-indigo-600 font-semibold uppercase text-[9px] md:text-[10px] truncate max-w-[80px] sm:max-w-none">{activeModel.replace(/-/g, " ")}</span>
                 </div>
               </div>
             </header>
@@ -946,40 +996,73 @@ const fetchProfile = async () => {
                   </div>
 
                   {/* Grid Table Container */}
-                  <div className="glass-card rounded-2xl border border-slate-200/60 overflow-hidden bg-white">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-mono tracking-wider uppercase text-[9px]">
-                            <th className="p-4 font-bold">Transaction ID</th>
-                            <th className="p-4 font-bold">Telemetry Event Name</th>
-                            <th className="p-4 font-bold">Status Badge</th>
-                            <th className="p-4 font-bold">Execution Time (ms)</th>
-                            <th className="p-4 font-bold">Timestamp</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-700">
-                          {telemetryTable.map((row) => (
-                            <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="p-4 font-mono font-semibold text-slate-900">{row.id}</td>
-                              <td className="p-4 font-mono text-indigo-600 font-semibold">{row.event}</td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold font-mono border ${
-                                  row.status === "success" 
-                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                    : row.status === "warning" 
-                                      ? "bg-amber-50 text-amber-600 border-amber-100"
-                                      : "bg-rose-50 text-rose-600 border-rose-100"
-                                }`}>
-                                  {row.status.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="p-4 font-mono">{row.duration === 0 ? "timeout" : `${row.duration} ms`}</td>
-                              <td className="p-4 font-mono text-slate-400">{row.timestamp}</td>
+                  <div className="space-y-4">
+                    {/* Mobile Stacking Cards Representation */}
+                    <div className="sm:hidden space-y-3">
+                      {telemetryTable.map((row) => (
+                        <div key={row.id} className="glass-card rounded-xl p-4 border border-slate-200/60 bg-white space-y-3 shadow-3xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold text-[10px] text-slate-400">ID: <span className="text-slate-800 font-extrabold">{row.id}</span></span>
+                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold font-mono border ${
+                              row.status === "success" 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : row.status === "warning" 
+                                  ? "bg-amber-50 text-amber-600 border-amber-100"
+                                  : "bg-rose-50 text-rose-600 border-rose-100"
+                            }`}>
+                              {row.status.toUpperCase()}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <p className="text-[8px] font-mono text-slate-400 uppercase font-semibold">Telemetry Event</p>
+                            <p className="text-[11px] font-mono text-indigo-600 font-semibold break-all leading-normal">{row.event}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 border-t border-slate-100 pt-2.5">
+                            <span>⏱️ {row.duration === 0 ? "timeout" : `${row.duration} ms`}</span>
+                            <span>📅 {row.timestamp}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Tablet/Desktop Table View */}
+                    <div className="hidden sm:block glass-card rounded-2xl border border-slate-200/60 overflow-hidden bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-mono tracking-wider uppercase text-[9px]">
+                              <th className="p-4 font-bold">Transaction ID</th>
+                              <th className="p-4 font-bold">Telemetry Event Name</th>
+                              <th className="p-4 font-bold">Status Badge</th>
+                              <th className="p-4 font-bold">Execution Time (ms)</th>
+                              <th className="p-4 font-bold">Timestamp</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700">
+                            {telemetryTable.map((row) => (
+                              <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-4 font-mono font-semibold text-slate-900">{row.id}</td>
+                                <td className="p-4 font-mono text-indigo-600 font-semibold">{row.event}</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold font-mono border ${
+                                    row.status === "success" 
+                                      ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                      : row.status === "warning" 
+                                        ? "bg-amber-50 text-amber-600 border-amber-100"
+                                        : "bg-rose-50 text-rose-600 border-rose-100"
+                                  }`}>
+                                    {row.status.toUpperCase()}
+                                  </span>
+                                </td>
+                                <td className="p-4 font-mono">{row.duration === 0 ? "timeout" : `${row.duration} ms`}</td>
+                                <td className="p-4 font-mono text-slate-400">{row.timestamp}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 
