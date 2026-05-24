@@ -333,3 +333,49 @@ def add_user_project(proj: schemas.ProjectDetails, db: Session = Depends(get_db)
         
     db.commit()
     return {"status": "success", "message": "Project added and 150 XP points awarded!"}
+
+@router.get("/settings", response_model=schemas.UserSettingsSchema)
+def get_user_settings(db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
+    """
+    Get user customizable configuration preferences.
+    (Protected: Requires Bearer Auth).
+    """
+    uid = current_user["uid"]
+    
+    settings_record = db.query(models.UserSetting).filter(models.UserSetting.user_id == uid).first()
+    if not settings_record:
+        # Create default settings if not exists
+        settings_record = models.UserSetting(
+            user_id=uid,
+            theme="dark",
+            notifications_enabled=True,
+            privacy_private=False,
+            language_preference="en"
+        )
+        db.add(settings_record)
+        db.commit()
+        db.refresh(settings_record)
+        
+    return settings_record
+
+@router.put("/settings", response_model=schemas.UserSettingsSchema)
+def update_user_settings(settings_data: schemas.UserSettingsSchema, db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
+    """
+    Update user customizable configuration preferences.
+    (Protected: Requires Bearer Auth).
+    """
+    uid = current_user["uid"]
+    
+    settings_record = db.query(models.UserSetting).filter(models.UserSetting.user_id == uid).first()
+    if not settings_record:
+        settings_record = models.UserSetting(user_id=uid)
+        db.add(settings_record)
+        
+    settings_record.theme = settings_data.theme
+    settings_record.notifications_enabled = settings_data.notifications_enabled
+    settings_record.privacy_private = settings_data.privacy_private
+    settings_record.language_preference = settings_data.language_preference
+    
+    db.commit()
+    db.refresh(settings_record)
+    return settings_record

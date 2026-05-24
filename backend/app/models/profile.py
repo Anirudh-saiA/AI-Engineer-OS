@@ -131,3 +131,15 @@ class Streak(Base):
     current_streak = Column(Integer, default=1)
     longest_streak = Column(Integer, default=1)
     last_login_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+class UserSetting(Base):
+    """
+    User customizable configuration preferences.
+    """
+    __tablename__ = "user_settings"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    theme = Column(String, default="dark")
+    notifications_enabled = Column(Boolean, default=True)
+    privacy_private = Column(Boolean, default=False)
+    language_preference = Column(String, default="en")

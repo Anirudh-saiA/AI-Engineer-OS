@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./context/AuthContext";
 import OnboardingWizard from "./onboarding/OnboardingWizard";
 import ProfileTab from "./components/ProfileTab";
+import SettingsTab from "./components/SettingsTab";
 
 type Tab = "dashboard" | "agent" | "database" | "vector" | "settings" | "profile";
 
@@ -75,6 +76,7 @@ const [profileExists, setProfileExists] = useState<boolean>(true);
 
   // Tab 5: Settings States
   const [activeModel, setActiveModel] = useState("gemini-3.5-flash");
+const [theme, setTheme] = useState("cyberpunk");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
   const [debugMode, setDebugMode] = useState(true);
@@ -1095,139 +1097,7 @@ const fetchProfile = async () => {
               )}
 
               {/* ================= TAB 5: SYSTEM CONFIG CONFIGURATIONS ================= */}
-              {activeTab === "settings" && (
-                <div className="space-y-6 animate-fadeIn">
-                  
-                  {/* General Config Screen */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
-                    {/* Controls Panel (8 Cols) */}
-                    <div className="lg:col-span-8 glass-card rounded-2xl p-6 border border-slate-200/60 bg-white space-y-6">
-                      
-                      <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">AI Engine Model Parameters</h3>
-                      
-                      {/* Dropdown Input */}
-                      <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-slate-700 font-mono uppercase">Active LLM Model Topology</label>
-                        <select 
-                          value={activeModel}
-                          onChange={(e) => {
-                            setActiveModel(e.target.value);
-                            addLog(`[CONFIG] System active model topology changed to: ${e.target.value}`, "config");
-                          }}
-                          className="w-full bg-slate-50 border border-slate-200 focus:outline-none rounded-xl px-4 py-2.5 text-xs text-slate-800 transition-all font-mono"
-                        >
-                          <option value="gemini-3.5-flash">Google Gemini 3.5 Flash (Recommended)</option>
-                          <option value="gemini-1.5-pro">Google Gemini 1.5 Pro</option>
-                          <option value="claude-3.5-sonnet">Anthropic Claude 3.5 Sonnet</option>
-                          <option value="gpt-4o">OpenAI GPT-4o</option>
-                        </select>
-                      </div>
-
-                      {/* Range Parameters */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        
-                        {/* Temperature Slider */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-[11px] font-bold text-slate-700 font-mono uppercase">
-                            <span>Model Temperature</span>
-                            <span className="text-indigo-600 font-bold">{temperature}</span>
-                          </div>
-                          <input 
-                            type="range"
-                            min="0.1"
-                            max="1.0"
-                            step="0.05"
-                            value={temperature}
-                            onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                            className="w-full accent-indigo-600 bg-slate-100 cursor-pointer h-1.5 rounded-lg appearance-none"
-                          />
-                        </div>
-
-                        {/* Max Tokens Slider */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-[11px] font-bold text-slate-700 font-mono uppercase">
-                            <span>Max Output Tokens</span>
-                            <span className="text-indigo-600 font-bold">{maxTokens}</span>
-                          </div>
-                          <input 
-                            type="range"
-                            min="256"
-                            max="8192"
-                            step="128"
-                            value={maxTokens}
-                            onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                            className="w-full accent-indigo-600 bg-slate-100 cursor-pointer h-1.5 rounded-lg appearance-none"
-                          />
-                        </div>
-
-                      </div>
-
-                      {/* Text Prompt Area */}
-                      <div className="space-y-2">
-                        <label className="block text-[11px] font-bold text-slate-700 font-mono uppercase">Cognitive System Prompt Blueprint</label>
-                        <textarea 
-                          value={systemPrompt}
-                          onChange={(e) => setSystemPrompt(e.target.value)}
-                          rows={4}
-                          className="w-full bg-slate-50 border border-slate-200 focus:outline-none rounded-xl p-4 text-xs text-slate-800 transition-all font-mono leading-5 shadow-inner"
-                        />
-                      </div>
-
-                    </div>
-
-                    {/* Additional Toggles sidebar (4 Cols) */}
-                    <div className="lg:col-span-4 flex flex-col gap-6">
-                      
-                      {/* OS Toggles */}
-                      <div className="glass-card rounded-2xl p-6 border border-slate-200/60 bg-white">
-                        <h4 className="font-mono text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-                          Developer Switches
-                        </h4>
-                        
-                        <div className="space-y-4">
-                          
-                          {/* Toggle 1 */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-bold text-slate-800">Developer Debug Mode</p>
-                              <p className="text-[9px] text-slate-400">Injects verbose runtime states</p>
-                            </div>
-                            <button 
-                              onClick={() => {
-                                setDebugMode(!debugMode);
-                                addLog(`[CONFIG] Debug mode set to: ${!debugMode}`, "config");
-                              }}
-                              className={`w-10 h-6 rounded-full transition-all cursor-pointer relative ${
-                                debugMode ? "bg-indigo-600" : "bg-slate-250"
-                              }`}
-                            >
-                              <span className={`w-4 h-4 rounded-full bg-white shadow-sm absolute top-1 transition-all ${
-                                debugMode ? "left-5" : "left-1"
-                              }`} />
-                            </button>
-                          </div>
-
-                          {/* Toggle 2 */}
-                          <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                            <div>
-                              <p className="text-xs font-bold text-slate-800">Mock Mode Sandbox</p>
-                              <p className="text-[9px] text-slate-400">Allows offline component tests</p>
-                            </div>
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-50 text-amber-600 border border-amber-100 uppercase">
-                              Enabled
-                            </span>
-                          </div>
-
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-              )}
+              {activeTab === "settings" && (<SettingsTab theme={theme} setTheme={setTheme} activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} />)}
 
               {/* ================= TAB 6: DEVELOPER PROFILE ================= */}
               {activeTab === "profile" && (

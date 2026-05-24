@@ -84,3 +84,12 @@ class UserProfileResponse(BaseModel):
     achievements: List[AchievementBadge] = []
     roadmap: List[RoadmapProgressNode] = []
     projects: List[ProjectDetails] = []
+
+class UserSettingsSchema(BaseModel):
+    theme: str = Field("dark", description="App interface theme preference")
+    notifications_enabled: bool = Field(True, description="Enable email/alert notifications")
+    privacy_private: bool = Field(False, description="Make portfolio private")
+    language_preference: str = Field("en", description="Preferred language selection")
+
+    class Config:
+        from_attributes = True
