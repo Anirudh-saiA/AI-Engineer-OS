@@ -105,147 +105,170 @@ body {
   border-color: rgba(168, 85, 247, 0.4) !important;
 }
 
+/* Duolingo Float Animations */
+@keyframes floatUpAndDown {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(4deg);
+  }
+}
+
+@keyframes floatDownAndUp {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-3deg);
+  }
+}
+
+.animate-float-slow {
+  animation: floatUpAndDown 6s infinite ease-in-out;
+}
+
+.animate-float-medium {
+  animation: floatDownAndUp 4.5s infinite ease-in-out;
+}
+
 /* ================= DARK CYBERPUNK AUTOMATIC OVERRIDES ================= */
 
 /* Form controls */
-input, select, textarea {
+.cyberpunk-theme input, .cyberpunk-theme select, .cyberpunk-theme textarea {
   background-color: rgba(255, 255, 255, 0.02) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #f1f5f9 !important;
 }
-input:focus, select:focus, textarea:focus {
+.cyberpunk-theme input:focus, .cyberpunk-theme select:focus, .cyberpunk-theme textarea:focus {
   border-color: rgba(168, 85, 247, 0.6) !important;
   box-shadow: 0 0 15px rgba(168, 85, 247, 0.25) !important;
   background-color: rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Sidebar & Header panels */
-aside {
+.cyberpunk-theme aside {
   background-color: rgba(5, 5, 12, 0.75) !important;
   border-right-color: rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(20px);
 }
 
-header {
+.cyberpunk-theme header {
   background-color: rgba(5, 5, 12, 0.4) !important;
   border-bottom-color: rgba(255, 255, 255, 0.07) !important;
   backdrop-filter: blur(20px);
 }
 
-footer {
+.cyberpunk-theme footer {
   border-top-color: rgba(255, 255, 255, 0.07) !important;
   background-color: rgba(5, 5, 12, 0.3) !important;
 }
 
 /* Overriding hardcoded tailwind text classes */
-h1, h2, h3, h4, h5, h6 {
+.cyberpunk-theme h1, .cyberpunk-theme h2, .cyberpunk-theme h3, .cyberpunk-theme h4, .cyberpunk-theme h5, .cyberpunk-theme h6 {
   color: #ffffff !important;
 }
 
-p, span, td, th, li, label, div {
-  /* Only target general text layers, leaving highlighted text colors like emerald, fuchsia and indigo */
-}
-
 /* Core Slate Replacements */
-.text-slate-800, .text-slate-900, .text-slate-750, .text-slate-950, .text-slate-700 {
+.cyberpunk-theme .text-slate-800, .cyberpunk-theme .text-slate-900, .cyberpunk-theme .text-slate-750, .cyberpunk-theme .text-slate-950, .cyberpunk-theme .text-slate-700 {
   color: #e2e8f0 !important;
 }
 
-.text-slate-600, .text-slate-500 {
+.cyberpunk-theme .text-slate-600, .cyberpunk-theme .text-slate-500 {
   color: #94a3b8 !important;
 }
 
-.text-slate-400 {
+.cyberpunk-theme .text-slate-400 {
   color: #64748b !important;
 }
 
-.bg-white {
+.cyberpunk-theme .bg-white {
   background-color: rgba(10, 10, 22, 0.6) !important;
 }
 
-.bg-slate-50, .bg-slate-50\/50, .bg-slate-50\/80, .bg-slate-50\/40, .bg-slate-50\/60 {
+.cyberpunk-theme .bg-slate-50, .cyberpunk-theme .bg-slate-50\/50, .cyberpunk-theme .bg-slate-50\/80, .cyberpunk-theme .bg-slate-50\/40, .cyberpunk-theme .bg-slate-50\/60 {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
-.bg-slate-950 {
+.cyberpunk-theme .bg-slate-950 {
   background-color: #020205 !important;
 }
 
-.border-slate-200, .border-slate-200\/60, .border-slate-250, .border-slate-100, .border-slate-200\/50 {
+.cyberpunk-theme .border-slate-200, .cyberpunk-theme .border-slate-200\/60, .cyberpunk-theme .border-slate-250, .cyberpunk-theme .border-slate-100, .cyberpunk-theme .border-slate-200\/50 {
   border-color: rgba(255, 255, 255, 0.07) !important;
 }
 
 /* Highlight elements */
-.bg-indigo-50 {
+.cyberpunk-theme .bg-indigo-50 {
   background-color: rgba(99, 102, 241, 0.1) !important;
 }
-.text-indigo-600 {
+.cyberpunk-theme .text-indigo-600 {
   color: #818cf8 !important;
 }
-.border-indigo-100 {
+.cyberpunk-theme .border-indigo-100 {
   border-color: rgba(99, 102, 241, 0.2) !important;
 }
 
-.bg-emerald-50 {
+.cyberpunk-theme .bg-emerald-50 {
   background-color: rgba(16, 185, 129, 0.1) !important;
 }
-.text-emerald-600 {
+.cyberpunk-theme .text-emerald-600 {
   color: #34d399 !important;
 }
 
-.bg-rose-50 {
+.cyberpunk-theme .bg-rose-50 {
   background-color: rgba(244, 63, 94, 0.1) !important;
 }
-.text-rose-600 {
+.cyberpunk-theme .text-rose-600 {
   color: #fb7185 !important;
 }
 
-.bg-amber-50 {
+.cyberpunk-theme .bg-amber-50 {
   background-color: rgba(245, 158, 11, 0.1) !important;
 }
-.text-amber-600 {
+.cyberpunk-theme .text-amber-600 {
   color: #fbbf24 !important;
 }
 
 /* Glow highlights */
-.glow-highlight {
+.cyberpunk-theme .glow-highlight {
   box-shadow: 0 0 25px rgba(168, 85, 247, 0.2);
 }
 
 /* Buttons style sync */
-button.bg-slate-950, button.bg-slate-950:hover {
+.cyberpunk-theme button.bg-slate-950, .cyberpunk-theme button.bg-slate-950:hover {
   background-color: #6366f1 !important;
   color: #ffffff !important;
   border-color: #6366f1 !important;
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
 }
 
-button.bg-slate-950:hover {
+.cyberpunk-theme button.bg-slate-950:hover {
   background-color: #4f46e5 !important;
 }
 
-button.bg-white {
+.cyberpunk-theme button.bg-white {
   background-color: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   color: #f1f5f9 !important;
 }
 
-button.bg-white:hover {
+.cyberpunk-theme button.bg-white:hover {
   background-color: rgba(255, 255, 255, 0.07) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Custom telemetry logs style */
-.bg-slate-50\/80.rounded-xl {
+.cyberpunk-theme .bg-slate-50\/80.rounded-xl {
   background-color: rgba(0, 0, 0, 0.4) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   color: #94a3b8 !important;
 }
 
-.divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+.cyberpunk-theme .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-tr:hover {
+.cyberpunk-theme tr:hover {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }

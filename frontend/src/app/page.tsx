@@ -327,104 +327,138 @@ const fetchProfile = async () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans relative overflow-hidden">
+    <div className={`min-h-screen text-slate-100 flex font-sans relative overflow-hidden ${user ? "bg-slate-950 cyberpunk-theme" : "bg-[#f9fafb]"}`}>
       
       {/* Background Soft Glow Effects (Inspired by Magic UI Light Theme) */}
-      <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tr from-indigo-200/20 via-violet-100/10 to-fuchsia-100/15 blur-[130px] pointer-events-none animate-pulse-glow"></div>
-      <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-cyan-100/15 via-blue-100/10 to-indigo-100/20 blur-[130px] pointer-events-none animate-pulse-glow"></div>
+      {user && (
+        <>
+          <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tr from-indigo-200/20 via-violet-100/10 to-fuchsia-100/15 blur-[130px] pointer-events-none animate-pulse-glow"></div>
+          <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-cyan-100/15 via-blue-100/10 to-indigo-100/20 blur-[130px] pointer-events-none animate-pulse-glow"></div>
+        </>
+      )}
       {!user ? (
         /* ================= AUTHENTICATION LOCK SCREEN (DUOLINGO-INSPIRED LIGHT TECH THEME) ================= */
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-6 md:py-10 bg-[#f9fafb] text-slate-800 font-sans overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-6 md:py-10 bg-[#f9fafb] text-slate-900 font-sans overflow-y-auto light-theme">
           {/* Subtle high-tech grid overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1.2px,transparent_1.2px),linear-gradient(to_bottom,#e2e8f0_1.2px,transparent_1.2px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-70 pointer-events-none"></div>
           
-          {/* Colorful Ambient Glowing Circles at Screen Borders */}
-          <div className="absolute top-[-10%] left-[-10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-indigo-300/40 to-violet-300/25 blur-[100px] pointer-events-none animate-pulse"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-emerald-300/35 to-teal-300/20 blur-[100px] pointer-events-none animate-pulse"></div>
-          <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] rounded-full bg-gradient-to-tr from-cyan-300/35 to-blue-300/20 blur-[90px] pointer-events-none animate-pulse delay-75"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-amber-300/30 to-orange-300/15 blur-[90px] pointer-events-none animate-pulse delay-150"></div>
+          {/* Pastel background soft aura glowing inside the lock screen */}
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-indigo-200/30 via-violet-100/20 to-fuchsia-100/20 blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-100/20 via-blue-100/20 to-indigo-200/30 blur-[120px] pointer-events-none"></div>
+
+          {/* REAL GEOMETRIC COLORFUL CIRCLES AT THE BORDERS (Duolingo Style with Playful Drifting Float Animations) */}
+          {/* Top-Left Indigo Circle */}
+          <div className="absolute top-4 left-4 md:top-8 md:left-8 w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-indigo-500 bg-indigo-50 flex flex-col items-center justify-center font-black text-2xl text-indigo-700 shadow-md rotate-[-6deg] select-none pointer-events-none z-10 animate-float-slow">
+            <span className="text-3xl">Ω</span>
+            <span className="text-[9px] uppercase tracking-wider mt-1 font-black opacity-80">AIOS</span>
+          </div>
+          {/* Top-Right Cyan Circle */}
+          <div className="absolute top-12 right-6 md:top-20 md:right-16 w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-cyan-500 bg-cyan-50 flex items-center justify-center font-black text-2xl text-cyan-600 shadow-md select-none pointer-events-none z-10 animate-float-medium">
+            ⚡
+          </div>
+          
+          {/* Bottom-Left Amber Circle */}
+          <div className="absolute bottom-6 left-12 md:bottom-16 md:left-24 w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-amber-500 bg-amber-50 flex items-center justify-center font-black text-2xl text-amber-600 shadow-md select-none pointer-events-none z-10 animate-float-medium">
+            🔥
+          </div>
+          
+          {/* Bottom-Right Emerald Circle */}
+          <div className="absolute bottom-16 right-8 md:bottom-28 md:right-12 w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-emerald-500 bg-emerald-50 flex flex-col items-center justify-center font-black text-xs text-emerald-700 shadow-md select-none pointer-events-none z-10 animate-float-slow">
+            <span className="text-3xl">🤖</span>
+            <span className="text-[10px] uppercase tracking-wider mt-1.5 font-extrabold">CareerAI</span>
+          </div>
+
+          {/* Floating small circular bubbles for extra playfulness */}
+          <div className="absolute top-1/4 left-16 w-6 h-6 rounded-full bg-blue-300 border-2 border-blue-400/50 shadow-sm pointer-events-none select-none animate-float-medium"></div>
+          <div className="absolute top-2/3 right-16 w-8 h-8 rounded-full bg-emerald-300 border-2 border-emerald-400/50 shadow-sm pointer-events-none select-none animate-float-slow"></div>
+          <div className="absolute bottom-1/4 left-24 w-5 h-5 rounded-full bg-indigo-300 border-2 border-indigo-400/50 shadow-sm pointer-events-none select-none animate-float-slow"></div>
+          <div className="absolute top-1/3 right-1/4 w-7 h-7 rounded-full bg-amber-300 border-2 border-amber-400/50 shadow-sm pointer-events-none select-none animate-float-medium"></div>
 
           {/* 1. Header Pill Banner */}
           <div className="z-10 mt-1 md:mt-2">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-extrabold bg-indigo-50/90 text-indigo-650 border border-indigo-150/80 shadow-3xs select-none hover:scale-101 transition-all">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-extrabold bg-indigo-50/95 text-indigo-700 border-2 border-indigo-200 shadow-sm select-none hover:scale-102 transition-all">
               <span className="text-[10px] animate-pulse">✨</span>
               <span>AI-Powered Career Platform</span>
               <span className="h-3 w-[1.5px] bg-indigo-200"></span>
               <span>500K+ Users</span>
-              <span className="text-indigo-400 font-semibold">›</span>
+              <span className="text-indigo-500 font-semibold">›</span>
             </div>
           </div>
 
           {/* 2. Primary Content Card with Colorful Border Dots */}
           <div className="z-10 max-w-4xl w-full text-center space-y-6 md:space-y-8 my-auto px-4 py-8 relative">
             
-            {/* Main Big Hero Title */}
-            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-slate-900 leading-[1.05] sm:leading-[1.05] md:leading-[1.05] font-sans select-none">
+            {/* Main Big Hero Title - High Contrast Slate-950/Black */}
+            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-slate-950 leading-[1.05] sm:leading-[1.05] md:leading-[1.05] font-sans select-none">
               Use AI to <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-indigo-600 via-violet-650 to-blue-500 bg-clip-text text-transparent drop-shadow-sm select-none">
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-xs select-none">
                 land your dream job
               </span>
             </h1>
             
-            {/* Larger description text */}
-            <p className="text-slate-650 text-xs sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto font-semibold font-sans">
+            {/* High Contrast description text */}
+            <p className="text-slate-800 text-sm sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto font-extrabold font-sans">
               CareerAI combines cutting-edge artificial intelligence with gamified learning to help you build skills, optimize your resume, and land your dream job 3x faster.
             </p>
 
-            {/* Explicit OAuth Google and GitHub sign-in buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3.5 justify-center max-w-md sm:max-w-xl mx-auto pt-2">
+            {/* Explicit OAuth Google and GitHub sign-in buttons - Playful 3D bevel buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-md sm:max-w-xl mx-auto pt-2">
+              {/* Google Button - Solid Vibrant Indigo */}
               <button 
                 onClick={signInWithGoogle}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-indigo-650 hover:bg-indigo-600 active:scale-98 text-white font-black text-xs tracking-wider transition-all shadow-md shadow-indigo-200/50 flex items-center justify-center gap-3 cursor-pointer select-none border border-indigo-650 hover:border-indigo-600"
+                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:translate-y-[2px] active:border-b-[2px] text-white font-extrabold text-sm tracking-wider transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer select-none border-b-[6px] border-indigo-800 text-shadow-xs"
               >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
                 </svg>
                 Sign In with Google
               </button>
 
+              {/* GitHub Button - Solid Vibrant Charcoal Black */}
               <button 
                 onClick={signInWithGithub}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-350 active:scale-98 text-slate-800 font-black text-xs tracking-wider transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer select-none"
+                className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 active:translate-y-[2px] active:border-b-[2px] text-white font-extrabold text-sm tracking-wider transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer select-none border-b-[6px] border-slate-950 text-shadow-xs"
               >
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
+                <svg className="w-4.5 h-4.5 fill-current text-white" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                 </svg>
                 Sign In with GitHub
               </button>
             </div>
 
-            {/* Description details card list (Inspired by gamified light platforms) */}
+            {/* Description details card list - High Contrast Solid White Cards with thick borders */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6 text-left">
               {/* Feature 1 */}
-              <div className="glass-card rounded-2xl p-4 border border-indigo-100/80 bg-white/70 shadow-3xs flex items-start gap-3 relative hover:scale-101 hover:border-indigo-200 transition-all">
-                <span className="text-xl p-1 bg-indigo-50 rounded-lg">🤖</span>
+              <div className="rounded-2xl p-5 border-[3px] border-indigo-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-indigo-400 transition-all cursor-pointer">
+                <span className="text-2xl p-2 bg-indigo-50 rounded-xl text-indigo-650 border border-indigo-200 flex-shrink-0">🤖</span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 font-sans">Cognitive AI Workflows</h4>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">Autonomous code sandboxing, docker checking & lint fixes.</p>
+                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Cognitive AI Workflows</h4>
+                  <p className="text-xs font-bold text-slate-700 font-sans mt-1">Autonomous code sandboxing, docker checking & lint fixes.</p>
                 </div>
                 {/* Neon dot at border */}
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_4px_#6366f1]"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_6px_#6366f1]"></span>
               </div>
+              
               {/* Feature 2 */}
-              <div className="glass-card rounded-2xl p-4 border border-emerald-100/80 bg-white/70 shadow-3xs flex items-start gap-3 relative hover:scale-101 hover:border-emerald-200 transition-all">
-                <span className="text-xl p-1 bg-emerald-50 rounded-lg">🔥</span>
+              <div className="rounded-2xl p-5 border-[3px] border-emerald-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-emerald-400 transition-all cursor-pointer">
+                <span className="text-2xl p-2 bg-emerald-50 rounded-xl text-emerald-650 border border-emerald-200 flex-shrink-0">🔥</span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 font-sans">Gamified Heatmaps</h4>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">365-day commit calendar, milestones and XP awards.</p>
+                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Gamified Heatmaps</h4>
+                  <p className="text-xs font-bold text-slate-700 font-sans mt-1">365-day commit calendar, milestones and XP awards.</p>
                 </div>
                 {/* Neon dot at border */}
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981]"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
               </div>
+              
               {/* Feature 3 */}
-              <div className="glass-card rounded-2xl p-4 border border-blue-100/80 bg-white/70 shadow-3xs flex items-start gap-3 relative hover:scale-101 hover:border-blue-200 transition-all">
-                <span className="text-xl p-1 bg-blue-50 rounded-lg">⚡</span>
+              <div className="rounded-2xl p-5 border-[3px] border-blue-200 bg-white shadow-md flex items-start gap-3.5 relative hover:scale-102 hover:border-blue-400 transition-all cursor-pointer">
+                <span className="text-2xl p-2 bg-blue-50 rounded-xl text-blue-650 border border-blue-200 flex-shrink-0">⚡</span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 font-sans">Semantic RAG Engine</h4>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">Nearest-neighbor vector matching of files inside Qdrant.</p>
+                  <h4 className="text-sm font-extrabold text-slate-900 font-sans tracking-tight">Semantic RAG Engine</h4>
+                  <p className="text-xs font-bold text-slate-750 font-sans mt-1">Nearest-neighbor vector matching of files inside Qdrant.</p>
                 </div>
                 {/* Neon dot at border */}
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_4px_#3b82f6]"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]"></span>
               </div>
             </div>
 
