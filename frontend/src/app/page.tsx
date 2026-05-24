@@ -332,50 +332,89 @@ const fetchProfile = async () => {
       {/* Background Soft Glow Effects (Inspired by Magic UI Light Theme) */}
       <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tr from-indigo-200/20 via-violet-100/10 to-fuchsia-100/15 blur-[130px] pointer-events-none animate-pulse-glow"></div>
       <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-cyan-100/15 via-blue-100/10 to-indigo-100/20 blur-[130px] pointer-events-none animate-pulse-glow"></div>
-
       {!user ? (
-        /* ================= AUTHENTICATION LOCK SCREEN ================= */
-        <div className="flex-1 min-h-screen flex items-center justify-center px-4 z-10">
-          <div className="glass-card max-w-lg w-full rounded-3xl p-8 relative border border-slate-200/60 text-center shadow-xl">
-            <div className="w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center font-semibold text-xl text-white mx-auto shadow-md mb-6 animate-bounce">
-              Ω
+        /* ================= AUTHENTICATION LOCK SCREEN (DUOLINGO-INSPIRED LIGHT TECH THEME) ================= */
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-8 md:py-12 bg-[#fafafa] text-slate-800 font-sans overflow-y-auto">
+          {/* Subtle high-tech grid overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1.2px,transparent_1.2px),linear-gradient(to_bottom,#e2e8f0_1.2px,transparent_1.2px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-70 pointer-events-none"></div>
+          
+          {/* Soft Duolingo-like colored ambient light circles */}
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/25 blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-200/20 blur-[120px] pointer-events-none"></div>
+
+          {/* 1. Header Pill Banner */}
+          <div className="z-10 mt-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-mono font-extrabold bg-indigo-50/80 text-indigo-650 border border-indigo-100/70 shadow-xs select-none hover:scale-101 transition-all">
+              <span className="text-[10px] animate-pulse">✨</span>
+              <span>AI-Powered Career Platform</span>
+              <span className="h-3 w-[1.5px] bg-indigo-200"></span>
+              <span>500K+ Users</span>
+              <span className="text-indigo-400 font-semibold">›</span>
             </div>
-            <span className="px-3 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase">
-              Secure Auth Required
-            </span>
-            <h2 className="text-3xl font-extrabold mt-4 tracking-tight text-slate-900 leading-tight">
-              Unlock Your Autonomous Developer Stack
-            </h2>
-            <p className="text-slate-600 text-sm mt-3 leading-relaxed max-w-md mx-auto">
-              Please authenticate using your Google or GitHub credentials via Firebase Popup to access the central agentic controls, container sandbox pipelines, vector indices, and database control maps.
-            </p>
+          </div>
+
+          {/* 2. Primary Hero Title & Actions */}
+          <div className="z-10 max-w-3xl w-full text-center space-y-6 md:space-y-7 my-auto px-2">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight font-sans">
+              Use AI to <span className="bg-gradient-to-r from-indigo-600 via-violet-650 to-blue-500 bg-clip-text text-transparent drop-shadow-3xs">land your dream job</span>
+            </h1>
             
-            {/* OAuth Sign-In Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 justify-center">
+            <p className="text-slate-500 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-medium font-sans">
+              CareerAI combines cutting-edge artificial intelligence with gamified learning to help you build skills, optimize your resume, and land your dream job 3x faster.
+            </p>
+
+            {/* Google and GitHub Actions */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2 sm:pt-4 max-w-md mx-auto sm:max-w-none">
               <button 
                 onClick={signInWithGoogle}
-                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-98 text-white font-semibold text-xs tracking-wide transition-all shadow-sm border border-slate-950 flex items-center justify-center gap-2.5 cursor-pointer glow-btn"
+                className="w-full sm:w-auto py-3.5 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs tracking-wider transition-all shadow-md shadow-indigo-200/50 flex items-center justify-center gap-3 cursor-pointer select-none border border-indigo-600 hover:border-indigo-500"
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
                 </svg>
-                Sign In with Google
+                Start for Free (Google) →
               </button>
 
               <button 
                 onClick={signInWithGithub}
-                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-white hover:bg-slate-50 active:scale-98 text-slate-800 font-semibold text-xs tracking-wide transition-all shadow-xs border border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2.5 cursor-pointer glow-btn"
+                className="w-full sm:w-auto py-3.5 px-8 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 active:scale-98 text-slate-800 font-bold text-xs tracking-wider transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer select-none"
               >
                 <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                 </svg>
-                Sign In with GitHub
+                View Demo (GitHub)
               </button>
             </div>
+          </div>
+
+          {/* 3. Footer Telemetry & Badges */}
+          <div className="z-10 flex flex-wrap justify-center items-center gap-x-6 gap-y-4 text-xs font-mono font-semibold text-slate-500 border-t border-slate-200/50 pt-5 md:pt-6 w-full max-w-4xl select-none">
+            <div className="flex items-center gap-2">
+              {/* Profile Avatars */}
+              <div className="flex -space-x-2">
+                <span className="w-6 h-6 rounded-full border-2 border-white bg-indigo-500 text-[8px] font-black text-white flex items-center justify-center">A</span>
+                <span className="w-6 h-6 rounded-full border-2 border-white bg-emerald-500 text-[8px] font-black text-white flex items-center justify-center">M</span>
+                <span className="w-6 h-6 rounded-full border-2 border-white bg-cyan-500 text-[8px] font-black text-white flex items-center justify-center">S</span>
+                <span className="w-6 h-6 rounded-full border-2 border-white bg-amber-500 text-[8px] font-black text-white flex items-center justify-center">R</span>
+              </div>
+              <span>500,000+ professionals</span>
+            </div>
             
-            <p className="text-[10px] text-slate-400 font-mono mt-8">
-              AI-Engineer-OS Workspace v0.1 • Authorized to Anirudh-saiA
-            </p>
+            <span className="hidden sm:inline h-3 w-[1.5px] bg-slate-300"></span>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-amber-500 text-sm">★★★★★</span>
+              <span className="text-slate-800 font-bold">4.9/5</span>
+            </div>
+
+            <span className="hidden sm:inline h-3 w-[1.5px] bg-slate-300"></span>
+
+            <div className="flex items-center gap-1.5 text-emerald-600">
+              <svg className="w-4 h-4 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>No credit card required</span>
+            </div>
           </div>
         </div>
       ) : (
