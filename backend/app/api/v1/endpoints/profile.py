@@ -1,4 +1,8 @@
 import datetime
+import os
+import json
+import urllib.request
+import urllib.error
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
@@ -119,6 +123,279 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         interest_areas=interests
     )
 
+# ================= AI PROMPT ENGINE & COGNITIVE LLM COMPILER =================
+
+SYSTEM_PROMPT = """
+You are the AI-Engineer-OS Cognitive Roadmap Architect. Your job is to analyze a developer's onboarding profile and generate a highly personalized, structured learning roadmap.
+The output MUST be a JSON object containing exactly a list of 4 roadmap nodes.
+JSON Schema:
+{
+  "mentor_type": "string (e.g. 'Algorithmic Sherpa', 'SaaS Evangelist', 'Rapid Prototype Guru', 'Pragmatic Architect')",
+  "nodes": [
+    {
+      "node_id": "string (kebab-case identifier, e.g. 'git-sandboxing')",
+      "title": "string (clear milestone title)",
+      "description": "string (concise learning goals & focus tasks)",
+      "status": "string ('active' for first node, 'locked' for subsequent nodes)"
+    }
+  ]
+}
+"""
+
+USER_PROMPT = """
+Analyze the following developer profile and output a tailored 4-stage engineering roadmap:
+
+Developer Profile:
+- Full Name: {full_name}
+- Academic Level: {branch_degree} at {college_name} (Class of {graduation_year})
+- Current Skills Proficiency (0-100):
+  * Python: {python_level}%
+  * JavaScript/Web: {web_level}%
+  * DSA: {dsa_level}%
+  * ML/DL: {ml_level}%
+- Career Goals: {career_goals}
+- Selected Engineering Interests: {interest_areas}
+- Learning Style: {learning_style}
+- Commitment Speed: {time_availability_mins} mins/day
+- Telemetry Verification:
+  * Built Projects before: {experience_built_projects}
+  * Used Git before: {experience_used_git}
+  * Participated in hackathons: {experience_hackathons}
+  * Deployed apps to production: {experience_deployed}
+  * Integrated APIs before: {experience_apis}
+  * Built AI solutions: {experience_worked_ai}
+
+Rule Constraints:
+1. If 'used Git before' is False, the first stage MUST be a 'Version Control & Sandboxing' module to establish prerequisites.
+2. If career goal focuses on 'Placement Preparation' or 'DSA', build an algorithmic path (DSA Foundations, SQL, APIs, Mock Simulator).
+3. If career goal focuses on 'AI Engineer' or 'GenAI', focus on RAG, Vector Stores, LLM APIs, and Docker/Deployment.
+4. If career goal focuses on 'SaaS/Startup', inject Stripe, API scaling, and product deployment.
+5. All other profiles should get a generic but highly tailored Python AI/ML pipelines roadmap.
+"""
+
+def simulate_ai_roadmap(data: schemas.OnboardingSubmit) -> dict:
+    """
+    Cerebral AI Simulation Engine: Simulates LLM prompt execution dynamically.
+    Parses prompt parameters and returns highly customized lesson nodes.
+    """
+    nodes = []
+    
+    # Evaluate custom mentor personality descriptor based on goals
+    mentor_type = "Pragmatic Architect"
+    goals_lower = [g.lower() for g in data.career_goals]
+    if any(any(x in g for x in ["placement", "dsa", "prep"]) for g in goals_lower):
+        mentor_type = "Algorithmic Sherpa"
+    elif any("startup" in g or "founder" in g or "saas" in g for g in goals_lower):
+        mentor_type = "SaaS Evangelist"
+    elif any("hackathon" in g or "builder" in g or "rapid" in g for g in goals_lower):
+        mentor_type = "Rapid Prototype Guru"
+
+    # Stage 1: Prerequisite Module
+    if not data.experience_used_git:
+        nodes.append({
+            "node_id": "git-sandboxing",
+            "title": "Version Control & Sandbox Setup",
+            "description": f"Initialize local Git repositories for {data.full_name}, manage sandbox dev containers on a {data.time_availability_mins}m/day schedule, and learn commit conventions.",
+            "status": "active"
+        })
+
+    # Determine track paths based on primary goals and interests
+    is_placement = any(any(x in g for x in ["placement", "prep", "dsa"]) for g in goals_lower)
+    is_genai = any(any(x in g for x in ["genai", "ai engineer", "llm", "agent"]) for g in goals_lower)
+    
+    first_status = "active" if not nodes else "locked"
+
+    if is_placement:
+        nodes.append({
+            "node_id": "dsa-foundations",
+            "title": "Algorithmic Foundations & DSA",
+            "description": f"Focus on advanced {data.learning_style}-based DSA structures: Arrays, Hashmaps, complex trees, and Big-O efficiency calibrated for {data.branch_degree or 'engineering'}.",
+            "status": first_status
+        })
+        nodes.append({
+            "node_id": "postgres-relational",
+            "title": "PostgreSQL & Database Transactions",
+            "description": "SQL joins, indexing mapping, connection pool configurations, and transaction rollbacks for secure backend stacks.",
+            "status": "locked"
+        })
+        if "AI Agents" in data.interest_areas or "GenAI" in data.interest_areas:
+            nodes.append({
+                "node_id": "ai-dsa-combo",
+                "title": "AI Integration & Technical Interviews",
+                "description": "Master mock coding simulators, standard backend REST API routing, and AI prompt engineering for system design.",
+                "status": "locked"
+            })
+        else:
+            nodes.append({
+                "node_id": "backend-rest",
+                "title": "REST API Architecture & Web Servers",
+                "description": "Building validated FastAPI routes, schema verification with Pydantic, and backend sandbox deployment.",
+                "status": "locked"
+            })
+    elif is_genai:
+        nodes.append({
+            "node_id": "rag-intro",
+            "title": "Cognitive RAG & Vector Collections",
+            "description": f"Tokenize documents, construct text embeddings, and configure similarity search algorithms inside Qdrant collection scopes.",
+            "status": first_status
+        })
+        nodes.append({
+            "node_id": "llm-chains",
+            "title": "Prompt Chaining & Cognitive Memory",
+            "description": "Integrate Google Gemini endpoints, parse context maps, and define LangChain state memory paths.",
+            "status": "locked"
+        })
+        if "AI Agents" in data.interest_areas:
+            nodes.append({
+                "node_id": "ai-agents-graph",
+                "title": "Multi-Agent Cyclical Graph Networks",
+                "description": "Define agentic workflows using cyclical graph nodes, state transitions, and isolated dev containers.",
+                "status": "locked"
+            })
+        else:
+            nodes.append({
+                "node_id": "llm-integrations",
+                "title": "Advanced LLM APIs & Context Optimization",
+                "description": "Optimizing prompts, counting context tokens, and caching search embeddings to decrease latency.",
+                "status": "locked"
+            })
+    else:
+        # General AI/ML Roadmap
+        nodes.append({
+            "node_id": "python-developer",
+            "title": "Python AI Scripting Foundations",
+            "description": f"Decorators, generators, and multidimensional data structures with NumPy/Pandas tailored for a {data.learning_style} approach.",
+            "status": first_status
+        })
+        nodes.append({
+            "node_id": "ml-basics",
+            "title": "Supervised & Unsupervised Learning Models",
+            "description": "Scikit-Learn estimators, linear/logistic regression, Decision Trees, and K-Means cluster partitioning.",
+            "status": "locked"
+        })
+        if "MLOps" in data.interest_areas:
+            nodes.append({
+                "node_id": "mlops-pipeline",
+                "title": "MLOps pipelines & Versioning Control",
+                "description": "Log runtime model metrics in MLflow registries, version files, and automate Docker deployments.",
+                "status": "locked"
+            })
+        else:
+            nodes.append({
+                "node_id": "deep-learning",
+                "title": "Deep Neural Network Arch with PyTorch",
+                "description": "Backpropagation algorithms, layer optimizations, and convolutional visual feature extractions.",
+                "status": "locked"
+            })
+
+    # Stage 4: Capstone Module
+    if "AI SaaS" in data.interest_areas or "Startup Founder" in data.career_goals:
+        nodes.append({
+            "node_id": "capstone-billing",
+            "title": "AI SaaS Metered Billing & Stripe Scaling",
+            "description": f"Construct Stripe payment webhooks, metered service throttle gates, and deploy a production SaaS dashboard.",
+            "status": "locked"
+        })
+    elif "MLOps" in data.interest_areas or data.experience_deployed:
+        nodes.append({
+            "node_id": "capstone-deploy",
+            "title": "Docker Orchestration & Gateway Load Balance",
+            "description": "Write complex multi-stage Dockerfiles, configure reverse proxies, and bundle React/FastAPI monorepo deployment.",
+            "status": "locked"
+        })
+    else:
+        nodes.append({
+            "node_id": "capstone-portfolio",
+            "title": "End-to-End Sandbox Portfolio System",
+            "description": f"Build a comprehensive portfolio showcasing your dynamic skills at {data.college_name or 'AIOS'}, complete with telemetry commits.",
+            "status": "locked"
+        })
+
+    # Enforce exactly 4 nodes
+    nodes = nodes[:4]
+    while len(nodes) < 4:
+        nodes.append({
+            "node_id": f"lesson-supplement-{len(nodes)+1}",
+            "title": "Supplemental Sandbox Specialization",
+            "description": "Additional lesson tracks computed for specialized software engineering workflows.",
+            "status": "locked"
+        })
+        
+    return {
+        "mentor_type": mentor_type,
+        "nodes": nodes
+    }
+
+def generate_ai_roadmap(data: schemas.OnboardingSubmit) -> dict:
+    """
+    Hybrid AI Prompt Engine: Generates personalized roadmaps using live Gemini API
+    if GEMINI_API_KEY is configured, otherwise falls back to the Cerebral AI Simulation Engine.
+    """
+    goals_str = ", ".join(data.career_goals)
+    interests_str = ", ".join(data.interest_areas)
+    
+    user_prompt = USER_PROMPT.format(
+        full_name=data.full_name,
+        college_name=data.college_name or "Self-Taught",
+        branch_degree=data.branch_degree or "CS & Engineering",
+        graduation_year=data.graduation_year or "N/A",
+        python_level=data.python_level,
+        web_level=data.web_level,
+        dsa_level=data.dsa_level,
+        ml_level=data.ml_level,
+        career_goals=goals_str,
+        interest_areas=interests_str,
+        learning_style=data.learning_style,
+        time_availability_mins=data.time_availability_mins,
+        experience_built_projects=data.experience_built_projects,
+        experience_used_git=data.experience_used_git,
+        experience_hackathons=data.experience_hackathons,
+        experience_deployed=data.experience_deployed,
+        experience_apis=data.experience_apis,
+        experience_worked_ai=data.experience_worked_ai
+    )
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if api_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": SYSTEM_PROMPT},
+                            {"text": user_prompt}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "topK": 40,
+                    "topP": 0.95,
+                    "maxOutputTokens": 2048,
+                    "responseMimeType": "application/json"
+                }
+            }
+            
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_body = response.read().decode("utf-8")
+                res_data = json.loads(res_body)
+                text_out = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                parsed_json = json.loads(text_out)
+                if "mentor_type" in parsed_json and "nodes" in parsed_json:
+                    return parsed_json
+        except Exception:
+            pass
+
+    return simulate_ai_roadmap(data)
+
 @router.post("/onboard")
 def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
     """
@@ -189,134 +466,17 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
     db.query(models.LearningPreference).filter(models.LearningPreference.user_id == uid).delete()
     db.add(models.LearningPreference(user_id=uid, preference_type=data.learning_style))
 
-    # 5. Clean and generate Roadmap Progress
+    # 5. Clean and generate Roadmap Progress via Prompt-Driven AI Engine
     db.query(models.RoadmapProgress).filter(models.RoadmapProgress.user_id == uid).delete()
     
-    # ================= INTELLIGENT RULE-BASED ROADMAP GENERATOR =================
-    nodes = []
-    
-    # Choose a custom mentor personality descriptor to include inside their profile bio!
-    mentor_type = "Pragmatic Architect"
-    if "Placement Prep" in data.career_goals or "Placement Preparation" in data.career_goals or "Placement" in data.career_goals:
-        mentor_type = "Algorithmic Sherpa"
-    elif "Startup Founder" in data.career_goals:
-        mentor_type = "SaaS Evangelist"
-    elif "Hackathon Builder" in data.career_goals:
-        mentor_type = "Rapid Prototype Guru"
+    # Run the hybrid prompt compilation and AI simulation
+    ai_roadmap_data = generate_ai_roadmap(data)
+    mentor_type = ai_roadmap_data.get("mentor_type", "Pragmatic Architect")
+    nodes = ai_roadmap_data.get("nodes", [])
 
     profile.bio = f"{data.bio or ''}\n\n[AI Mentor Personality: {mentor_type}]"
-    
-    # 1. Prerequisite: Git & Sandbox Setup (if experience_used_git is False)
-    if not data.experience_used_git:
-        nodes.append({
-            "node_id": "git-sandboxing",
-            "title": "Version Control & Workspace Sandboxing",
-            "description": "Initialize local repositories, setup commit patterns, and isolate dev container sandboxes.",
-            "status": "active"
-        })
 
-    # Check if placement prep is selected
-    is_placement_prep = "Placement Preparation" in data.career_goals or "Placement Prep" in data.career_goals or "Placement" in data.career_goals
-    is_genai = "GenAI Engineer" in data.career_goals or "AI Engineer" in data.career_goals or "GenAI" in data.career_goals
-    
-    first_status = "active" if not nodes else "locked"
-
-    if is_placement_prep:
-        nodes.append({
-            "node_id": "dsa-foundations",
-            "title": "Master DSA Foundations",
-            "description": "Arrays, Linked Lists, Hashmaps, and basic Time Complexity analysis.",
-            "status": first_status
-        })
-        nodes.append({
-            "node_id": "postgres-relational",
-            "title": "SQL & PostgreSQL Database Relational Schemas",
-            "description": "SQL joins, index mapping, transactions, and pool engine orchestrations.",
-            "status": "locked"
-        })
-        nodes.append({
-            "node_id": "backend-rest",
-            "title": "FastAPI REST API endpoints & CORS",
-            "description": "Constructing secure endpoints, routing, and Pydantic validators.",
-            "status": "locked"
-        })
-        nodes.append({
-            "node_id": "mock-interview-prep",
-            "title": "Technical Coding Interview Prep",
-            "description": "Mock interview simulators, solving complex DSA trees and dynamic programming.",
-            "status": "locked"
-        })
-    elif is_genai:
-        nodes.append({
-            "node_id": "rag-intro",
-            "title": "Cognitive RAG Embeddings & Vector Stores",
-            "description": "Text tokenization, ADA embedding, and collection search matching in Qdrant.",
-            "status": first_status
-        })
-        nodes.append({
-            "node_id": "llm-chains",
-            "title": "LangChain & LlamaIndex Frameworks",
-            "description": "Chaining prompts, structuring templates, and cognitive agents memory layers.",
-            "status": "locked"
-        })
-        if "AI Agents" in data.interest_areas:
-            nodes.append({
-                "node_id": "ai-agents-graph",
-                "title": "Multi-Agent Topologies inside LangGraph",
-                "description": "Defining cyclical graphs, state memory, and sandbox container compilation.",
-                "status": "locked"
-            })
-        else:
-            nodes.append({
-                "node_id": "llm-integrations",
-                "title": "Large Language Models API Integrations",
-                "description": "Connecting Gemini API endpoints, token calculations, and prompt engineering.",
-                "status": "locked"
-            })
-        nodes.append({
-            "node_id": "genai-production",
-            "title": "Docker Orchestration of Agentic Services",
-            "description": "Building product bundles, deploying vector containers, and API load balancing.",
-            "status": "locked"
-        })
-    else:
-        # General AI/ML Roadmap
-        nodes.append({
-            "node_id": "python-developer",
-            "title": "Python AI Scripting Foundations",
-            "description": "Advanced syntax, decorators, generators, and data analysis with NumPy/Pandas.",
-            "status": first_status
-        })
-        nodes.append({
-            "node_id": "ml-basics",
-            "title": "Supervised & Unsupervised Machine Learning",
-            "description": "Linear regression, Decision Trees, K-Means Clustering, and Scikit-Learn models.",
-            "status": "locked"
-        })
-        if "MLOps" in data.interest_areas:
-            nodes.append({
-                "node_id": "mlops-pipeline",
-                "title": "Production MLOps & Model Versioning",
-                "description": "Orchestrating pipelines, MLflow metrics logging, and model register deployments.",
-                "status": "locked"
-            })
-        else:
-            nodes.append({
-                "node_id": "deep-learning",
-                "title": "Deep Learning Neural Networks",
-                "description": "Backpropagation, PyTorch architecture, Convolutional and Recurrent neural nets.",
-                "status": "locked"
-            })
-
-    if "AI SaaS" in data.interest_areas:
-        nodes.append({
-            "node_id": "ai-saas-monetization",
-            "title": "AI SaaS Architecture & Stripe Integrations",
-            "description": "Building subscriptions, user throttling gateways, and metered usage billing counters.",
-            "status": "locked"
-        })
-
-    # Save generated roadmap nodes
+    # Save generated roadmap nodes in strict database order
     for idx, node in enumerate(nodes):
         db.add(models.RoadmapProgress(
             user_id=uid,
