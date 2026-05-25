@@ -95,7 +95,7 @@ function parseMarkdownToReact(text: string) {
     const flushList = (key: string) => {
       if (listItems.length > 0) {
         elements.push(
-          <ul key={key} className="list-disc pl-6 my-2 space-y-1 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          <ul key={`${key}-list`} className="list-disc pl-6 my-2 space-y-1 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
             {listItems}
           </ul>
         );
