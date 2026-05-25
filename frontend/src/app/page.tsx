@@ -395,10 +395,10 @@ const fetchProfile = async () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, agentThinking]);
 
-  // Handle Mock Chat sends
-  const handleSendMessage = (textToSend?: string) => {
+  // Handle Real AI Agent Chat sends (Connected to OpenAI Backend API)
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || chatInput;
-    if (!text.trim()) return;
+    if (!text.trim() || !user) return;
 
     const userMsg: Message = {
       id: Math.random().toString(),
@@ -410,33 +410,50 @@ const fetchProfile = async () => {
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setChatInput("");
     setAgentThinking(true);
-    addLog(`[AGENT] Processing dialogue input: "${text.substring(0, 30)}..."`, "info");
+    addLog(`[AGENT] Dispatching prompt context to secure backend API...`, "info");
 
-    // Simulate Agent responses after delay
-    setTimeout(() => {
-      let replyText = "I've processed your query. Let me know how else I can assist you with your AI-Engineer-OS code!";
-      
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes("code") || lowerText.includes("/code")) {
-        replyText = "Here is a clean Python FastAPI connection check boilerplate:\n\n```python\nfrom fastapi import FastAPI, Depends\nfrom app.api.deps import verify_token\n\napp = FastAPI()\n\n@app.get(\"/api/check\")\ndef check(user = Depends(verify_token)):\n    return {\"status\": \"secure\", \"user_id\": user.uid}\n```\nWould you like me to commit this code to the repository?";
-      } else if (lowerText.includes("database") || lowerText.includes("postgres") || lowerText.includes("/db")) {
-        replyText = "I scanned the database models in `/backend/app/models/`. You have tables mapped for telemetry, workspaces, and chat indices. I can write a new SQLAlchemy schema or execute a migration. What would you like to build?";
-      } else if (lowerText.includes("vector") || lowerText.includes("qdrant") || lowerText.includes("/rag")) {
-        replyText = "Qdrant vector client is initialized on host port 6333. I've prepared a document ingestion pipeline. You can drag and drop your text files in the Vector tab to split them into chunks, create embeddings, and upsert them to Qdrant.";
-      } else if (lowerText.includes("system") || lowerText.includes("health") || lowerText.includes("/system")) {
-        replyText = `Backend Status: ${fastapiOnline ? "ONLINE (Port 8000)" : "OFFLINE"}. PostgreSQL container running on host port 5434. The infrastructure looks healthy. You can refresh status details at any time from the Main Dashboard panel.`;
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/agent/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({
+          message: text
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        const assistantMsg: Message = {
+          id: Math.random().toString(),
+          sender: "assistant",
+          text: data.text,
+          timestamp: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages((prev) => [...prev, assistantMsg]);
+        addLog("[SUCCESS] Agent response compiled dynamically from backend OpenAI gateway.", "success");
+      } else {
+        throw new Error(`HTTP ${res.status}`);
       }
-
-      const assistantMsg: Message = {
+    } catch (err) {
+      console.error(err);
+      addLog("[ERROR] Failed to query AI Agent. Ensure backend uvicorn is running.", "error");
+      
+      // Fallback message inside chat
+      const errorMsg: Message = {
         id: Math.random().toString(),
         sender: "assistant",
-        text: replyText,
+        text: "⚠️ [SYSTEM OFFLINE] I failed to establish a secure connection to the OpenAI Backend API. Please verify that your `uvicorn` dev server is active on port 8000 and the PostgreSQL database pool is running.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setAgentThinking(false);
-      addLog("[SUCCESS] Agent response compiled.", "success");
-    }, 1200);
+    }
   };
 
   // Database Tab: Trigger a live DB ping check
@@ -1626,6 +1643,9 @@ const fetchProfile = async () => {
                           { text: "⚡ Generate DB Model code", cmd: "/code Build a FastAPI database model table" },
                           { text: "🐘 SQL Migration status", cmd: "/db Trigger db-check route and verify migrations" },
                           { text: "🎯 Vector Search index docs", cmd: "/rag Query matching files inside Qdrant index" },
+                          { text: "💡 Project blueprints", cmd: "/idea Suggest 3 personalized advanced project ideas" },
+                          { text: "📊 Progress summary report", cmd: "/summary Summarize my active skill levels, XP counts, and streaks" },
+                          { text: "🐛 Sandbox debugger helper", cmd: "/debug I have a transaction lock in my SQLite/PostgreSQL completion route. How do I fix it?" },
                         ].map((chip, i) => (
                           <button 
                             key={i}
@@ -1679,6 +1699,9 @@ const fetchProfile = async () => {
                           { cmd: "/code [prompt]", desc: "Generates code templates" },
                           { cmd: "/db [query]", desc: "Checks Postgres schema logs" },
                           { cmd: "/rag [concept]", desc: "Semantically queries files" },
+                          { cmd: "/idea [track]", desc: "Suggests custom project ideas" },
+                          { cmd: "/summary [profile]", desc: "Summarizes milestones & progress" },
+                          { cmd: "/debug [code]", desc: "Audits sandbox syntax errors" },
                         ].map((item, i) => (
                           <li key={i} className="flex flex-col gap-0.5">
                             <span className="font-bold" style={{ color: "var(--accent-text)" }}>{item.cmd}</span>

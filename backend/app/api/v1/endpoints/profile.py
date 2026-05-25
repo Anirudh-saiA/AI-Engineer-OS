@@ -355,6 +355,53 @@ def generate_ai_roadmap(data: schemas.OnboardingSubmit) -> dict:
         experience_worked_ai=data.experience_worked_ai
     )
 
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            url = "https://api.openai.com/v1/chat/completions"
+            payload = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt
+                    }
+                ],
+                "temperature": 0.2
+            }
+            
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {openai_key}"
+                }
+            )
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_body = response.read().decode("utf-8")
+                res_data = json.loads(res_body)
+                text_out = res_data["choices"][0]["message"]["content"]
+                
+                # Strip markdown json tags if the LLM output wrapped it
+                text_out = text_out.strip()
+                if text_out.startswith("```json"):
+                    text_out = text_out[7:]
+                if text_out.endswith("```"):
+                    text_out = text_out[:-3]
+                text_out = text_out.strip()
+                
+                parsed_json = json.loads(text_out)
+                if "mentor_type" in parsed_json and "nodes" in parsed_json:
+                    return parsed_json
+        except Exception:
+            pass
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:
         try:
