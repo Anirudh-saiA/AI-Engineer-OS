@@ -15,6 +15,218 @@ interface Message {
   timestamp: string;
 }
 
+// ================= PREMIUM LIGHTWEIGHT REACT MARKDOWN COMPILER =================
+
+function CodeBlock({ language, code }: { language: string; code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="rounded-xl border my-4 overflow-hidden shadow-md flex flex-col font-mono text-[12px]" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-[#1e1e24] select-none border-b" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          {language || "code"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="text-[10px] font-bold cursor-pointer text-slate-400 hover:text-white transition-all flex items-center gap-1.5 py-1 px-2.5 rounded-md hover:bg-white/5"
+        >
+          {copied ? (
+            <>
+              <span className="text-[9px]">✓</span> Copied!
+            </>
+          ) : (
+            <>
+              <span className="text-[11px]">📋</span> Copy Code
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Code body */}
+      <pre className="p-4 overflow-x-auto bg-[#111115] text-[#e2e8f0] leading-6 font-semibold select-text">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+function parseInlineMarkdown(text: string): React.ReactNode[] {
+  const regex = /(\*\*.*?\*\*|`.*?`)/g;
+  const parts = text.split(regex);
+
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} className="font-extrabold" style={{ color: "var(--text-primary)" }}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] text-[11px] font-mono px-1.5 py-0.5 rounded" style={{ color: "var(--accent-text)" }}>{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+}
+
+function parseMarkdownToReact(text: string) {
+  if (!text) return null;
+
+  // Split by code blocks
+  const parts = text.split(/(```[\s\S]*?```)/g);
+
+  return parts.map((part, idx) => {
+    if (part.startsWith("```")) {
+      const match = part.match(/```(\w*)\n([\s\S]*?)```/);
+      const lang = match ? match[1] : "";
+      const code = match ? match[2] : part.slice(3, -3).trim();
+
+      return <CodeBlock key={idx} language={lang} code={code} />;
+    }
+
+    const lines = part.split("\n");
+    let inList = false;
+    let listItems: React.ReactNode[] = [];
+    const elements: React.ReactNode[] = [];
+
+    const flushList = (key: string) => {
+      if (listItems.length > 0) {
+        elements.push(
+          <ul key={key} className="list-disc pl-6 my-2 space-y-1 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            {listItems}
+          </ul>
+        );
+        listItems = [];
+        inList = false;
+      }
+    };
+
+    lines.forEach((line, lineIdx) => {
+      const trimmed = line.trim();
+      const lineKey = `${idx}-${lineIdx}`;
+
+      // Table Detection
+      if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+        flushList(lineKey);
+        const cols = trimmed.split("|").map(c => c.trim()).filter((c, i) => i > 0 && i < trimmed.split("|").length - 1);
+        
+        if (cols.every(c => c.startsWith(":") || c.startsWith("-"))) {
+          return;
+        }
+
+        const prevElement = elements[elements.length - 1];
+        // Safely check type using React element structure
+        const isHeader = !prevElement || (prevElement as any).type !== "div" || !(prevElement as any).key?.toString().startsWith("table-wrapper");
+
+        if (isHeader) {
+          elements.push(
+            <div key={`table-wrapper-${lineKey}`} className="overflow-x-auto my-3 rounded-xl border" style={{ borderColor: "var(--border)" }}>
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)" }}>
+                    {cols.map((col, colIdx) => (
+                      <th key={colIdx} className="p-3 font-bold font-mono uppercase tracking-wider text-slate-400">
+                        {parseInlineMarkdown(col)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          );
+        } else {
+          const prevWrapper = prevElement as any;
+          const table = prevWrapper.props.children as any;
+          const tbody = table.props.children[1] as any;
+          const rows = [...(tbody.props.children || [])];
+          
+          rows.push(
+            <tr key={`row-${lineKey}`} className="transition-colors border-b" style={{ borderColor: "var(--border)" }}>
+              {cols.map((col, colIdx) => (
+                <td key={colIdx} className="p-3 font-medium" style={{ color: "var(--text-primary)" }}>
+                  {parseInlineMarkdown(col)}
+                </td>
+              ))}
+            </tr>
+          );
+
+          elements[elements.length - 1] = (
+            <div key={prevWrapper.key} className="overflow-x-auto my-3 rounded-xl border" style={{ borderColor: "var(--border)" }}>
+              <table className="w-full text-left border-collapse text-xs">
+                {table.props.children[0]}
+                <tbody>{rows}</tbody>
+              </table>
+            </div>
+          );
+        }
+        return;
+      }
+
+      // Heading Detection
+      if (trimmed.startsWith("###")) {
+        flushList(lineKey);
+        elements.push(
+          <h4 key={lineKey} className="text-sm font-black tracking-tight mt-4 mb-2" style={{ color: "var(--accent-text)" }}>
+            {parseInlineMarkdown(trimmed.slice(3).trim())}
+          </h4>
+        );
+        return;
+      }
+      if (trimmed.startsWith("##")) {
+        flushList(lineKey);
+        elements.push(
+          <h3 key={lineKey} className="text-base font-black tracking-tight mt-5 mb-2.5" style={{ color: "var(--text-primary)" }}>
+            {parseInlineMarkdown(trimmed.slice(2).trim())}
+          </h3>
+        );
+        return;
+      }
+      if (trimmed.startsWith("#")) {
+        flushList(lineKey);
+        elements.push(
+          <h2 key={lineKey} className="text-lg font-black tracking-tight mt-6 mb-3" style={{ color: "var(--text-primary)" }}>
+            {parseInlineMarkdown(trimmed.slice(1).trim())}
+          </h2>
+        );
+        return;
+      }
+
+      // Bullet List Detection
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+        inList = true;
+        listItems.push(
+          <li key={lineKey} className="pl-1">
+            {parseInlineMarkdown(trimmed.slice(2).trim())}
+          </li>
+        );
+        return;
+      }
+
+      // Empty Line
+      if (!trimmed) {
+        flushList(lineKey);
+        elements.push(<div key={lineKey} className="h-2"></div>);
+        return;
+      }
+
+      // Plain Line
+      flushList(lineKey);
+      elements.push(
+        <p key={lineKey} className="text-[13px] leading-relaxed my-1.5 font-medium" style={{ color: "var(--text-secondary)" }}>
+          {parseInlineMarkdown(trimmed)}
+        </p>
+      );
+    });
+
+    flushList(`final-${idx}`);
+    return elements;
+  });
+}
+
 interface TelemetryRow {
   id: string;
   event: string;
@@ -426,16 +638,37 @@ const fetchProfile = async () => {
 
       if (res.ok) {
         const data = await res.json();
+        const rawText = data.text;
+        const msgId = Math.random().toString();
+        const timestampVal = data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
+        // 1. Insert empty message placeholder
         const assistantMsg: Message = {
-          id: Math.random().toString(),
+          id: msgId,
           sender: "assistant",
-          text: data.text,
-          timestamp: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          text: "",
+          timestamp: timestampVal
         };
         
         setMessages((prev) => [...prev, assistantMsg]);
         addLog("[SUCCESS] Agent response compiled dynamically from backend OpenAI gateway.", "success");
+
+        // 2. Word-by-word typewriter streaming
+        const words = rawText.split(" ");
+        let currentWordIndex = 0;
+        let currentText = "";
+        
+        const timer = setInterval(() => {
+          if (currentWordIndex < words.length) {
+            currentText += (currentWordIndex === 0 ? "" : " ") + words[currentWordIndex];
+            setMessages((prev) => 
+              prev.map((msg) => msg.id === msgId ? { ...msg, text: currentText } : msg)
+            );
+            currentWordIndex++;
+          } else {
+            clearInterval(timer);
+          }
+        }, 12); // Very fast, fluid 12ms token typewriter streaming
       } else {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -443,14 +676,33 @@ const fetchProfile = async () => {
       console.error(err);
       addLog("[ERROR] Failed to query AI Agent. Ensure backend uvicorn is running.", "error");
       
-      // Fallback message inside chat
+      const rawErrorText = "⚠️ [SYSTEM OFFLINE] I failed to establish a secure connection to the OpenAI Backend API. Please verify that your `uvicorn` dev server is active on port 8000 and the PostgreSQL database pool is running.";
+      const msgId = Math.random().toString();
+      
       const errorMsg: Message = {
-        id: Math.random().toString(),
+        id: msgId,
         sender: "assistant",
-        text: "⚠️ [SYSTEM OFFLINE] I failed to establish a secure connection to the OpenAI Backend API. Please verify that your `uvicorn` dev server is active on port 8000 and the PostgreSQL database pool is running.",
+        text: "",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+      
       setMessages((prev) => [...prev, errorMsg]);
+      
+      const words = rawErrorText.split(" ");
+      let currentWordIndex = 0;
+      let currentText = "";
+      
+      const timer = setInterval(() => {
+        if (currentWordIndex < words.length) {
+          currentText += (currentWordIndex === 0 ? "" : " ") + words[currentWordIndex];
+          setMessages((prev) => 
+            prev.map((msg) => msg.id === msgId ? { ...msg, text: currentText } : msg)
+          );
+          currentWordIndex++;
+        } else {
+          clearInterval(timer);
+        }
+      }, 12);
     } finally {
       setAgentThinking(false);
     }
@@ -1608,7 +1860,11 @@ const fetchProfile = async () => {
                             ? { background: "var(--accent)", color: "white" }
                             : { background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-primary)" }
                           }>
-                            <div className="whitespace-pre-line font-sans">{msg.text}</div>
+                            {msg.sender === "user" ? (
+                              <div className="whitespace-pre-line font-sans font-semibold">{msg.text}</div>
+                            ) : (
+                              <div className="font-sans space-y-1.5">{parseMarkdownToReact(msg.text)}</div>
+                            )}
                             <span className="block text-[9px] font-mono mt-2 text-right" style={{ opacity: 0.6 }}>
                               {msg.timestamp}
                             </span>
