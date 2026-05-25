@@ -29,6 +29,15 @@ class OnboardingSubmit(BaseModel):
     learning_style: str = Field("project-based", description="Preferred learning methodology")
     time_availability_mins: int = Field(60, ge=30, le=480, description="Available daily minutes")
 
+    # Practical experience telemetry (Git, APIs, Deployed projects, AI experience, etc.)
+    experience_built_projects: bool = Field(False, description="Has built projects before")
+    experience_used_git: bool = Field(False, description="Has used Git/GitHub before")
+    experience_hackathons: bool = Field(False, description="Has participated in hackathons")
+    experience_deployed: bool = Field(False, description="Has deployed applications")
+    experience_apis: bool = Field(False, description="Has used APIs in development")
+    experience_worked_ai: bool = Field(False, description="Has built or integrated AI systems")
+    interest_areas: List[str] = Field([], description="Topics of specific engineering interest")
+
 class RoadmapProgressNode(BaseModel):
     node_id: str
     title: str
@@ -79,6 +88,15 @@ class UserProfileResponse(BaseModel):
     xp_points: int = 0
     streak_count: int = 1
     longest_streak: int = 1
+
+    # Experience & Interests
+    experience_built_projects: bool = False
+    experience_used_git: bool = False
+    experience_hackathons: bool = False
+    experience_deployed: bool = False
+    experience_apis: bool = False
+    experience_worked_ai: bool = False
+    interest_areas: List[str] = []
 
     # Playlists & Tracks
     achievements: List[AchievementBadge] = []

@@ -46,6 +46,16 @@ class LearningProfile(Base):
     xp_points = Column(Integer, default=0)
     time_availability_mins = Column(Integer, default=60) # minutes per day
     learning_style = Column(String, default="project-based")
+    
+    # Practical experience telemetry (Git, APIs, Deployed projects, AI experience, etc.)
+    experience_built_projects = Column(Boolean, default=False)
+    experience_used_git = Column(Boolean, default=False)
+    experience_hackathons = Column(Boolean, default=False)
+    experience_deployed = Column(Boolean, default=False)
+    experience_apis = Column(Boolean, default=False)
+    experience_worked_ai = Column(Boolean, default=False)
+    interest_areas = Column(Text, nullable=True) # Comma-separated strings
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class UserGoal(Base):

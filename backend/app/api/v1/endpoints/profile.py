@@ -89,6 +89,8 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         "RAG Systems": profile.rag_level
     }
 
+    interests = [i.strip() for i in profile.interest_areas.split(",")] if profile.interest_areas else []
+
     return schemas.UserProfileResponse(
         onboarded=True,
         full_name=profile.full_name,
@@ -107,7 +109,14 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         longest_streak=longest_val,
         achievements=achievement_badges,
         roadmap=roadmap_schema,
-        projects=project_schema
+        projects=project_schema,
+        experience_built_projects=profile.experience_built_projects,
+        experience_used_git=profile.experience_used_git,
+        experience_hackathons=profile.experience_hackathons,
+        experience_deployed=profile.experience_deployed,
+        experience_apis=profile.experience_apis,
+        experience_worked_ai=profile.experience_worked_ai,
+        interest_areas=interests
     )
 
 @router.post("/onboard")
@@ -158,6 +167,15 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
     profile.agents_level = data.agents_level
     profile.rag_level = data.rag_level
     
+    # Save experience booleans and interest telemetry
+    profile.experience_built_projects = data.experience_built_projects
+    profile.experience_used_git = data.experience_used_git
+    profile.experience_hackathons = data.experience_hackathons
+    profile.experience_deployed = data.experience_deployed
+    profile.experience_apis = data.experience_apis
+    profile.experience_worked_ai = data.experience_worked_ai
+    profile.interest_areas = ",".join(data.interest_areas) if data.interest_areas else ""
+    
     profile.time_availability_mins = data.time_availability_mins
     profile.learning_style = data.learning_style
     profile.xp_points = 100 # Award 100 XP starting bonus!
@@ -177,17 +195,38 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
     # ================= INTELLIGENT RULE-BASED ROADMAP GENERATOR =================
     nodes = []
     
-    # Check if placement prep is selected or if DSA is low
-    is_placement_prep = "Placement Preparation" in data.career_goals or "Placement Prep" in data.career_goals
-    is_genai = "GenAI Engineer" in data.career_goals or "AI Engineer" in data.career_goals
+    # Choose a custom mentor personality descriptor to include inside their profile bio!
+    mentor_type = "Pragmatic Architect"
+    if "Placement Prep" in data.career_goals or "Placement Preparation" in data.career_goals or "Placement" in data.career_goals:
+        mentor_type = "Algorithmic Sherpa"
+    elif "Startup Founder" in data.career_goals:
+        mentor_type = "SaaS Evangelist"
+    elif "Hackathon Builder" in data.career_goals:
+        mentor_type = "Rapid Prototype Guru"
+
+    profile.bio = f"{data.bio or ''}\n\n[AI Mentor Personality: {mentor_type}]"
     
+    # 1. Prerequisite: Git & Sandbox Setup (if experience_used_git is False)
+    if not data.experience_used_git:
+        nodes.append({
+            "node_id": "git-sandboxing",
+            "title": "Version Control & Workspace Sandboxing",
+            "description": "Initialize local repositories, setup commit patterns, and isolate dev container sandboxes.",
+            "status": "active"
+        })
+
+    # Check if placement prep is selected
+    is_placement_prep = "Placement Preparation" in data.career_goals or "Placement Prep" in data.career_goals or "Placement" in data.career_goals
+    is_genai = "GenAI Engineer" in data.career_goals or "AI Engineer" in data.career_goals or "GenAI" in data.career_goals
+    
+    first_status = "active" if not nodes else "locked"
+
     if is_placement_prep:
-        # Placement track focuses heavily on DSA and base software engineering
         nodes.append({
             "node_id": "dsa-foundations",
             "title": "Master DSA Foundations",
             "description": "Arrays, Linked Lists, Hashmaps, and basic Time Complexity analysis.",
-            "status": "active"
+            "status": first_status
         })
         nodes.append({
             "node_id": "postgres-relational",
@@ -207,13 +246,12 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
             "description": "Mock interview simulators, solving complex DSA trees and dynamic programming.",
             "status": "locked"
         })
-    elif is_genai and data.python_level >= 50:
-        # Advanced GenAI path
+    elif is_genai:
         nodes.append({
             "node_id": "rag-intro",
             "title": "Cognitive RAG Embeddings & Vector Stores",
             "description": "Text tokenization, ADA embedding, and collection search matching in Qdrant.",
-            "status": "active"
+            "status": first_status
         })
         nodes.append({
             "node_id": "llm-chains",
@@ -221,12 +259,20 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
             "description": "Chaining prompts, structuring templates, and cognitive agents memory layers.",
             "status": "locked"
         })
-        nodes.append({
-            "node_id": "ai-agents-graph",
-            "title": "Multi-Agent Topologies inside LangGraph",
-            "description": "Defining cyclical graphs, state memory, and sandbox container compilation.",
-            "status": "locked"
-        })
+        if "AI Agents" in data.interest_areas:
+            nodes.append({
+                "node_id": "ai-agents-graph",
+                "title": "Multi-Agent Topologies inside LangGraph",
+                "description": "Defining cyclical graphs, state memory, and sandbox container compilation.",
+                "status": "locked"
+            })
+        else:
+            nodes.append({
+                "node_id": "llm-integrations",
+                "title": "Large Language Models API Integrations",
+                "description": "Connecting Gemini API endpoints, token calculations, and prompt engineering.",
+                "status": "locked"
+            })
         nodes.append({
             "node_id": "genai-production",
             "title": "Docker Orchestration of Agentic Services",
@@ -239,7 +285,7 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
             "node_id": "python-developer",
             "title": "Python AI Scripting Foundations",
             "description": "Advanced syntax, decorators, generators, and data analysis with NumPy/Pandas.",
-            "status": "active"
+            "status": first_status
         })
         nodes.append({
             "node_id": "ml-basics",
@@ -247,16 +293,26 @@ def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), 
             "description": "Linear regression, Decision Trees, K-Means Clustering, and Scikit-Learn models.",
             "status": "locked"
         })
+        if "MLOps" in data.interest_areas:
+            nodes.append({
+                "node_id": "mlops-pipeline",
+                "title": "Production MLOps & Model Versioning",
+                "description": "Orchestrating pipelines, MLflow metrics logging, and model register deployments.",
+                "status": "locked"
+            })
+        else:
+            nodes.append({
+                "node_id": "deep-learning",
+                "title": "Deep Learning Neural Networks",
+                "description": "Backpropagation, PyTorch architecture, Convolutional and Recurrent neural nets.",
+                "status": "locked"
+            })
+
+    if "AI SaaS" in data.interest_areas:
         nodes.append({
-            "node_id": "deep-learning",
-            "title": "Deep Learning Neural Networks",
-            "description": "Backpropagation, PyTorch architecture, Convolutional and Recurrent neural nets.",
-            "status": "locked"
-        })
-        nodes.append({
-            "node_id": "llm-integrations",
-            "title": "Large Language Models API Integrations",
-            "description": "Connecting Gemini API endpoints, token calculations, and prompt engineers.",
+            "node_id": "ai-saas-monetization",
+            "title": "AI SaaS Architecture & Stripe Integrations",
+            "description": "Building subscriptions, user throttling gateways, and metered usage billing counters.",
             "status": "locked"
         })
 
