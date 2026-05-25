@@ -462,3 +462,44 @@ def update_user_settings(settings_data: schemas.UserSettingsSchema, db: Session 
     db.commit()
     db.refresh(settings_record)
     return settings_record
+
+@router.put("/roadmap/{node_id}/complete")
+def complete_roadmap_node(node_id: str, db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
+    """
+    Mark a specific learning roadmap node as completed, unlock the subsequent node, and award XP.
+    """
+    uid = current_user["uid"]
+    
+    # 1. Fetch the target node
+    node = db.query(models.RoadmapProgress).filter(
+        models.RoadmapProgress.user_id == uid,
+        models.RoadmapProgress.node_id == node_id
+    ).first()
+    
+    if not node:
+        raise HTTPException(status_code=404, detail="Roadmap node not found.")
+        
+    if node.status == "completed":
+        return {"status": "success", "message": "Node is already completed."}
+        
+    # 2. Mark as completed
+    node.status = "completed"
+    node.completed_at = datetime.datetime.utcnow()
+    
+    # Award XP points to user profile
+    profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
+    if profile:
+        profile.xp_points += 50  # Award 50 XP for node completion!
+        
+    # 3. Find the next node in order to mark it as 'active'
+    next_node = db.query(models.RoadmapProgress).filter(
+        models.RoadmapProgress.user_id == uid,
+        models.RoadmapProgress.order_index > node.order_index
+    ).order_by(models.RoadmapProgress.order_index).first()
+    
+    if next_node and next_node.status == "locked":
+        next_node.status = "active"
+        
+    db.commit()
+    return {"status": "success", "message": "Node completed, next node unlocked, and 50 XP awarded!"}
+

@@ -35,6 +35,7 @@ const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 const [onboardingStep, setOnboardingStep] = useState<number>(1);
 const [onboardingData, setOnboardingData] = useState<any>({});
 const [profileExists, setProfileExists] = useState<boolean>(true);
+const [roadmap, setRoadmap] = useState<any[]>([]);
 
   // Infrastructure / Status States
   const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
@@ -148,6 +149,7 @@ const fetchProfile = async () => {
       if (data.onboarded) {
         setProfileExists(true);
         setShowOnboarding(false);
+        setRoadmap(data.roadmap || []);
       } else {
         setProfileExists(false);
         setShowOnboarding(true);
@@ -540,6 +542,7 @@ const fetchProfile = async () => {
                 setShowOnboarding(false);
                 setProfileExists(true);
                 setActiveTab("dashboard");
+                fetchProfile();
               }}
             />
           )}
@@ -812,6 +815,158 @@ const fetchProfile = async () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* ═══════ DYNAMIC LEARNING ROADMAP PROGRESS TRAIL ═══════ */}
+                  {roadmap && roadmap.length > 0 && (
+                    <div className="card rounded-3xl p-6 md:p-8 animate-fade-up relative overflow-hidden"
+                      style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
+                      
+                      {/* Ambient card background glow */}
+                      <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[var(--border)] relative z-10">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">🗺️</span>
+                          <div>
+                            <h3 className="text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
+                              Personalized Learning Roadmap
+                            </h3>
+                            <p className="text-xs font-mono font-bold mt-0.5" style={{ color: "var(--text-muted)" }}>
+                              Calibrated based on your career targets and skills
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-black px-3.5 py-1.5 rounded-full"
+                            style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
+                            🏆 {roadmap.filter(n => n.status === 'completed').length} of {roadmap.length} Milestones Clear
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Timeline track connector line */}
+                      <div className="relative pl-9 sm:pl-12 space-y-8 before:absolute before:left-[16px] sm:before:left-[20px] before:top-2 before:bottom-2 before:w-[3px] before:bg-[var(--border)] z-10">
+                        {roadmap.map((node, index) => {
+                          const isActive = node.status === "active";
+                          const isCompleted = node.status === "completed";
+                          const isLocked = node.status === "locked";
+
+                          let circleBg = "var(--bg-card)";
+                          let circleBorder = "var(--border)";
+                          let circleTextColor = "var(--text-muted)";
+                          let cardBorder = "var(--border)";
+                          let cardGlow = "none";
+
+                          if (isActive) {
+                            circleBg = "var(--accent)";
+                            circleBorder = "var(--accent)";
+                            circleTextColor = "var(--text-inverse)";
+                            cardBorder = "var(--accent)";
+                            cardGlow = "0 0 16px var(--accent-glow)";
+                          } else if (isCompleted) {
+                            circleBg = "var(--success)";
+                            circleBorder = "var(--success)";
+                            circleTextColor = "var(--text-inverse)";
+                          }
+
+                          return (
+                            <div key={node.node_id} className="relative flex flex-col gap-2 transition-all hover:translate-x-1 duration-200">
+                              
+                              {/* Left Anchor Circle */}
+                              <div 
+                                className={`absolute left-[-32px] sm:left-[-38px] w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] rounded-full flex items-center justify-center font-black text-xs border-2 z-15 transition-all duration-300 ${
+                                  isActive ? "animate-pulse" : ""
+                                }`}
+                                style={{
+                                  background: circleBg,
+                                  borderColor: circleBorder,
+                                  color: circleTextColor,
+                                  boxShadow: isActive ? "0 0 10px var(--accent)" : "none"
+                                }}
+                              >
+                                {isCompleted ? "✓" : index + 1}
+                              </div>
+
+                              {/* Target Node Panel */}
+                              <div 
+                                className="flex-1 card rounded-2xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all duration-300"
+                                style={{
+                                  borderColor: cardBorder,
+                                  boxShadow: cardGlow,
+                                  background: "var(--bg-card)"
+                                }}
+                              >
+                                <div className="space-y-2 flex-1">
+                                  <div className="flex items-center gap-2.5 flex-wrap">
+                                    <h4 className="text-base font-extrabold" style={{ color: isActive ? "var(--accent-text)" : "var(--text-primary)" }}>
+                                      {node.title}
+                                    </h4>
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase border ${
+                                      isActive 
+                                        ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
+                                        : isCompleted 
+                                          ? "bg-green-500/10 text-green-500 border-green-500/25" 
+                                          : "bg-gray-500/10 text-gray-500 border-gray-500/25"
+                                    }`}>
+                                      {node.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                    {node.description}
+                                  </p>
+                                </div>
+
+                                {/* Dynamic Action Trigger */}
+                                {isActive && (
+                                  <button
+                                    onClick={async () => {
+                                      addLog(`[SYSTEM] Initiating completion sequence for stage: "${node.title}"...`, "system");
+                                      try {
+                                        const res = await fetch(`http://localhost:8000/api/v1/profile/roadmap/${node.node_id}/complete`, {
+                                          method: "PUT",
+                                          headers: {
+                                            Authorization: `Bearer ${user.uid}`
+                                          }
+                                        });
+                                        if (res.ok) {
+                                          addLog(`[SUCCESS] Stage verified! marked completed in PostgreSQL. +50 XP Awarded.`, "success");
+                                          fetchProfile();
+                                        } else {
+                                          throw new Error(`HTTP ${res.status}`);
+                                        }
+                                      } catch (err) {
+                                        addLog(`[ERROR] Connection failed. Sandbox sync aborted.`, "error");
+                                      }
+                                    }}
+                                    className="btn-accent py-2.5 px-5 rounded-xl text-xs font-bold whitespace-nowrap self-stretch md:self-auto flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+                                  >
+                                    <span>Complete Milestone</span>
+                                    <span>➔</span>
+                                  </button>
+                                )}
+
+                                {isCompleted && (
+                                  <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--success)" }}>
+                                    <span>Cleared</span>
+                                    <span>✓</span>
+                                  </div>
+                                )}
+
+                                {isLocked && (
+                                  <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--text-muted)" }}>
+                                    <span>Locked Stage</span>
+                                    <span>🔒</span>
+                                  </div>
+                                )}
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                    </div>
+                  )}
 
                   {/* Console + Quick Actions */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
