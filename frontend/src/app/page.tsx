@@ -36,6 +36,213 @@ const [onboardingStep, setOnboardingStep] = useState<number>(1);
 const [onboardingData, setOnboardingData] = useState<any>({});
 const [profileExists, setProfileExists] = useState<boolean>(true);
 const [roadmap, setRoadmap] = useState<any[]>([]);
+const [selectedRoadmapTrack, setSelectedRoadmapTrack] = useState<string>("calibrated");
+const [activeDetailSubNode, setActiveDetailSubNode] = useState<any | null>(null);
+const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({});
+
+// Load checked tasks from localStorage on mount
+useEffect(() => {
+  const saved = localStorage.getItem("aios-roadmap-checklist");
+  if (saved) {
+    try {
+      setCheckedTasks(JSON.parse(saved));
+    } catch (e) {}
+  }
+}, []);
+
+const toggleChecklistTask = (taskId: string) => {
+  setCheckedTasks((prev) => {
+    const updated = { ...prev, [taskId]: !prev[taskId] };
+    localStorage.setItem("aios-roadmap-checklist", JSON.stringify(updated));
+    return updated;
+  });
+};
+
+// Auto-switch default track if calibrated is empty
+useEffect(() => {
+  if (roadmap && roadmap.length > 0) {
+    setSelectedRoadmapTrack("calibrated");
+  } else {
+    setSelectedRoadmapTrack("ai_engineer");
+  }
+}, [roadmap]);
+
+const staticRoadmaps: Record<string, any> = {
+  ai_engineer: {
+    title: "AI Engineer",
+    icon: "🤖",
+    accent: "var(--accent)",
+    description: "Master pre-trained models, embeddings, vector databases, RAG, and cyclical multi-agent graphs.",
+    nodes: [
+      {
+        id: "ai-pre-trained",
+        title: "Using Pre-Trained Models",
+        description: "Standard model integrations and prompt engineering configurations.",
+        subNodes: [
+          { id: "ai-pt-openai", title: "OpenAI Platform", description: "Connect GPT model endpoints, manage custom system prompts, and calibrate max token thresholds.", checklist: ["Acquire and configure API keys", "Write a standard completion call", "Analyze token billing metrics"] },
+          { id: "ai-pt-gemini", title: "Gemini API", description: "Query Google's highly efficient Gemini Flash/Pro multimodal model structures.", checklist: ["Connect using standard SDK/HTTP", "Pass image inputs in prompts", "Configure generation temperature parameters"] },
+          { id: "ai-pt-safety", title: "AI Safety & Ethics", description: "Address prompt injection, secure user filters, and audit model output vulnerabilities.", checklist: ["Build basic input sanitizers", "Verify guardrail alignment parameters", "Audit PII data masking constraints"] }
+        ]
+      },
+      {
+        id: "ai-embeddings-vector",
+        title: "Embeddings & Vector Databases",
+        description: "Vector representation of semantic text concepts and indexing configurations.",
+        subNodes: [
+          { id: "ai-ev-qdrant", title: "Qdrant Vector DB", description: "Perform high-performance similarity indexing on custom document vectors.", checklist: ["Create a custom Qdrant collection", "Insert embedded document nodes", "Perform cosine similarity searches"] },
+          { id: "ai-ev-chunking", title: "Text Tokenization & Chunking", description: "Implement sliding-window tokenizers to optimize LLM attention bounds.", checklist: ["Build recursively split text parsers", "Optimize chunk size overlap metrics", "Evaluate metadata injection strategies"] }
+        ]
+      },
+      {
+        id: "ai-rag-systems",
+        title: "RAG (Retrieval-Augmented Generation)",
+        description: "Retrieve relevant context from documents to augment LLM system knowledge.",
+        subNodes: [
+          { id: "ai-rag-frameworks", title: "LlamaIndex & LangChain", description: "Assemble prompt orchestrators, vector index queries, and context ingestion tools.", checklist: ["Build standard retrieval indexes", "Inject context into LLM chats", "Implement source attribution filters"] },
+          { id: "ai-rag-parsing", title: "Document Parsing Strategies", description: "Extract clean markdown tables and layout flows from PDF structures.", checklist: ["Parse structured tables from files", "Extract raw text from layout maps", "Log parsed indexes in Qdrant collections"] }
+        ]
+      },
+      {
+        id: "ai-agents-cyclical",
+        title: "Cognitive AI Agents",
+        description: "Autonomous workflows featuring tools execution, function calling, and state routing.",
+        subNodes: [
+          { id: "ai-ag-langgraph", title: "LangGraph cyclical flows", description: "Design complex cyclical state nodes and multi-agent interaction systems.", checklist: ["Define state routers & transitions", "Configure loop boundaries and exit rules", "Manage active graph memory pools"] },
+          { id: "ai-ag-tools", title: "Sandbox Tool Calling", description: "Enable agents to execute container bash commands and interact with Postgres DB tables.", checklist: ["Write verified sandbox tools", "Handle tool execution exceptions", "Parse structured function arguments"] }
+        ]
+      }
+    ]
+  },
+  mlops: {
+    title: "MLOps",
+    icon: "⚙️",
+    accent: "var(--secondary)",
+    description: "Master automated training pipelines, model version registries, container deploys, and infra observability.",
+    nodes: [
+      {
+        id: "mlo-fundamentals",
+        title: "Systems & Python Dev",
+        description: "Standard monorepo automation script development and container isolated sandboxing.",
+        subNodes: [
+          { id: "mlo-fd-bash", title: "Bash & DevOps automation", description: "Write robust terminal commands to synchronize directories and handle environment configurations.", checklist: ["Write automated backup bash files", "Parse stdout logs dynamically", "Establish directory mounts"] },
+          { id: "mlo-fd-docker", title: "Docker Containerization", description: "Package web and backend services into reproducible multi-stage Docker images.", checklist: ["Write custom Dockerfiles", "Optimize layer cache rules", "Configure local volume attachments"] }
+        ]
+      },
+      {
+        id: "mlo-cloud-cicd",
+        title: "Cloud Infrastructure & CI/CD",
+        description: "Configure declarative automation models to test and deploy services securely.",
+        subNodes: [
+          { id: "mlo-cc-actions", title: "GitHub Actions", description: "Trigger automated builds, run test scripts, and dispatch deployment events on git commits.", checklist: ["Write standard action workflow files", "Manage protected repository secrets", "Verify lint status checkers"] },
+          { id: "mlo-cc-terraform", title: "Infrastructure as Code", description: "Deploy cloud networking, container nodes, and database servers via Terraform scripts.", checklist: ["Write standard TF configurations", "State management setups", "Trigger resource destructions"] }
+        ]
+      },
+      {
+        id: "mlo-data-eng",
+        title: "Data Pipelines & Streams",
+        description: "Ingest, split, and batch process high-velocity training logs dynamically.",
+        subNodes: [
+          { id: "mlo-de-spark", title: "Apache Spark & Batching", description: "Execute parallelized data transformations and analytical queries on large file datasets.", checklist: ["Build local map-reduce query scripts", "Optimize JVM allocation memory pools", "Merge massive CSV partition files"] },
+          { id: "mlo-de-kafka", title: "Apache Kafka Streaming", description: "Establish persistent high-speed publisher-subscriber queues for event logs.", checklist: ["Create consumer topics", "Write secure stream publishers", "Scale consumer groupings"] }
+        ]
+      },
+      {
+        id: "mlo-orchestration",
+        title: "Model Registries & Observability",
+        description: "Log training parameters, audit metrics, and scale production container groups.",
+        subNodes: [
+          { id: "mlo-or-mlflow", title: "MLflow Metrics Tracking", description: "Record model training parameters, loss curves, and tag production versioning files.", checklist: ["Initialize MLflow tracking server", "Log epochs validation parameters", "Register trained binary models"] },
+          { id: "mlo-or-k8s", title: "Kubernetes Orchestration", description: "Deploy fault-tolerant container clusters with integrated load balancers.", checklist: ["Define cluster deployment YAMLs", "Orchestrate rolling version updates", "Set resource memory limit boundaries"] }
+        ]
+      }
+    ]
+  },
+  machine_learning: {
+    title: "Machine Learning",
+    icon: "📈",
+    accent: "var(--warning)",
+    description: "Master probability theory, numpy/pandas cleaning, supervised/unsupervised fitters, and transformer neural nets.",
+    nodes: [
+      {
+        id: "ml-math-foundations",
+        title: "Mathematical Foundations",
+        description: "The core statistical framework that guides weight optimizations and linear fits.",
+        subNodes: [
+          { id: "ml-mf-algebra", title: "Linear Algebra & Matrices", description: "Understand dot products, eigenvectors, matrix transposition, and coordinate transformations.", checklist: ["Calculate matrix dot products", "Compute eigenvalues of matrices", "Solve system configurations of linear formulas"] },
+          { id: "ml-mf-calculus", title: "Multivariate Calculus", description: "Learn partial derivatives and standard gradient descent optimizations.", checklist: ["Write partial derivative algorithms", "Calculate Jacobians of layers", "Derive standard chain-rule steps"] }
+        ]
+      },
+      {
+        id: "ml-data-preprocessing",
+        title: "Data Processing",
+        description: "Parse raw features, handle NaN values, and apply min-max standardizations.",
+        subNodes: [
+          { id: "ml-dp-pandas", title: "Pandas DataFrame Matrix", description: "Group, slice, clean, and merge structured database CSV arrays.", checklist: ["Merge database frames dynamically", "Fill NaN outliers with averages", "Apply vector formatting lamda maps"] },
+          { id: "ml-dp-scaling", title: "Scaling & Standardizations", description: "Bring wide-ranging features into cohesive standard distributions.", checklist: ["Execute MinMaxScaling fits", "Apply normal standardization formulas", "Analyze correlation coefficients"] }
+        ]
+      },
+      {
+        id: "ml-supervised",
+        title: "Supervised & Unsupervised Models",
+        description: "Construct basic regression algorithms and fit clustering coordinates.",
+        subNodes: [
+          { id: "ml-su-scikit", title: "Scikit-Learn Estimators", description: "Fit decision trees, support vector classifiers, and logistic regression bounds.", checklist: ["Fit logistic regression models", "Validate with cross-validation splits", "Plot precision-recall evaluation graphs"] },
+          { id: "ml-su-kmeans", title: "K-Means Cluster Partition", description: "Group unlabeled datasets using iterative centroid-distance recalculations.", checklist: ["Run elbow-curve estimations", "Fit K-Means coordinate centroids", "Measure silhouette cluster qualities"] }
+        ]
+      },
+      {
+        id: "ml-deep-learning",
+        title: "Deep Learning & Transformers",
+        description: "Configure multi-layered neural networks and attention-based self-attention parameters.",
+        subNodes: [
+          { id: "ml-dl-pytorch", title: "PyTorch Layers", description: "Write standard model layers, custom loss formulas, and optimization step functions.", checklist: ["Build custom linear torch layers", "Implement training epoch loops", "Measure backpropagation gradients"] },
+          { id: "ml-dl-transformers", title: "Transformer Self-Attention", description: "Analyze positional encodings, key-query-value scales, and multi-head attention weights.", checklist: ["Build basic dot-product attention scales", "Visualize self-attention weights mapping", "Load Hugging Face pre-trained tokenizers"] }
+        ]
+      }
+    ]
+  },
+  data_analyst: {
+    title: "Data Analyst",
+    icon: "📊",
+    accent: "#06b6d4",
+    description: "Master excel pivot summaries, standard SQL groupings, seaborn plots, and Tableau metrics dashboards.",
+    nodes: [
+      {
+        id: "da-excel-basics",
+        title: "Spreadsheet Analytics",
+        description: "Clean lists and aggregate summaries using advanced formulas.",
+        subNodes: [
+          { id: "da-eb-formulas", title: "Advanced Excel Formulas", description: "Lookup records and apply dynamic string transforms using standard syntax.", checklist: ["Construct VLOOKUP/XLOOKUP chains", "Apply nested IF-ELSE functions", "Filter datasets with custom criteria"] },
+          { id: "da-eb-pivots", title: "Pivot Tables & Graphs", description: "Pivot massive spreadsheets to extract dynamic group sums and averages.", checklist: ["Generate pivot summaries dynamically", "Chart bar/pie visualizations", "Apply timeline slices to charts"] }
+        ]
+      },
+      {
+        id: "da-sql-database",
+        title: "SQL Databases & Queries",
+        description: "Perform structured selections, join relational files, and aggregate group values.",
+        subNodes: [
+          { id: "da-sq-queries", title: "Relational SQL Joins", description: "Query database tables, group columns, and filter with aggregations.", checklist: ["Write complex LEFT/INNER joins", "Aggregate sum averages with GROUP BY", "Execute nested sub-query tables"] }
+        ]
+      },
+      {
+        id: "da-python-plotting",
+        title: "Python Data Visualization",
+        description: "Extract clean graphic insights from dataframe sets using plotting modules.",
+        subNodes: [
+          { id: "da-pp-matplotlib", title: "Matplotlib & Seaborn plots", description: "Configure high-fidelity scatter maps, histograms, and correlation heatmaps.", checklist: ["Configure dual-axes line charts", "Plot correlation heatmaps", "Customize tick label colors and legends"] }
+        ]
+      },
+      {
+        id: "da-reporting",
+        title: "Business Analytics & Tableau",
+        description: "Configure real-time interactive business dashboards to display key telemetry metrics.",
+        subNodes: [
+          { id: "da-re-tableau", title: "Tableau Dashboards", description: "Import SQL server data, define interactive filters, and design layout maps.", checklist: ["Design interactive Tableau panels", "Define clean calculated variables", "Deploy live reporting dashboards"] }
+        ]
+      }
+    ]
+  }
+};
 
   // Infrastructure / Status States
   const [fastapiOnline, setFastapiOnline] = useState<boolean | null>(null);
@@ -816,155 +1023,433 @@ const fetchProfile = async () => {
                     </div>
                   </div>
 
-                  {/* ═══════ DYNAMIC LEARNING ROADMAP PROGRESS TRAIL ═══════ */}
-                  {roadmap && roadmap.length > 0 && (
-                    <div className="card rounded-3xl p-6 md:p-8 animate-fade-up relative overflow-hidden"
-                      style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
-                      
-                      {/* Ambient card background glow */}
-                      <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
+                  {/* ═══════ COGNITIVE ROADMAP CANVASES & INTERACTIVE BLUEPRINTS ═══════ */}
+                  <div className="card rounded-3xl p-6 md:p-8 animate-fade-up relative overflow-hidden"
+                    style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
+                    
+                    {/* Floating ambient radial background decor */}
+                    <div className="absolute top-[-25%] right-[-15%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[100px] pointer-events-none"></div>
 
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[var(--border)] relative z-10">
-                        <div className="flex items-center gap-3">
-                          <span className="text-3xl">🗺️</span>
-                          <div>
-                            <h3 className="text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-                              Personalized Learning Roadmap
-                            </h3>
-                            <p className="text-xs font-mono font-bold mt-0.5" style={{ color: "var(--text-muted)" }}>
-                              Calibrated based on your career targets and skills
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-black px-3.5 py-1.5 rounded-full"
-                            style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
-                            🏆 {roadmap.filter(n => n.status === 'completed').length} of {roadmap.length} Milestones Clear
-                          </span>
+                    {/* Canvas Header */}
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 mb-6 border-b border-[var(--border)] relative z-10">
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl animate-float">🗺️</span>
+                        <div>
+                          <h3 className="text-base sm:text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
+                            Cognitive Roadmap Hub
+                          </h3>
+                          <p className="text-xs font-mono font-bold mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            Select, explore, and check off specialized learning trails
+                          </p>
                         </div>
                       </div>
 
-                      {/* Timeline track connector line */}
-                      <div className="relative pl-9 sm:pl-12 space-y-8 before:absolute before:left-[16px] sm:before:left-[20px] before:top-2 before:bottom-2 before:w-[3px] before:bg-[var(--border)] z-10">
-                        {roadmap.map((node, index) => {
-                          const isActive = node.status === "active";
-                          const isCompleted = node.status === "completed";
-                          const isLocked = node.status === "locked";
-
-                          let circleBg = "var(--bg-card)";
-                          let circleBorder = "var(--border)";
-                          let circleTextColor = "var(--text-muted)";
-                          let cardBorder = "var(--border)";
-                          let cardGlow = "none";
-
-                          if (isActive) {
-                            circleBg = "var(--accent)";
-                            circleBorder = "var(--accent)";
-                            circleTextColor = "var(--text-inverse)";
-                            cardBorder = "var(--accent)";
-                            cardGlow = "0 0 16px var(--accent-glow)";
-                          } else if (isCompleted) {
-                            circleBg = "var(--success)";
-                            circleBorder = "var(--success)";
-                            circleTextColor = "var(--text-inverse)";
-                          }
-
+                      {/* Track Selector Tab Buttons */}
+                      <div className="flex flex-wrap gap-2 max-w-full overflow-x-auto py-1">
+                        {roadmap && roadmap.length > 0 && (
+                          <button
+                            onClick={() => setSelectedRoadmapTrack("calibrated")}
+                            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 border ${
+                              selectedRoadmapTrack === "calibrated"
+                                ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-[var(--shadow-glow)]"
+                                : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-slate-400 text-slate-400"
+                            }`}
+                            style={{ fontSize: "12px" }}
+                          >
+                            🎯 Calibrated Path
+                          </button>
+                        )}
+                        {Object.entries(staticRoadmaps).map(([key, value]) => {
+                          const isSelected = selectedRoadmapTrack === key;
                           return (
-                            <div key={node.node_id} className="relative flex flex-col gap-2 transition-all hover:translate-x-1 duration-200">
-                              
-                              {/* Left Anchor Circle */}
-                              <div 
-                                className={`absolute left-[-32px] sm:left-[-38px] w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] rounded-full flex items-center justify-center font-black text-xs border-2 z-15 transition-all duration-300 ${
-                                  isActive ? "animate-pulse" : ""
-                                }`}
-                                style={{
-                                  background: circleBg,
-                                  borderColor: circleBorder,
-                                  color: circleTextColor,
-                                  boxShadow: isActive ? "0 0 10px var(--accent)" : "none"
-                                }}
-                              >
-                                {isCompleted ? "✓" : index + 1}
-                              </div>
-
-                              {/* Target Node Panel */}
-                              <div 
-                                className="flex-1 card rounded-2xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all duration-300"
-                                style={{
-                                  borderColor: cardBorder,
-                                  boxShadow: cardGlow,
-                                  background: "var(--bg-card)"
-                                }}
-                              >
-                                <div className="space-y-2 flex-1">
-                                  <div className="flex items-center gap-2.5 flex-wrap">
-                                    <h4 className="text-base font-extrabold" style={{ color: isActive ? "var(--accent-text)" : "var(--text-primary)" }}>
-                                      {node.title}
-                                    </h4>
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase border ${
-                                      isActive 
-                                        ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
-                                        : isCompleted 
-                                          ? "bg-green-500/10 text-green-500 border-green-500/25" 
-                                          : "bg-gray-500/10 text-gray-500 border-gray-500/25"
-                                    }`}>
-                                      {node.status}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                                    {node.description}
-                                  </p>
-                                </div>
-
-                                {/* Dynamic Action Trigger */}
-                                {isActive && (
-                                  <button
-                                    onClick={async () => {
-                                      addLog(`[SYSTEM] Initiating completion sequence for stage: "${node.title}"...`, "system");
-                                      try {
-                                        const res = await fetch(`http://localhost:8000/api/v1/profile/roadmap/${node.node_id}/complete`, {
-                                          method: "PUT",
-                                          headers: {
-                                            Authorization: `Bearer ${user.uid}`
-                                          }
-                                        });
-                                        if (res.ok) {
-                                          addLog(`[SUCCESS] Stage verified! marked completed in PostgreSQL. +50 XP Awarded.`, "success");
-                                          fetchProfile();
-                                        } else {
-                                          throw new Error(`HTTP ${res.status}`);
-                                        }
-                                      } catch (err) {
-                                        addLog(`[ERROR] Connection failed. Sandbox sync aborted.`, "error");
-                                      }
-                                    }}
-                                    className="btn-accent py-2.5 px-5 rounded-xl text-xs font-bold whitespace-nowrap self-stretch md:self-auto flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
-                                  >
-                                    <span>Complete Milestone</span>
-                                    <span>➔</span>
-                                  </button>
-                                )}
-
-                                {isCompleted && (
-                                  <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--success)" }}>
-                                    <span>Cleared</span>
-                                    <span>✓</span>
-                                  </div>
-                                )}
-
-                                {isLocked && (
-                                  <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--text-muted)" }}>
-                                    <span>Locked Stage</span>
-                                    <span>🔒</span>
-                                  </div>
-                                )}
-                              </div>
-
-                            </div>
+                            <button
+                              key={key}
+                              onClick={() => setSelectedRoadmapTrack(key)}
+                              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 border ${
+                                isSelected
+                                  ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-[var(--shadow-glow)]"
+                                  : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-slate-400 text-slate-400"
+                              }`}
+                              style={{ fontSize: "12px" }}
+                            >
+                              <span>{value.icon}</span>
+                              <span>{value.title}</span>
+                            </button>
                           );
                         })}
                       </div>
+                    </div>
 
+                    {/* Canvas Main Area */}
+                    <div className="relative z-10">
+                      
+                      {/* CASE A: CALIBRATED ROADMAP TIMELINE */}
+                      {selectedRoadmapTrack === "calibrated" && roadmap && roadmap.length > 0 && (
+                        <div className="space-y-6">
+                          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <p className="text-xs font-mono text-[var(--text-muted)] font-semibold">
+                              🎯 Showing personalized calibrated timeline with backend live database sync
+                            </p>
+                            <span className="text-xs font-mono font-black px-3.5 py-1.5 rounded-full"
+                              style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
+                              🏆 {roadmap.filter(n => n.status === 'completed').length} of {roadmap.length} Stages Completed
+                            </span>
+                          </div>
+
+                          <div className="relative pl-9 sm:pl-12 space-y-8 before:absolute before:left-[16px] sm:before:left-[20px] before:top-2 before:bottom-2 before:w-[3px] before:bg-[var(--border)]">
+                            {roadmap.map((node, index) => {
+                              const isActive = node.status === "active";
+                              const isCompleted = node.status === "completed";
+                              const isLocked = node.status === "locked";
+
+                              let circleBg = "var(--bg-card)";
+                              let circleBorder = "var(--border)";
+                              let circleTextColor = "var(--text-muted)";
+                              let cardBorder = "var(--border)";
+                              let cardGlow = "none";
+
+                              if (isActive) {
+                                circleBg = "var(--accent)";
+                                circleBorder = "var(--accent)";
+                                circleTextColor = "var(--text-inverse)";
+                                cardBorder = "var(--accent)";
+                                cardGlow = "0 0 16px var(--accent-glow)";
+                              } else if (isCompleted) {
+                                circleBg = "var(--success)";
+                                circleBorder = "var(--success)";
+                                circleTextColor = "var(--text-inverse)";
+                              }
+
+                              return (
+                                <div key={node.node_id} className="relative flex flex-col gap-2 transition-all hover:translate-x-1 duration-200">
+                                  <div 
+                                    className={`absolute left-[-32px] sm:left-[-38px] w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] rounded-full flex items-center justify-center font-black text-xs border-2 z-15 transition-all duration-300 ${
+                                      isActive ? "animate-pulse" : ""
+                                    }`}
+                                    style={{
+                                      background: circleBg,
+                                      borderColor: circleBorder,
+                                      color: circleTextColor,
+                                      boxShadow: isActive ? "0 0 10px var(--accent)" : "none"
+                                    }}
+                                  >
+                                    {isCompleted ? "✓" : index + 1}
+                                  </div>
+
+                                  <div className="flex-1 card rounded-2xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all duration-300"
+                                    style={{
+                                      borderColor: cardBorder,
+                                      boxShadow: cardGlow,
+                                      background: "var(--bg-card)"
+                                    }}
+                                  >
+                                    <div className="space-y-2 flex-1">
+                                      <div className="flex items-center gap-2.5 flex-wrap">
+                                        <h4 className="text-base font-extrabold" style={{ color: isActive ? "var(--accent-text)" : "var(--text-primary)" }}>
+                                          {node.title}
+                                        </h4>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase border ${
+                                          isActive 
+                                            ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
+                                            : isCompleted 
+                                              ? "bg-green-500/10 text-green-500 border-green-500/25" 
+                                              : "bg-gray-500/10 text-gray-500 border-gray-500/25"
+                                        }`}>
+                                          {node.status}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                                        {node.description}
+                                      </p>
+                                    </div>
+
+                                    {isActive && (
+                                      <button
+                                        onClick={async () => {
+                                          addLog(`[SYSTEM] Initiating completion sequence for stage: "${node.title}"...`, "system");
+                                          try {
+                                            const res = await fetch(`http://localhost:8000/api/v1/profile/roadmap/${node.node_id}/complete`, {
+                                              method: "PUT",
+                                              headers: {
+                                                Authorization: `Bearer ${user.uid}`
+                                              }
+                                            });
+                                            if (res.ok) {
+                                              addLog(`[SUCCESS] Stage verified! marked completed in PostgreSQL. +50 XP Awarded.`, "success");
+                                              fetchProfile();
+                                            } else {
+                                              throw new Error(`HTTP ${res.status}`);
+                                            }
+                                          } catch (err) {
+                                            addLog(`[ERROR] Connection failed. Sandbox sync aborted.`, "error");
+                                          }
+                                        }}
+                                        className="btn-accent py-2.5 px-5 rounded-xl text-xs font-bold whitespace-nowrap self-stretch md:self-auto flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+                                      >
+                                        <span>Complete Milestone</span>
+                                        <span>➔</span>
+                                      </button>
+                                    )}
+
+                                    {isCompleted && (
+                                      <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--success)" }}>
+                                        <span>Cleared</span>
+                                        <span>✓</span>
+                                      </div>
+                                    )}
+
+                                    {isLocked && (
+                                      <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--text-muted)" }}>
+                                        <span>Locked Stage</span>
+                                        <span>🔒</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CASE B: STANDARD DETAILED BRANCHING MAPS */}
+                      {selectedRoadmapTrack !== "calibrated" && staticRoadmaps[selectedRoadmapTrack] && (
+                        <div className="space-y-12 py-4">
+                          
+                          {/* Track Details Card */}
+                          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <h4 className="text-base font-extrabold flex items-center gap-2">
+                                <span>{staticRoadmaps[selectedRoadmapTrack].icon}</span>
+                                <span>Integrated {staticRoadmaps[selectedRoadmapTrack].title} Curriculum Blueprint</span>
+                              </h4>
+                              <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
+                                {staticRoadmaps[selectedRoadmapTrack].description} Click any sub-node card to open its detailed checklist.
+                              </p>
+                            </div>
+                            
+                            {/* Track overall checklist progress */}
+                            {(() => {
+                              const track = staticRoadmaps[selectedRoadmapTrack];
+                              let totalTasks = 0;
+                              let completedTasks = 0;
+                              track.nodes.forEach((node: any) => {
+                                node.subNodes.forEach((sub: any) => {
+                                  totalTasks += sub.checklist.length;
+                                  sub.checklist.forEach((task: string) => {
+                                    if (checkedTasks[`${sub.id}-${task}`]) {
+                                      completedTasks++;
+                                    }
+                                  });
+                                });
+                              });
+
+                              return (
+                                <span className="text-xs font-mono font-black px-3.5 py-1.5 rounded-full self-stretch md:self-auto text-center"
+                                  style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
+                                  🎯 Mastery Check: {completedTasks} / {totalTasks} Checked
+                                </span>
+                              );
+                            })()}
+                          </div>
+
+                          {/* Node Timeline Visual Graph */}
+                          <div className="space-y-10 relative before:absolute before:left-1/2 before:top-4 before:bottom-4 before:w-[2px] before:bg-[var(--border)] before:hidden md:before:block">
+                            {staticRoadmaps[selectedRoadmapTrack].nodes.map((node: any, idx: number) => (
+                              <div key={node.id} className="space-y-6 relative z-10">
+                                
+                                {/* Yellow Centered Main Subject Node */}
+                                <div className="flex justify-center">
+                                  <div className="px-6 py-3 rounded-2xl border-2 text-sm font-black shadow-md tracking-wider flex items-center gap-2.5 transition-all hover:scale-102 select-none"
+                                    style={{
+                                      background: theme === "dark" ? "#3f2b0f" : "#fef9c3",
+                                      borderColor: "var(--warning)",
+                                      color: theme === "dark" ? "#fef08a" : "#854d0e"
+                                    }}>
+                                    <span>🔶</span>
+                                    <span>{node.title}</span>
+                                  </div>
+                                </div>
+
+                                {/* Vertical dashed connector */}
+                                <div className="w-[2px] h-6 border-l-2 border-dashed border-[var(--border)] mx-auto"></div>
+
+                                {/* Sub-Nodes Grid branching down */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+                                  {node.subNodes.map((sub: any) => {
+                                    const subTotal = sub.checklist.length;
+                                    const subCompleted = sub.checklist.filter((task: string) => checkedTasks[`${sub.id}-${task}`]).length;
+                                    const isSubCompleted = subTotal > 0 && subCompleted === subTotal;
+
+                                    return (
+                                      <button
+                                        key={sub.id}
+                                        onClick={() => setActiveDetailSubNode(sub)}
+                                        className="card rounded-2xl p-5 text-left transition-all duration-300 hover:translate-y-[-4px] flex flex-col justify-between h-full group relative cursor-pointer"
+                                        style={{
+                                          border: `1px solid ${isSubCompleted ? "var(--success)" : "var(--border)"}`,
+                                          background: isSubCompleted ? "rgba(34,197,94,0.02)" : "var(--bg-card)",
+                                          boxShadow: isSubCompleted ? "0 0 10px rgba(34,197,94,0.06)" : "var(--shadow-sm)"
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = isSubCompleted ? "var(--success)" : "var(--accent)"; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = isSubCompleted ? "var(--success)" : "var(--border)"; }}
+                                      >
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between gap-3">
+                                            <h5 className="text-xs sm:text-sm font-extrabold group-hover:text-[var(--accent)] transition-colors leading-tight" style={{ color: "var(--text-primary)" }}>
+                                              {sub.title}
+                                            </h5>
+                                            {isSubCompleted ? (
+                                              <span className="text-xs font-bold" style={{ color: "var(--success)" }}>✓</span>
+                                            ) : (
+                                              <span className="text-[10px] font-mono font-bold text-slate-400">
+                                                {subCompleted}/{subTotal}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                                            {sub.description}
+                                          </p>
+                                        </div>
+
+                                        {subTotal > 0 && (
+                                          <div className="w-full bg-[var(--bg-secondary)] h-1 rounded-full overflow-hidden mt-4 border border-[var(--border)]">
+                                            <div 
+                                              className="h-full rounded-full transition-all duration-300"
+                                              style={{ 
+                                                width: `${(subCompleted / subTotal) * 100}%`,
+                                                background: isSubCompleted ? "var(--success)" : "var(--accent)"
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Dash gap to next segment */}
+                                {idx < staticRoadmaps[selectedRoadmapTrack].nodes.length - 1 && (
+                                  <div className="w-[2px] h-10 border-l-2 border-dashed border-[var(--border)] mx-auto"></div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                  {/* ═══════ SLIDE-OVER FROSTED GLASS POP-UP DETAIL DRAWER ═══════ */}
+                  {activeDetailSubNode && (
+                    <div className="fixed inset-0 z-50 flex justify-end"
+                      style={{ background: "var(--bg-overlay)", backdropFilter: "blur(6px)" }}
+                      onClick={() => setActiveDetailSubNode(null)}
+                    >
+                      <div className="w-full max-w-lg h-full p-6 md:p-8 flex flex-col justify-between overflow-y-auto animate-slide-left relative"
+                        style={{ 
+                          background: "var(--bg-card)", 
+                          borderLeft: "1px solid var(--border)",
+                          boxShadow: "var(--shadow-lg)"
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Ambient subtle drawer background blur */}
+                        <div className="absolute top-[-30%] right-[-10%] w-[350px] h-[350px] bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
+
+                        <div className="space-y-7 relative z-10">
+                          
+                          {/* Close / Header */}
+                          <div className="flex items-start justify-between pb-4 border-b border-[var(--border)]">
+                            <div>
+                              <span className="text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full" style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
+                                🔶 Sub-Topic Blueprint Detail
+                              </span>
+                              <h3 className="text-base sm:text-lg font-black tracking-tight mt-2.5" style={{ color: "var(--text-primary)" }}>
+                                {activeDetailSubNode.title}
+                              </h3>
+                            </div>
+                            <button 
+                              onClick={() => setActiveDetailSubNode(null)}
+                              className="w-8 h-8 rounded-xl border border-[var(--border)] flex items-center justify-center font-bold text-xs cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Description */}
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Learning Scope:</h4>
+                            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                              {activeDetailSubNode.description}
+                            </p>
+                          </div>
+
+                          {/* Mastery Checklist */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: "var(--text-muted)" }}>
+                              <span>Checklist Objectives:</span>
+                              <span className="text-[10px] font-mono text-[var(--accent-text)]">
+                                {activeDetailSubNode.checklist.filter((task: string) => checkedTasks[`${activeDetailSubNode.id}-${task}`]).length} / {activeDetailSubNode.checklist.length} Completed
+                              </span>
+                            </h4>
+                            <div className="space-y-2">
+                              {activeDetailSubNode.checklist.map((task: string, i: number) => {
+                                const taskId = `${activeDetailSubNode.id}-${task}`;
+                                const isChecked = !!checkedTasks[taskId];
+
+                                return (
+                                  <button
+                                    key={i}
+                                    onClick={() => toggleChecklistTask(taskId)}
+                                    className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left cursor-pointer transition-all hover:bg-[var(--bg-secondary)]"
+                                    style={{
+                                      borderColor: isChecked ? "var(--success)" : "var(--border)",
+                                      background: isChecked ? "rgba(34,197,94,0.02)" : "var(--bg-card)"
+                                    }}
+                                  >
+                                    <div className="w-5 h-5 rounded-md border flex items-center justify-center font-bold text-xs"
+                                      style={{
+                                        borderColor: isChecked ? "var(--success)" : "var(--border)",
+                                        background: isChecked ? "var(--success)" : "transparent",
+                                        color: isChecked ? "white" : "transparent"
+                                      }}>
+                                      ✓
+                                    </div>
+                                    <span className="text-xs font-semibold leading-snug"
+                                      style={{ 
+                                        color: isChecked ? "var(--text-muted)" : "var(--text-primary)",
+                                        textDecoration: isChecked ? "line-through" : "none"
+                                      }}>
+                                      {task}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                        </div>
+
+                        {/* Footer Exercises */}
+                        <div className="pt-6 border-t border-[var(--border)] mt-8 space-y-4 relative z-10">
+                          <div className="bg-[var(--accent-soft)] border border-[var(--accent)] rounded-2xl p-4 text-[10px] sm:text-xs font-mono leading-relaxed text-[var(--accent-text)] font-semibold">
+                            💡 Setup and verify this curriculum segment inside your AIOS sandboxed docker containers directly from the Agent Terminal tab!
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              setActiveDetailSubNode(null);
+                              addLog(`[SYSTEM] Practice Exercise Loaded: Active study session spawned for blueprint node "${activeDetailSubNode.title}"`, "info");
+                            }}
+                            className="btn-accent w-full py-4 rounded-2xl font-black text-xs uppercase cursor-pointer transition-all active:scale-95"
+                          >
+                            Launch Sandbox Practice Session 🪐
+                          </button>
+                        </div>
+
+                      </div>
                     </div>
                   )}
 
