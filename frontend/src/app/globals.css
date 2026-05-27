@@ -62,50 +62,50 @@
 
 /* ── DARK THEME ── Warm, bold, Nexus-inspired ── */
 [data-theme="dark"] {
-  --bg-primary: #1a1a1b;
-  --bg-secondary: #111112;
-  --bg-card: #242428;
-  --bg-card-hover: #2c2c31;
-  --bg-code: #1b1b2f;
-  --bg-input: #2a2a30;
-  --bg-input-focus: #333338;
-  --bg-sidebar: rgba(20, 20, 21, 0.92);
-  --bg-header: rgba(26, 26, 27, 0.72);
-  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-primary: #09090b;       /* Pure Tailwind zinc-950 deep space look */
+  --bg-secondary: #0c0c0e;     /* Slightly darker base */
+  --bg-card: #121214;          /* Tailwind zinc-900 slate card */
+  --bg-card-hover: #1c1c1f;    /* Hover high-contrast cards */
+  --bg-code: #09090b;
+  --bg-input: #18181b;         /* Tailwind zinc-800 input boundary */
+  --bg-input-focus: #27272a;
+  --bg-sidebar: rgba(12, 12, 14, 0.96);
+  --bg-header: rgba(9, 9, 11, 0.85);
+  --bg-overlay: rgba(0, 0, 0, 0.8);
 
   --text-primary: #ffffff;
-  --text-secondary: #d4d4d8;
-  --text-muted: #71717a;
-  --text-inverse: #0f172a;
+  --text-secondary: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --text-inverse: #09090b;
   --text-code: #e2e8f0;
 
-  --accent: #FF6B35;
-  --accent-hover: #FF8C5A;
-  --accent-soft: rgba(255, 107, 53, 0.1);
-  --accent-glow: rgba(255, 107, 53, 0.25);
-  --accent-text: #FF6B35;
+  --accent: #f97316;           /* Vibrant premium orange */
+  --accent-hover: #ea580c;
+  --accent-soft: rgba(249, 115, 22, 0.08);
+  --accent-glow: rgba(249, 115, 22, 0.25);
+  --accent-text: #f97316;
 
-  --secondary: #FBBF24;
+  --secondary: #fbbf24;
   --secondary-soft: rgba(251, 191, 36, 0.1);
-  --secondary-text: #FBBF24;
+  --secondary-text: #fbbf24;
 
-  --warning: #FBBF24;
-  --error: #F87171;
-  --success: #4ADE80;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --success: #22c55e;
 
-  --border: #333338;
-  --border-hover: #48484e;
+  --border: #27272a;           /* Tailwind zinc-800 borders */
+  --border-hover: #3f3f46;     /* Tailwind zinc-700 hover borders */
   --border-accent: var(--accent);
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 24px var(--accent-glow);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 20px var(--accent-glow);
 
-  --scrollbar-track: #1a1a1b;
-  --scrollbar-thumb: #333338;
-  --scrollbar-hover: #48484e;
+  --scrollbar-track: #09090b;
+  --scrollbar-thumb: #27272a;
+  --scrollbar-hover: #3f3f46;
 }
 
 /* ── TAILWIND THEME TOKENS ── */
@@ -289,17 +289,26 @@ body {
   box-shadow: var(--shadow-glow) !important;
 }
 
-/* Legacy glass-card — now maps to themed system */
+/* Legacy glass-card — now upgraded with premium blurred glassmorphism */
 .glass-card {
-  background: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-sm) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(18, 18, 20, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.05) !important;
 }
 
 .glass-card:hover {
-  border-color: var(--border-hover) !important;
-  box-shadow: var(--shadow-md) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.5), 0 0 15px 0 var(--accent-soft) !important;
+  transform: translateY(-2px) !important;
 }
 
 /* ═══════════════════════════════════════════
