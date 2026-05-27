@@ -90,22 +90,21 @@ export default function ProfileTab({ user }: ProfileTabProps) {
   // Generate contribution heatmap (365 days)
   const generateHeatmap = () => {
     const cells = [];
-    const seed = user?.uid?.charCodeAt(0) || 42;
     
     for (let i = 0; i < 371; i++) {
-      let val = 0;
-      const rand = Math.sin(i * 0.15 + seed) * Math.cos(i * 0.05);
-      
-      if (rand > 0.6) val = 4;
-      else if (rand > 0.2) val = 3;
-      else if (rand > -0.2) val = 2;
-      else if (rand > -0.6) val = 1;
-      else val = 0;
-
       const date = new Date();
       date.setDate(date.getDate() - (371 - i));
+      
+      // Calculate local YYYY-MM-DD date string
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const dayVal = String(date.getDate()).padStart(2, '0');
+      const isoStr = `${year}-${month}-${dayVal}`;
+
+      const isCompleted = profile?.active_days?.includes(isoStr) || false;
+      const val = isCompleted ? 4 : 0;
       const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      const commitCount = val === 0 ? "No commits" : val === 4 ? "12 commits" : val === 3 ? "6 commits" : val === 2 ? "3 commits" : "1 commit";
+      const commitCount = isCompleted ? "Active Study Day 🔥" : "No study activity 💤";
 
       cells.push({
         id: i,
@@ -289,6 +288,57 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Active Focus: Weak Topics & Goals */}
+          <div className="glass-card rounded-3xl p-8 space-y-6">
+            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2 flex items-center justify-between">
+              <span>🎯 Cognitive Focus & Review Areas</span>
+              <span className="text-[9px] font-semibold text-[var(--accent)] font-mono">Live Sync</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {/* Target Goals */}
+              <div className="space-y-3.5">
+                <h5 className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold">Target Career Goals</h5>
+                {(!profile.career_goals || profile.career_goals.length === 0) ? (
+                  <p className="text-[10px] font-mono text-slate-500">No active goals registered.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2.5">
+                    {profile.career_goals.map((goal: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="py-1.5 px-3 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)] text-[10px] font-extrabold shadow-sm select-none"
+                      >
+                        🚀 {goal}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Weak Topics / Areas for Review */}
+              <div className="space-y-3.5">
+                <h5 className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold text-red-400">Concept Review Needed (Weak Topics)</h5>
+                {(!profile.weak_topics || profile.weak_topics.length === 0) ? (
+                  <p className="text-[10px] font-mono text-[var(--success)] font-semibold flex items-center gap-1">
+                    <span>✨</span> No weak topics identified yet! Keep it up!
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2.5">
+                    {profile.weak_topics.map((topic: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="py-1.5 px-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/25 hover:border-red-400 transition-colors text-[10px] font-extrabold shadow-sm flex items-center gap-1.5"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

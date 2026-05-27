@@ -55,11 +55,14 @@ def check_db_connection(db: Session = Depends(get_db), current_user: dict = Depe
         pass
 
     try:
-        # Execute raw SQL query SELECT 1
+        # Execute raw SQL query SELECT 1 with precise duration timing
+        start_time = time.time()
         db.execute(text("SELECT 1"))
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
         return {
             "status": "connected",
             "database": db_type,
+            "query_duration_ms": elapsed_ms,
             "message": f"Database ({db_type}) is fully online and responding."
         }
     except Exception as e:

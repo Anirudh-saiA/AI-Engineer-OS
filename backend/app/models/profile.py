@@ -153,3 +153,72 @@ class UserSetting(Base):
     notifications_enabled = Column(Boolean, default=True)
     privacy_private = Column(Boolean, default=False)
     language_preference = Column(String, default="en")
+
+class CompletedRoadmapTask(Base):
+    """
+    Tracks checkable weekly roadmap tasks completed by the user.
+    """
+    __tablename__ = "completed_roadmap_tasks"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    node_id = Column(String, index=True, nullable=False) # e.g. 'week-1'
+    task_text = Column(String, nullable=False) # e.g. 'Python revision'
+    completed_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class ChatSession(Base):
+    """
+    Active chat dialogue sessions for the AI mentor.
+    """
+    __tablename__ = "chat_sessions"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    title = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatMessage.timestamp")
+
+class ChatMessage(Base):
+    """
+    Chronological history of messages within a chat session.
+    """
+    __tablename__ = "chat_messages"
+
+    id = Column(String, primary_key=True, index=True)
+    session_id = Column(String, ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True, nullable=False)
+    sender = Column(String, nullable=False) # 'user' or 'assistant'
+    text = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+    session = relationship("ChatSession", back_populates="messages")
+
+class UserWeakTopic(Base):
+    """
+    Topics the user struggles with, identified dynamically by AI audits or checklist gaps.
+    """
+    __tablename__ = "user_weak_topics"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    topic_name = Column(String, nullable=False)
+    difficulty_level = Column(String, default="beginner")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class DailyTask(Base):
+    """
+    Daily personalized tasks generated automatically by the AI Planner.
+    """
+    __tablename__ = "daily_tasks"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    task_text = Column(String, nullable=False)
+    category = Column(String, default="study") # 'study', 'dsa', 'coding', 'revision', 'project'
+    completed = Column(Boolean, default=False)
+    task_date = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+

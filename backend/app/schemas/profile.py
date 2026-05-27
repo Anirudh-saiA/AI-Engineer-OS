@@ -45,9 +45,16 @@ class RoadmapProgressNode(BaseModel):
     status: str # 'locked', 'active', 'completed'
     order_index: int
     completed_at: Optional[datetime] = None
+    tasks: List[str] = []
 
     class Config:
         from_attributes = True
+
+class RoadmapTaskToggleRequest(BaseModel):
+    node_id: str
+    task_text: str
+    completed: bool
+
 
 class AchievementBadge(BaseModel):
     title: str
@@ -102,6 +109,9 @@ class UserProfileResponse(BaseModel):
     achievements: List[AchievementBadge] = []
     roadmap: List[RoadmapProgressNode] = []
     projects: List[ProjectDetails] = []
+    completed_tasks: List[str] = []
+    weak_topics: List[str] = []
+    active_days: List[str] = []
 
 class UserSettingsSchema(BaseModel):
     theme: str = Field("dark", description="App interface theme preference")
@@ -111,3 +121,45 @@ class UserSettingsSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DailyTaskSchema(BaseModel):
+    id: int
+    task_text: str
+    category: str
+    completed: bool
+    task_date: datetime
+
+    class Config:
+        from_attributes = True
+
+class DailyTaskToggleRequest(BaseModel):
+    task_id: int
+    completed: bool
+
+
+class InsightCard(BaseModel):
+    id: str
+    title: str
+    description: str
+    icon: str
+    metric: str
+    color: str
+
+
+class NotificationItem(BaseModel):
+    id: str
+    type: str # 'success', 'info', 'warning', 'error'
+    message: str
+    timestamp: str
+
+
+class AIMotivationResponse(BaseModel):
+    status: str # 'doing_well', 'inactive_returned', 'struggling', 'burnout_risk', 'neutral'
+    mentor_message: str
+    popup_title: Optional[str] = None
+    popup_message: Optional[str] = None
+    show_popup: bool = False
+    insights: List[InsightCard] = []
+    notifications: List[NotificationItem] = []
+
+

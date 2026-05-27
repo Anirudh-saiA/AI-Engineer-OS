@@ -3,23 +3,53 @@ import json
 import urllib.request
 import urllib.error
 import datetime
+import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, verify_token
 from app.models import profile as models
+from app.core.mentor_prompts import MENTOR_PROMPTS
 
 router = APIRouter()
 
 class ChatQuery(BaseModel):
     message: str = Field(..., description="The user query or prompt message")
+    session_id: Optional[str] = Field(None, description="Active chat session identifier")
     context: Optional[dict] = Field(None, description="Optional developer profile metadata")
 
 class ChatResponse(BaseModel):
     sender: str = "assistant"
     text: str
     timestamp: str
+    session_id: Optional[str] = None
+
+class MessageSchema(BaseModel):
+    id: str
+    sender: str
+    text: str
+    timestamp: str
+
+    class Config:
+        from_attributes = True
+
+class SessionSchema(BaseModel):
+    id: str
+    title: str
+    messages: List[MessageSchema] = []
+    timestamp: str
+
+    class Config:
+        from_attributes = True
+
+class SessionCreateSchema(BaseModel):
+    id: str
+    title: str
+
+class WeakTopicSchema(BaseModel):
+    topic_name: str
+    difficulty_level: Optional[str] = "beginner"
 
 def simulate_openai_chat(message: str, db: Session, uid: str) -> str:
     """
@@ -155,7 +185,7 @@ from app.models import profile as models
 
 router = APIRouter()
 
-@router.put("/roadmap/{{node_id}}/complete", status_code=200)
+@router.put("/roadmap/{node_id}/complete", status_code=200)
 def complete_roadmap_milestone(
     node_id: str,
     db: Session = Depends(get_db),
@@ -188,14 +218,14 @@ def complete_roadmap_milestone(
         # 4. Commit transaction
         db.commit()
         db.refresh(node)
-        return {{"status": "completed", "awarded_xp": 50, "node_id": node_id}}
+        return {"status": "completed", "awarded_xp": 50, "node_id": node_id}
         
     except Exception as e:
         # 5. RESILIENT ROLLBACK: Prevents database locks
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database transaction error: {{str(e)}}"
+            detail=f"Database transaction error: {str(e)}"
         )
 ```
 
@@ -223,7 +253,7 @@ class IngestionItem(BaseModel):
 def ingest_data(item: IngestionItem):
     if not item.data:
         raise HTTPException(status_code=400, detail="Data payload cannot be empty.")
-    return {{"status": "ingested", "processed_tokens": item.tokens}}
+    return {"status": "ingested", "processed_tokens": item.tokens}
 ```
 
 **Implementation Steps:**
@@ -278,7 +308,7 @@ def search_qdrant_embeddings(query_vector: list, limit: int = 3):
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={{"Content-Type": "application/json"}}
+        headers={"Content-Type": "application/json"}
     )
     with urllib.request.urlopen(req) as res:
         return json.loads(res.read().decode("utf-8"))
@@ -301,6 +331,161 @@ I am connected to the monorepo databases, container sandboxes, and semantic inde
 
 What are we orchestrating today inside the developer stack?"""
 
+# ═══════════════════════════════════════════════════════════
+# SESSIONS AND MESSAGES CRUD ROUTERS
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/sessions", response_model=List[SessionSchema])
+def get_chat_sessions(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    sessions = db.query(models.ChatSession).filter(
+        models.ChatSession.user_id == uid
+    ).order_by(models.ChatSession.updated_at.desc()).all()
+    
+    response = []
+    for s in sessions:
+        msgs = []
+        for m in s.messages:
+            msgs.append(MessageSchema(
+                id=m.id,
+                sender=m.sender,
+                text=m.text,
+                timestamp=m.timestamp.strftime("%H:%M")
+            ))
+        response.append(SessionSchema(
+            id=s.id,
+            title=s.title,
+            messages=msgs,
+            timestamp=s.updated_at.strftime("%H:%M")
+        ))
+    return response
+
+@router.post("/sessions", response_model=SessionSchema)
+def create_chat_session(
+    session_data: SessionCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    
+    # Check if already exists
+    existing = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_data.id,
+        models.ChatSession.user_id == uid
+    ).first()
+    if existing:
+        msgs = []
+        for m in existing.messages:
+            msgs.append(MessageSchema(
+                id=m.id,
+                sender=m.sender,
+                text=m.text,
+                timestamp=m.timestamp.strftime("%H:%M")
+            ))
+        return SessionSchema(
+            id=existing.id,
+            title=existing.title,
+            messages=msgs,
+            timestamp=existing.updated_at.strftime("%H:%M")
+        )
+        
+    db_session = models.ChatSession(
+        id=session_data.id,
+        user_id=uid,
+        title=session_data.title
+    )
+    db.add(db_session)
+    db.commit()
+    db.refresh(db_session)
+    
+    return SessionSchema(
+        id=db_session.id,
+        title=db_session.title,
+        messages=[],
+        timestamp=db_session.updated_at.strftime("%H:%M")
+    )
+
+@router.delete("/sessions/{session_id}")
+def delete_chat_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    db_session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id,
+        models.ChatSession.user_id == uid
+    ).first()
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Chat session not found.")
+        
+    db.delete(db_session)
+    db.commit()
+    return {"status": "success", "message": "Session wiped successfully."}
+
+# ═══════════════════════════════════════════════════════════
+# WEAK TOPICS CRUD ROUTERS
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/weak-topics")
+def get_weak_topics(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    topics = db.query(models.UserWeakTopic).filter(
+        models.UserWeakTopic.user_id == uid
+    ).all()
+    return [{"id": t.id, "topic_name": t.topic_name, "difficulty_level": t.difficulty_level} for t in topics]
+
+@router.post("/weak-topics")
+def add_weak_topic(
+    topic: WeakTopicSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    existing = db.query(models.UserWeakTopic).filter(
+        models.UserWeakTopic.user_id == uid,
+        models.UserWeakTopic.topic_name == topic.topic_name
+    ).first()
+    if existing:
+        return {"status": "exists", "id": existing.id}
+        
+    db_topic = models.UserWeakTopic(
+        user_id=uid,
+        topic_name=topic.topic_name,
+        difficulty_level=topic.difficulty_level
+    )
+    db.add(db_topic)
+    db.commit()
+    db.refresh(db_topic)
+    return {"status": "success", "id": db_topic.id}
+
+@router.delete("/weak-topics/{topic_name}")
+def remove_weak_topic(
+    topic_name: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    uid = current_user["uid"]
+    db_topic = db.query(models.UserWeakTopic).filter(
+        models.UserWeakTopic.user_id == uid,
+        models.UserWeakTopic.topic_name == topic_name
+    ).first()
+    if not db_topic:
+        raise HTTPException(status_code=404, detail="Weak topic not found.")
+    db.delete(db_topic)
+    db.commit()
+    return {"status": "success"}
+
+# ═══════════════════════════════════════════════════════════
+# MAIN COGNITIVE CHAT ENGINE
+# ═══════════════════════════════════════════════════════════
+
 @router.post("/chat", response_model=ChatResponse)
 def chat_with_mentor(
     query: ChatQuery,
@@ -308,50 +493,158 @@ def chat_with_mentor(
     current_user: dict = Depends(verify_token)
 ):
     """
-    Connects to OpenAI's API to generate dynamic responses.
-    If OPENAI_API_KEY is not defined, falls back to the dynamic Cognitive AI Simulator.
+    Connects to Google Gemini API or OpenAI's API to generate dynamic, personalized responses.
+    Maintains persistent session dialogue state and context. Falls back to simulator on failure.
     """
     uid = current_user["uid"]
     prompt_message = query.message
+    session_id = query.session_id
     
-    # 1. Fetch user profile bio & skills for LLM context injection
+    # 1. Fetch user profile context if onboarded
     profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
-    context_str = ""
+    dev_name = profile.full_name if profile else "Developer"
+    
+    # 2. Resolve/Sync Active Session Thread in DB
+    if not session_id:
+        # Fallback to last active session
+        last_sess = db.query(models.ChatSession).filter(
+            models.ChatSession.user_id == uid
+        ).order_by(models.ChatSession.updated_at.desc()).first()
+        if last_sess:
+            session_id = last_sess.id
+        else:
+            session_id = "session-" + str(int(datetime.datetime.utcnow().timestamp()))
+            db_sess = models.ChatSession(id=session_id, user_id=uid, title="AI Mentor Welcome")
+            db.add(db_sess)
+            db.commit()
+    else:
+        # Ensure session exists in the database
+        db_sess = db.query(models.ChatSession).filter(
+            models.ChatSession.id == session_id,
+            models.ChatSession.user_id == uid
+        ).first()
+        if not db_sess:
+            db_sess = models.ChatSession(id=session_id, user_id=uid, title="Active Chat")
+            db.add(db_sess)
+            db.commit()
+
+    # 3. Save User Prompt message to database immediately
+    user_msg_id = "msg-" + str(int(datetime.datetime.utcnow().timestamp())) + "-user"
+    db_msg = models.ChatMessage(
+        id=user_msg_id,
+        session_id=session_id,
+        sender="user",
+        text=prompt_message,
+        timestamp=datetime.datetime.utcnow()
+    )
+    db.add(db_msg)
+    
+    # Update Session updated timestamp
+    session_obj = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+    if session_obj:
+        session_obj.updated_at = datetime.datetime.utcnow()
+    db.commit()
+
+    # 4. Fetch User Progress & Telemetry Context
+    goals = db.query(models.UserGoal).filter(models.UserGoal.user_id == uid).all()
+    goals_str = ", ".join([g.goal_name for g in goals]) if goals else "Not set yet"
+    
+    weak_topics_records = db.query(models.UserWeakTopic).filter(models.UserWeakTopic.user_id == uid).all()
+    weak_topics_str = ", ".join([w.topic_name for w in weak_topics_records]) if weak_topics_records else "None recorded yet"
+    
+    total_nodes = db.query(models.RoadmapProgress).filter(models.RoadmapProgress.user_id == uid).count()
+    completed_nodes = db.query(models.RoadmapProgress).filter(
+        models.RoadmapProgress.user_id == uid,
+        models.RoadmapProgress.status == "completed"
+    ).count()
+    
+    streak_record = db.query(models.Streak).filter(models.Streak.user_id == uid).first()
+    streak_days = streak_record.current_streak if streak_record else 1
+    xp = profile.xp_points if profile else 0
+    learning_style = profile.learning_style if profile else "project-based"
+    time_avail = profile.time_availability_mins if profile else 60
+    
+    # Analyze low skills automatically
+    low_skills = []
     if profile:
-        context_str = f"User is {profile.full_name}. Target goals: {profile.branch_degree}. Bio: {profile.bio}."
+        skills_dict = {
+            "Python": profile.python_level,
+            "JavaScript": profile.javascript_level,
+            "DSA": profile.dsa_level,
+            "Machine Learning": profile.ml_level,
+            "Deep Learning": profile.dl_level,
+            "GenAI": profile.genai_level,
+            "Web Development": profile.web_level,
+            "Backend Development": profile.backend_level,
+            "DevOps": profile.devops_level,
+            "AI Agents": profile.agents_level,
+            "RAG Systems": profile.rag_level
+        }
+        for sk, val in skills_dict.items():
+            if val > 0 and val < 40:
+                low_skills.append(f"{sk} ({val}%)")
+    low_skills_str = ", ".join(low_skills) if low_skills else "None (all active skills are intermediate or advanced)"
+
+    # Identify Active Mentor Persona
+    mentor_type = "Pragmatic Architect"
+    if profile and profile.bio:
+        if "Algorithmic Sherpa" in profile.bio:
+            mentor_type = "Algorithmic Sherpa"
+        elif "SaaS Evangelist" in profile.bio:
+            mentor_type = "SaaS Evangelist"
+        elif "Rapid Prototype Guru" in profile.bio:
+            mentor_type = "Rapid Prototype Guru"
+        elif "Pragmatic Architect" in profile.bio:
+            mentor_type = "Pragmatic Architect"
+
+    # 5. Retrieve Thread Chat History for Conversational Context (Limit to last 15 messages)
+    history_msgs = db.query(models.ChatMessage).filter(
+        models.ChatMessage.session_id == session_id
+    ).order_by(models.ChatMessage.timestamp.asc()).all()
     
+    history_list = []
+    # Loop over prior messages, excluding the one we just wrote (which is history_msgs[-1])
+    for m in history_msgs[:-1]:
+        history_list.append({
+            "role": "user" if m.sender == "user" else "assistant",
+            "content": m.text
+        })
+
+    # 6. Formulate Robust System Directives
+    system_prompt_str = (
+        f"You are the AIOS Cognitive Mentor, acting as the **{mentor_type}** persona.\n\n"
+        f"DEVELOPER TELEMETRY CONTEXT:\n"
+        f"- Name: {dev_name}\n"
+        f"- Target Career Goals: {goals_str}\n"
+        f"- Learning Preference: {learning_style} style, committing {time_avail} mins/day.\n"
+        f"- Roadmap Progress: Completed {completed_nodes} of {total_nodes if total_nodes else 4} milestones.\n"
+        f"- Current Stats: {xp} XP accumulated, active {streak_days}-day streak.\n"
+        f"- Active Weak/Review Topics: {weak_topics_str}\n"
+        f"- Identified Low Skills (under 40%): {low_skills_str}\n\n"
+        f"DIRECTIVES & CONSTRAINTS:\n"
+        f"1. Offer highly personalized, context-aware responses incorporating their progress, weak areas, and goals.\n"
+        f"2. Never treat the developer like a complete stranger or treat every conversation like a completely new chat. Address them by name and draw context connections to their current goals or weak areas when relevant.\n"
+        f"3. DYNAMIC WEAK TOPIC TRACKING: If the developer asks a troubleshooting, debugging, or conceptual question showing they are struggling with a specific concept (e.g. Docker, recursive backtracking, Stripe checks), append `[WEAK_TOPIC: <Topic Name>]` to the VERY END of your response so the system can record it. E.g. `[WEAK_TOPIC: Docker Ports]`. You can output multiple if relevant.\n"
+        f"4. DYNAMIC TOPIC RESOLUTION: If the developer demonstrates mastery, solves a debugging puzzle, or completes a roadmap challenge they previously struggled with, append `[RESOLVED_TOPIC: <Topic Name>]` to the VERY END of your response to remove it. E.g. `[RESOLVED_TOPIC: Docker Ports]`.\n"
+        f"5. Command Shortcuts: Fully support commands `/idea` (tailored project blueprint), `/summary` (learning metrics card), `/debug` (exception diagnostics), `/db` (database pooling), and `/rag` (vector indices configurations) styled specifically for your persona."
+    )
+
     api_key = os.environ.get("OPENAI_API_KEY")
-    
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    reply_text = ""
+
+    # 7. Attempt OpenAI Completion
     if api_key:
         try:
-            # Construct standard OpenAI API chat request
             url = "https://api.openai.com/v1/chat/completions"
-            
-            # Formulate robust system prompt mapping /idea, /summary, and /debug explicitly
-            system_prompt_str = (
-                f"You are the AIOS Cognitive Mentor. {context_str} Provide highly detailed technical feedback, "
-                "coding blueprints, and sandboxed developer recommendations in clean markdown.\n"
-                "Constraints & Directives:\n"
-                "1. If the user's message contains '/idea' or mentions 'project idea', suggest 3 detailed project ideas "
-                "personalized to their profile skills and interests, including a tech stack, descriptions, and a core exercise.\n"
-                "2. If the user's message contains '/summary' or mentions 'summarize', summarize their profile, XP, streak, "
-                "and present a beautiful markdown table showing their skill proficiencies.\n"
-                "3. If the user's message contains '/debug' or mentions 'debug/error/bug', audit their code or problem, explain the "
-                "underlying systems context, and provide a secure, transaction-safe corrected code template using standard exception boundaries."
-            )
+            messages_payload = [{"role": "system", "content": system_prompt_str}]
+            for h in history_list:
+                messages_payload.append({"role": h["role"], "content": h["content"]})
+            messages_payload.append({"role": "user", "content": prompt_message})
             
             payload = {
                 "model": "gpt-3.5-turbo",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_prompt_str
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt_message
-                    }
-                ],
+                "messages": messages_payload,
                 "temperature": 0.7
             }
             
@@ -364,22 +657,112 @@ def chat_with_mentor(
                 }
             )
             
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=12) as response:
                 res_body = response.read().decode("utf-8")
                 res_data = json.loads(res_body)
                 reply_text = res_data["choices"][0]["message"]["content"]
-                
-                return ChatResponse(
-                    text=reply_text,
-                    timestamp=datetime.datetime.now().strftime("%H:%M")
-                )
-        except Exception:
-            # Fall back to simulator if call encounters rate limits or auth issues
-            pass
+        except Exception as e:
+            print(f"OpenAI Completion failed: {e}")
 
-    # Fallback simulation
-    simulated_reply = simulate_openai_chat(prompt_message, db, uid)
+    # 8. Attempt Google Gemini Completion (High priority per user preference)
+    if not reply_text and gemini_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+            
+            contents_payload = []
+            # Inject system prompt securely
+            contents_payload.append({
+                "role": "user",
+                "parts": [{"text": f"SYSTEM INSTRUCTION: {system_prompt_str}\n\nPlease acknowledge these instructions."}]
+            })
+            contents_payload.append({
+                "role": "model",
+                "parts": [{"text": "Understood. I will act as your AIOS Cognitive Mentor with the specified persona, incorporating developer progress, goals, weak topics, and streaks, and will append [WEAK_TOPIC: ...] or [RESOLVED_TOPIC: ...] tags when relevant."}]
+            })
+            
+            # Map history
+            for h in history_list:
+                contents_payload.append({
+                    "role": "user" if h["role"] == "user" else "model",
+                    "parts": [{"text": h["content"]}]
+                })
+            # Current message
+            contents_payload.append({
+                "role": "user",
+                "parts": [{"text": prompt_message}]
+            })
+            
+            payload = {
+                "contents": contents_payload,
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 2048
+                }
+            }
+            
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res_body = response.read().decode("utf-8")
+                res_data = json.loads(res_body)
+                reply_text = res_data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            print(f"Gemini Completion failed: {e}")
+
+    # 9. Fallback to simulator
+    if not reply_text:
+        reply_text = simulate_openai_chat(prompt_message, db, uid)
+
+    # 10. Dynamic Weak Topics & Resolution parsing
+    weak_matches = re.findall(r"\[WEAK_TOPIC:\s*(.*?)\]", reply_text, re.IGNORECASE)
+    resolved_matches = re.findall(r"\[RESOLVED_TOPIC:\s*(.*?)\]", reply_text, re.IGNORECASE)
+    
+    for topic in weak_matches:
+        topic_cleaned = topic.strip()
+        exist = db.query(models.UserWeakTopic).filter(
+            models.UserWeakTopic.user_id == uid,
+            models.UserWeakTopic.topic_name == topic_cleaned
+        ).first()
+        if not exist:
+            db.add(models.UserWeakTopic(user_id=uid, topic_name=topic_cleaned, difficulty_level="beginner"))
+            
+    for topic in resolved_matches:
+        topic_cleaned = topic.strip()
+        exist = db.query(models.UserWeakTopic).filter(
+            models.UserWeakTopic.user_id == uid,
+            models.UserWeakTopic.topic_name == topic_cleaned
+        ).first()
+        if exist:
+            db.delete(exist)
+
+    # Strip dynamic tags from user visible chat message
+    reply_text = re.sub(r"\[WEAK_TOPIC:\s*(.*?)\]", "", reply_text, flags=re.IGNORECASE)
+    reply_text = re.sub(r"\[RESOLVED_TOPIC:\s*(.*?)\]", "", reply_text, flags=re.IGNORECASE)
+    reply_text = reply_text.strip()
+
+    # 11. Save Assistant reply to Database
+    assistant_msg_id = "msg-" + str(int(datetime.datetime.utcnow().timestamp())) + "-assistant"
+    db_assistant_msg = models.ChatMessage(
+        id=assistant_msg_id,
+        session_id=session_id,
+        sender="assistant",
+        text=reply_text,
+        timestamp=datetime.datetime.utcnow()
+    )
+    db.add(db_assistant_msg)
+    
+    # Update Session updated timestamp again
+    if session_obj:
+        session_obj.updated_at = datetime.datetime.utcnow()
+    db.commit()
+
     return ChatResponse(
-        text=simulated_reply,
-        timestamp=datetime.datetime.now().strftime("%H:%M")
+        sender="assistant",
+        text=reply_text,
+        timestamp=datetime.datetime.now().strftime("%H:%M"),
+        session_id=session_id
     )
