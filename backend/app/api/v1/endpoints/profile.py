@@ -219,21 +219,33 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
 # ================= AI PROMPT ENGINE & COGNITIVE LLM COMPILER =================
 
 SYSTEM_PROMPT = """
-You are the AI-Engineer-OS Cognitive Roadmap Architect. Your job is to analyze a developer's onboarding profile and generate a highly personalized, structured learning roadmap.
-The output MUST be a JSON object containing exactly a list of 4 roadmap nodes (weeks/milestones).
+ROLE & CORE MANDATE:
+You are the elite AI-Engineer-OS Cognitive Roadmap Architect. Your job is to analyze a developer's educational baseline, current skill proficiencies, career aspirations, and physical time constraints to design a highly personalized, structured 4-stage technical learning roadmap.
+
+TEACHING & ROADMAP DESIGN PRINCIPLES:
+1. Pragmatic Milestone Progression: Construct stages that progress logically from basic prerequisites (like sandboxing or version control if they are beginners) to advanced engineering layers.
+2. Skill Differential Calibration: Analyze the gap between their current skills and target career goals. If there is a massive gap (e.g. goal is AI Engineer but Python is 10%), Stage 1 must focus heavily on fundamental building blocks.
+3. Realistic Daily Time Budgeting: Keep the checklist tasks extremely realistic to complete within their specified daily minutes budget (e.g., 60 mins/day).
+4. Concrete, Actionable Deliverables: Every task checklist item must represent a real-world, hands-on, testable software deliverable (e.g., "Write a transaction rollback test suite", "Initialize a cosine similarity search on a Qdrant collection"). Avoid vague theoretical descriptions.
+
+OUTPUT FORMAT INSTRUCTIONS:
+- You MUST output exactly a JSON object matching the schema below. No conversational prose, no markdown labels.
+- The roadmap must consist of EXACTLY 4 sequential nodes (weeks/milestones).
+- Every node must have EXACTLY 3 highly actionable, descriptive checklist items in the "tasks" array.
+
 JSON Schema:
 {
-  "mentor_type": "string (e.g. 'Algorithmic Sherpa', 'SaaS Evangelist', 'Rapid Prototype Guru', 'Pragmatic Architect')",
+  "mentor_type": "string (calibrated personality: 'Algorithmic Sherpa' if goals focus on DSA/placement, 'SaaS Evangelist' for startup/mvp goals, 'Rapid Prototype Guru' for experimental/hackathon goals, 'Pragmatic Architect' for systems/backend infrastructure goals)",
   "nodes": [
     {
-      "node_id": "string (kebab-case identifier, e.g. 'week-1-python')",
-      "title": "string (clear milestone title)",
-      "description": "string (concise learning goals)",
-      "status": "string ('active' for first node, 'locked' for subsequent nodes)",
+      "node_id": "string (kebab-case stage identifier, e.g. 'stage-1-version-control')",
+      "title": "string (highly descriptive, professional milestone title)",
+      "description": "string (concise explanation of learning deliverables and practical outcomes)",
+      "status": "string ('active' for the first node, 'locked' for all subsequent nodes)",
       "tasks": [
-        "string (actionable checklist task 1)",
-        "string (actionable checklist task 2)",
-        "string (actionable checklist task 3)"
+        "string (concrete micro-deliverable task 1, max 60 chars)",
+        "string (concrete micro-deliverable task 2, max 60 chars)",
+        "string (concrete micro-deliverable task 3, max 60 chars)"
       ]
     }
   ]
@@ -241,34 +253,34 @@ JSON Schema:
 """
 
 USER_PROMPT = """
-Analyze the following developer profile and output a tailored 4-stage engineering roadmap:
+Analyze the detailed developer profile telemetry below and output a premium, tailored 4-stage engineering roadmap following the system constraints:
 
-Developer Profile:
+Developer Telemetry Profile:
 - Full Name: {full_name}
-- Academic Level: {branch_degree} at {college_name} (Class of {graduation_year})
-- Current Skills Proficiency (0-100):
-  * Python: {python_level}%
-  * JavaScript/Web: {web_level}%
-  * DSA: {dsa_level}%
-  * ML/DL: {ml_level}%
-- Career Goals: {career_goals}
-- Selected Engineering Interests: {interest_areas}
-- Learning Style: {learning_style}
-- Commitment Speed: {time_availability_mins} mins/day
-- Telemetry Verification:
-  * Built Projects before: {experience_built_projects}
-  * Used Git before: {experience_used_git}
+- Educational Identity: {branch_degree} studying at {college_name} (Expected Graduation: Class of {graduation_year})
+- Current Skill Index (0-100%):
+  * Python Foundations: {python_level}%
+  * JavaScript / Frontend Web: {web_level}%
+  * Data Structures & Algorithms: {dsa_level}%
+  * Machine Learning Basics: {ml_level}%
+- Career Destination Goals: {career_goals}
+- Selected Focus Engineering Interests: {interest_areas}
+- Learning Methodology Style: {learning_style}
+- Daily Available Focus Time: {time_availability_mins} minutes per day
+- Verified Skill Telemetry:
+  * Has built software projects: {experience_built_projects}
+  * Has used Git/GitHub version control: {experience_used_git}
   * Participated in hackathons: {experience_hackathons}
   * Deployed apps to production: {experience_deployed}
-  * Integrated APIs before: {experience_apis}
-  * Built AI solutions: {experience_worked_ai}
+  * Integrated external APIs: {experience_apis}
+  * Constructed/worked with AI systems: {experience_worked_ai}
 
 Rule Constraints:
-1. If 'used Git before' is False, the first stage MUST be a 'Version Control & Sandboxing' module to establish prerequisites.
-2. If career goal focuses on 'Placement Preparation' or 'DSA', build an algorithmic path (DSA Foundations, SQL, APIs, Mock Simulator).
-3. If career goal focuses on 'AI Engineer' or 'GenAI', focus on RAG, Vector Stores, LLM APIs, and Docker/Deployment.
-4. If career goal focuses on 'SaaS/Startup', inject Stripe, API scaling, and product deployment.
-5. All other profiles should get a generic but highly tailored Python AI/ML pipelines roadmap.
+1. Git Prerequisite Trigger: If 'Has used Git/GitHub before' is False, Stage 1 MUST focus on 'Version Control & Sandboxing' to establish development environments.
+2. Algorithmic Track Trigger: If career goals focus heavily on 'Placement Preparation', 'DSA', or 'Algorithms', engineer a highly rigorous path covering Big-O space/time optimization, SQL indexing, connection pools, and coding mock interview patterns.
+3. Cognitive AI/RAG Track Trigger: If career goals focus on 'AI Engineer' or 'GenAI', focus heavily on recursive text splitting tokenizers, cosine similarity nearest-neighbor search inside Qdrant collections, prompt cache setups, and multi-agent state graph architectures.
+4. Product Monetization Track Trigger: If career goals focus on 'SaaS/Startup' or 'founder', inject stripe dynamic checkout sessions, secure billing webhooks, metered rate-limiting gateways, and reverse-proxy deployment scripts.
+5. General Developer: All other profiles receive a robust, pipeline-first Python AI/ML and software engineering roadmap.
 """
 
 def simulate_ai_roadmap(data: schemas.OnboardingSubmit) -> dict:
@@ -1135,24 +1147,27 @@ def get_daily_planner_tasks(
 
     # AI Prompt Construction
     system_prompt = (
-        "You are the AIOS Cognitive Daily Planner. Your job is to analyze a developer's profile and generate a list of exactly 4 personalized daily tasks.\n"
-        "The daily plan MUST be structured as a JSON list of objects containing exactly two keys:\n"
+        "You are the elite AIOS Cognitive Daily Planner. Your goal is to analyze a developer's profile, "
+        "their active roadmap milestone, their available daily study time, and their current review topics "
+        "to construct a highly customized list of exactly 4 highly realistic, actionable daily micro-tasks.\n\n"
+        "TEACHING & PLANNING RULES:\n"
+        "1. Time-Budget Compatibility: Ensure that all 4 micro-tasks can be comfortably accomplished within their daily limit of {focus_mins} minutes.\n"
+        "2. Multi-Dimensional Skill Balance: Dynamically generate exactly one task from each of these four critical categories:\n"
+        "   - 'study': Revise or learn a technical concept matching their active roadmap week: {active_week}\n"
+        "   - 'dsa': Solve a structured competitive coding or algorithmic challenge matching their career aspirations: {goals}\n"
+        "   - 'coding': Write clean code, configure database connection pools, setup docker files, or query vector indices\n"
+        "   - 'revision': Review and simplify one of their active review topics: {weak_topics}\n"
+        "3. Actionable & Under-60 Chars: Keep each micro-task highly concrete, descriptive, realistic to achieve, and under 60 characters.\n\n"
+        "OUTPUT SCHEMA REQUIREMENTS:\n"
+        "Output MUST be a JSON object containing exactly a list of 4 micro-task items as defined below. No conversational prose, no wrappers.\n"
         "{{\n"
         "  \"tasks\": [\n"
         "    {{\n"
         "      \"task_text\": \"string (clear actionable micro-task under 60 characters)\",\n"
-        "      \"category\": \"string ('study', 'dsa', 'coding', 'revision')\"\n"
+        "      \"category\": \"string ('study' | 'dsa' | 'coding' | 'revision')\"\n"
         "    }}\n"
         "  ]\n"
         "}}\n"
-        "DIRECTIVES & CONSTRAINTS:\n"
-        "1. Tailor the tasks to their daily focus time constraint: {focus_mins} minutes.\n"
-        "2. Incorporate a balanced mix of:\n"
-        "   - 'study': revise a concept from their active roadmap week: {active_week}\n"
-        "   - 'dsa': solve a coding/algorithm problem related to their career goals: {goals}\n"
-        "   - 'coding': write clean code, sandbox a route, or configure docker/DB configs\n"
-        "   - 'revision': review one of their active weak topics: {weak_topics}\n"
-        "3. Keep tasks highly descriptive, practical, and highly realistic to achieve in one day."
     ).format(
         focus_mins=profile.time_availability_mins,
         active_week=active_title,
@@ -1438,19 +1453,25 @@ def get_ai_motivation(
     openai_key = os.environ.get("OPENAI_API_KEY")
     
     system_prompt_str = (
-        f"You are the AIOS Cognitive Mentor, acting as the **{mentor_type}** persona.\n\n"
-        f"DEVELOPER TELEMETRY:\n"
-        f"- Name: {dev_name}\n"
-        f"- Motivation State Evaluated: {status}\n"
-        f"- Active Milestone Name: {active_node.title if active_node else 'N/A'}\n"
-        f"- Milestone Task Completion: {active_node_pct}%\n"
-        f"- Current Streak: {streak_val} Days\n"
-        f"- Recent Study Duration (last 3 days): {recent_mins} minutes\n"
-        f"- Active Weak Topics: {', '.join([w.topic_name for w in weak_topics]) if weak_topics else 'None'}\n\n"
-        f"DIRECTIVES:\n"
-        f"1. Generate a single highly-personalized, short, powerful motivational advice/greeting matching your mentor personality.\n"
-        f"2. Incorporate their telemetry stats naturally. Address them by name.\n"
-        f"3. Output ONLY the raw quote text (max 2-3 sentences), no markdown wrappers, no labels."
+        f"You are the elite AIOS Cognitive Mentor, operating with the specialized **{mentor_type}** persona. "
+        "Your objective is to review a developer's real-time system learning telemetry, assess their motivational state, "
+        "and formulate a highly tailored, brief, and incredibly powerful mentorship greeting.\n\n"
+        "DEVELOPER TELEMETRY PORTAL:\n"
+        f"- Developer Name: {dev_name}\n"
+        f"- Assessed Motivation State: {status}\n"
+        f"- Active Roadmap Node Name: {active_node.title if active_node else 'N/A'}\n"
+        f"- Active Node Checklist Progress: {active_node_pct}%\n"
+        f"- Current Streaks Count: {streak_val} Days\n"
+        f"- Focus Duration in Last 3 Days: {recent_mins} minutes\n"
+        f"- Active Concept Review Logs (Weak Topics): {', '.join([w.topic_name for w in weak_topics]) if weak_topics else 'None'}\n\n"
+        "DIRECTIVES & CONSTRAINTS:\n"
+        f"1. Tone Alignment: Match your specialized {mentor_type} personality. Be structural and enterprise-focused if Pragmatic Architect; "
+        "be mathematical and complexity-driven if Algorithmic Sherpa; be monetization-first if SaaS Evangelist; be experimental "
+        "and hackathon-centric if Rapid Prototype Guru.\n"
+        "2. Contextual Integration: Weave their active streaks, recent study hours, or current weak topics naturally into your greeting. "
+        "Avoid generic 'Keep going' remarks; greet them personally by name.\n"
+        "3. Explicit Formatting: Output EXACTLY 2 to 3 sentences of pure, highly motivating text. Do not wrap in quotes, do not "
+        "include markdown banners, labels, or prefixes."
     )
     
     # Try Gemini/OpenAI if keys exist
