@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../config";
 
 interface OnboardingWizardProps {
   step: number;
@@ -166,7 +167,7 @@ export default function OnboardingWizard({
     };
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profile/onboard", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/onboard`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -177,7 +178,7 @@ export default function OnboardingWizard({
 
       if (res.ok) {
         // Fetch fresh profile data to render dynamic summary on success screen
-        const freshProfile = await fetch("http://localhost:8000/api/v1/profile/me", {
+        const freshProfile = await fetch(`${API_BASE_URL}/api/v1/profile/me`, {
           headers: { Authorization: `Bearer ${user?.uid}` }
         });
         if (freshProfile.ok) {

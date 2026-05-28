@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../config";
 
 interface ProfileTabProps {
   user: any;
@@ -31,7 +32,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profile/me", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/me`, {
         headers: {
           Authorization: `Bearer ${user.uid}`,
         },
@@ -57,7 +58,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
     setSubmittingProject(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profile/project", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/project`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

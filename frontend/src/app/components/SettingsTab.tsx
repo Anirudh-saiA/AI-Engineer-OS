@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config";
 
 interface SettingsTabProps {
   theme: string;
@@ -36,7 +37,7 @@ export default function SettingsTab({
       }
     }
     if (user) {
-      fetch('http://localhost:8000/api/v1/profile/settings', {
+      fetch(`${API_BASE_URL}/api/v1/profile/settings`, {
         headers: { Authorization: `Bearer ${user.uid}` },
       })
         .then((res) => res.json())
@@ -58,7 +59,7 @@ export default function SettingsTab({
       ...settings,
       theme,
     };
-    const res = await fetch('http://localhost:8000/api/v1/profile/settings', {
+    const res = await fetch(`${API_BASE_URL}/api/v1/profile/settings`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

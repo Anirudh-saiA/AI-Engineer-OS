@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import OnboardingWizard from "./onboarding/OnboardingWizard";
 import ProfileTab from "./components/ProfileTab";
 import SettingsTab from "./components/SettingsTab";
+import { API_BASE_URL } from "./config";
 
 type Tab = "dashboard" | "agent" | "database" | "vector" | "settings" | "profile";
 
@@ -233,6 +234,58 @@ interface TelemetryRow {
   status: "success" | "warning" | "error";
   duration: number;
   timestamp: string;
+}
+
+function BreathingSpace() {
+  const [timer, setTimer] = React.useState(300); // 5 mins break
+  const [breathText, setBreathText] = React.useState("Inhale");
+  
+  React.useEffect(() => {
+    let interval: any;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer(t => t - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  React.useEffect(() => {
+    let textInterval: any;
+    if (timer > 0) {
+      textInterval = setInterval(() => {
+        setBreathText(prev => {
+          if (prev === "Inhale") return "Hold";
+          if (prev === "Hold") return "Exhale";
+          return "Inhale";
+        });
+      }, 4000);
+    }
+    return () => clearInterval(textInterval);
+  }, [timer]);
+
+  const mins = Math.floor(timer / 60);
+  const secs = timer % 60;
+  const formattedTime = `${mins}:${String(secs).padStart(2, '0')}`;
+
+  return (
+    <div className="text-center font-mono relative z-20">
+      <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest select-none animate-pulse">
+        {timer > 0 ? breathText : "Peaceful"}
+      </p>
+      <h3 className="text-2xl font-black text-white mt-1">
+        {timer > 0 ? formattedTime : "Finished"}
+      </h3>
+      {timer === 0 && (
+        <button 
+          onClick={() => setTimer(300)}
+          className="text-[9px] font-bold underline cursor-pointer text-slate-400 hover:text-white"
+        >
+          Restart break
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -529,7 +582,7 @@ const staticRoadmaps: Record<string, any> = {
   const fetchChatSessions = async () => {
     if (!user) return;
     try {
-      const res = await fetch("http://localhost:8000/api/v1/agent/sessions", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
         headers: {
           "Authorization": `Bearer ${user.uid}`
         }
@@ -567,7 +620,7 @@ const staticRoadmaps: Record<string, any> = {
     
     // Auto-save the default welcome session to the backend database
     try {
-      await fetch("http://localhost:8000/api/v1/agent/sessions", {
+      await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -585,9 +638,9 @@ const staticRoadmaps: Record<string, any> = {
   const fetchDailyTasks = async () => {
     if (!user) return;
     setPlannerLoading(true);
-    addLog("[API] Querying daily planner checklist from AI Coach...", "system");
+    addLog(`[API] Querying daily planner checklist from AI Coach (${API_BASE_URL})...`, "system");
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profile/daily-planner", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/daily-planner`, {
         headers: {
           "Authorization": `Bearer ${user.uid}`
         }
@@ -610,7 +663,7 @@ const staticRoadmaps: Record<string, any> = {
     if (!user) return;
     setMotivationLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profile/motivation", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/motivation`, {
         headers: { "Authorization": `Bearer ${user.uid}` }
       });
       if (res.ok) {
@@ -635,7 +688,7 @@ const staticRoadmaps: Record<string, any> = {
     if (!user) return;
     addLog(`[SYSTEM] Toggling daily task progress...`, "system");
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/profile/daily-planner/${taskId}/toggle`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/daily-planner/${taskId}/toggle`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${user.uid}`
@@ -709,7 +762,7 @@ const staticRoadmaps: Record<string, any> = {
 
     try {
       // Register session in backend database
-      await fetch("http://localhost:8000/api/v1/agent/sessions", {
+      await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -736,7 +789,7 @@ const staticRoadmaps: Record<string, any> = {
 
     try {
       // Wipes session and cascade deleted message children
-      await fetch(`http://localhost:8000/api/v1/agent/sessions/${sessionId}`, {
+      await fetch(`${API_BASE_URL}/api/v1/agent/sessions/${sessionId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${user.uid}`
@@ -766,7 +819,7 @@ const staticRoadmaps: Record<string, any> = {
         };
 
         // Re-post default welcome session
-        fetch("http://localhost:8000/api/v1/agent/sessions", {
+        fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -856,9 +909,9 @@ const staticRoadmaps: Record<string, any> = {
   const fetchStatus = async () => {
     if (!user) return;
     setFastapiOnline(null);
-    addLog("[API] Querying REST API gateway status from http://localhost:8000/api/v1/system/status...", "system");
+    addLog(`[API] Querying REST API gateway status from ${API_BASE_URL}/api/v1/system/status...`, "system");
     try {
-      const res = await fetch("http://localhost:8000/api/v1/system/status", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/system/status`, {
         headers: {
           "Authorization": `Bearer ${user.uid}`
         }
@@ -881,7 +934,7 @@ const staticRoadmaps: Record<string, any> = {
 const fetchProfile = async () => {
   if (!user) return;
   try {
-    const res = await fetch("http://localhost:8000/api/v1/profile/me", {
+    const res = await fetch(`${API_BASE_URL}/api/v1/profile/me`, {
       headers: { Authorization: `Bearer ${user.uid}` },
     });
     if (res.ok) {
@@ -903,6 +956,7 @@ const fetchProfile = async () => {
     }
   } catch (err) {
     console.error("Profile fetch error", err);
+    addLog("[ERROR] Unable to reach backend API. Check if the server is running.", "error");
     setProfileExists(false);
     setShowOnboarding(true);
   }
@@ -950,7 +1004,7 @@ const fetchProfile = async () => {
     addLog(`[AGENT] Dispatching prompt context to secure backend API...`, "info");
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/agent/chat", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/agent/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1040,7 +1094,7 @@ const fetchProfile = async () => {
     setDbChecking(true);
     addLog("[API] Sending db-check query to backend...", "system");
     try {
-      const res = await fetch("http://localhost:8000/api/v1/system/db-check", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/system/db-check`, {
         headers: {
           "Authorization": `Bearer ${user.uid}`
         }
@@ -1673,57 +1727,7 @@ const fetchProfile = async () => {
                           <div className="relative w-44 h-44 rounded-full border border-cyan-500/20 flex items-center justify-center">
                             <div className="absolute w-36 h-36 rounded-full bg-cyan-500/10 border-2 border-cyan-400/60 shadow-[0_0_30px_rgba(6,182,212,0.4)] animate-breath flex items-center justify-center">
                               
-                              {(() => {
-                                const [timer, setTimer] = React.useState(300); // 5 mins break
-                                const [breathText, setBreathText] = React.useState("Inhale");
-                                
-                                React.useEffect(() => {
-                                  let interval: any;
-                                  if (timer > 0) {
-                                    interval = setInterval(() => {
-                                      setTimer(t => t - 1);
-                                    }, 1000);
-                                  }
-                                  return () => clearInterval(interval);
-                                }, [timer]);
-
-                                React.useEffect(() => {
-                                  let textInterval: any;
-                                  if (timer > 0) {
-                                    textInterval = setInterval(() => {
-                                      setBreathText(prev => {
-                                        if (prev === "Inhale") return "Hold";
-                                        if (prev === "Hold") return "Exhale";
-                                        return "Inhale";
-                                      });
-                                    }, 4000);
-                                  }
-                                  return () => clearInterval(textInterval);
-                                }, [timer]);
-
-                                const mins = Math.floor(timer / 60);
-                                const secs = timer % 60;
-                                const formattedTime = `${mins}:${String(secs).padStart(2, '0')}`;
-
-                                return (
-                                  <div className="text-center font-mono relative z-20">
-                                    <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest select-none animate-pulse">
-                                      {timer > 0 ? breathText : "Peaceful"}
-                                    </p>
-                                    <h3 className="text-2xl font-black text-white mt-1">
-                                      {timer > 0 ? formattedTime : "Finished"}
-                                    </h3>
-                                    {timer === 0 && (
-                                      <button 
-                                        onClick={() => setTimer(300)}
-                                        className="text-[9px] font-bold underline cursor-pointer text-slate-400 hover:text-white"
-                                      >
-                                        Restart break
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })()}
+                              <BreathingSpace />
 
                             </div>
                           </div>
@@ -2467,7 +2471,7 @@ const fetchProfile = async () => {
                                               onClick={async () => {
                                                 addLog(`[SYSTEM] Syncing task checklist item: "${task}"...`, "system");
                                                 try {
-                                                  const res = await fetch("http://localhost:8000/api/v1/profile/roadmap/task/toggle", {
+                                                  const res = await fetch(`${API_BASE_URL}/api/v1/profile/roadmap/task/toggle`, {
                                                     method: "POST",
                                                     headers: {
                                                       "Content-Type": "application/json",

@@ -373,8 +373,7 @@ def create_chat_session(
     
     # Check if already exists
     existing = db.query(models.ChatSession).filter(
-        models.ChatSession.id == session_data.id,
-        models.ChatSession.user_id == uid
+        models.ChatSession.id == session_data.id
     ).first()
     if existing:
         msgs = []
@@ -520,8 +519,7 @@ def chat_with_mentor(
     else:
         # Ensure session exists in the database
         db_sess = db.query(models.ChatSession).filter(
-            models.ChatSession.id == session_id,
-            models.ChatSession.user_id == uid
+            models.ChatSession.id == session_id
         ).first()
         if not db_sess:
             db_sess = models.ChatSession(id=session_id, user_id=uid, title="Active Chat")
