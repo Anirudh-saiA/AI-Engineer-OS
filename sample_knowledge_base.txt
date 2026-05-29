@@ -1,0 +1,26 @@
+========================================================================
+AI-ENGINEER-OS: SEMANTIC VECTOR STORAGE & RAG SYSTEMS
+========================================================================
+
+The AI-Engineer-OS uses Qdrant Vector Database on port 6333 as its core
+high-performance semantic similarity retrieval engine. 
+
+1. Recursive Paragraph Splitting:
+Raw files uploaded to the platform are tokenized and divided using a sliding
+text split window (typically 400 characters per chunk with an 80-character
+overlap) to preserve the contextual flow of paragraphs.
+
+2. Cosine Similarity Vector Index:
+Once chunked, the application generates a 1536-dimension float array embedding
+using Gemini or OpenAI models. If API keys are offline, it falls back to a 
+local high-fidelity keyword semantic overlay scanner.
+
+3. Database Configurations:
+- Qdrant REST Endpoint: http://localhost:6333/collections/ai_engineer_kb
+- Distance Metric: Cosine
+- Vector Dimensions: 1536
+- Relational Database Backend: PostgreSQL on port 5434
+
+4. Real-time Ingest Pipeline:
+Uploading files through the dashboard automatically updates the points vector
+index inside the database and awards +20 XP to the developer profile daily streak.

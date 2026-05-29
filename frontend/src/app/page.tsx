@@ -868,6 +868,7 @@ const staticRoadmaps: Record<string, any> = {
   const [vectorResults, setVectorResults] = useState<any[]>([]);
   const [vectorSearching, setVectorSearching] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
 
   // Tab 5: Settings States
   const [activeModel, setActiveModel] = useState("gemini-3.5-flash");
@@ -1150,27 +1151,102 @@ const fetchProfile = async () => {
     addLog(`[DATABASE] Injected mock transaction log: ${picked.event} (duration: ${picked.duration}ms)`, "success");
   };
 
-  // Vector Tab: Mock Search
-  const handleVectorSearch = (e: React.FormEvent) => {
+  // Vector Tab: Live Search
+  const handleVectorSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vectorQuery.trim()) return;
+    if (!user) return;
     setVectorSearching(true);
     addLog(`[VECTOR] Performing cosine similarity index search: "${vectorQuery}"`, "info");
     
-    setTimeout(() => {
-      const results = [
-        { score: 0.985, doc: "backend/app/api/deps.py: Verify authentication token via Bearer header authorization protocol.", category: "auth" },
-        { score: 0.912, doc: "backend/app/db/session.py: SQLAlchemy PostgreSQL engine connection pools on port 5434.", category: "database" },
-        { score: 0.843, doc: "frontend/src/app/firebase.ts: Client web configuration parameters supporting OAuth popups.", category: "config" },
-      ].filter(r => r.doc.toLowerCase().includes(vectorQuery.toLowerCase()) || vectorQuery.length > 2);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/vector/search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({
+          query: vectorQuery,
+          limit: 3
+        })
+      });
       
-      setVectorResults(results);
+      if (res.ok) {
+        const data = await res.json();
+        const results = data.results || [];
+        setVectorResults(results);
+        addLog(`[SUCCESS] Vector match complete. Found ${results.length} relevant documents. (Engine: ${data.engine})`, "success");
+      } else {
+        addLog(`[ERROR] Vector search failed with status ${res.status}`, "error");
+      }
+    } catch (err: any) {
+      addLog(`[ERROR] Vector search failed: ${err.message || err}`, "error");
+    } finally {
       setVectorSearching(false);
-      addLog(`[SUCCESS] Vector match complete. Found ${results.length} relevant documents.`, "success");
-    }, 800);
+    }
   };
 
-  // Vector Tab: Mock File Upload
+  // Vector Tab: File Ingestion Pipeline
+  const ingestFile = (file: File) => {
+    if (!user) return;
+    addLog(`[VECTOR] Reading document file: "${file.name}" (${file.size} bytes)`, "info");
+    setUploadStatus({ text: `Reading document file: "${file.name}"...`, type: "info" });
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      if (!content) {
+        addLog(`[ERROR] Failed to read empty or invalid file: "${file.name}"`, "error");
+        setUploadStatus({ text: `Failed to read empty or invalid file: "${file.name}"`, type: "error" });
+        return;
+      }
+      
+      addLog(`[VECTOR] Ingesting file "${file.name}" into vector pipeline...`, "info");
+      setUploadStatus({ text: `Ingesting "${file.name}" into vector pipeline...`, type: "info" });
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/vector/ingest`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user.uid}`
+          },
+          body: JSON.stringify({
+            filename: file.name,
+            content: content
+          })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "success" || data.status === "partial_success") {
+            addLog(`[VECTOR] Ingesting file... Tokenized into ${data.chunks_count} chunks... Upserted to Qdrant!`, "success");
+            addLog(`[SUCCESS] ${data.message}`, "success");
+            setUploadStatus({ text: `[VECTOR] Ingesting file... Tokenized into ${data.chunks_count} chunks... Upserted to Qdrant!`, type: "success" });
+          } else {
+            addLog(`[ERROR] Ingestion failed: ${data.message}`, "error");
+            setUploadStatus({ text: `Ingestion failed: ${data.message}`, type: "error" });
+          }
+        } else {
+          const errorText = await res.text();
+          addLog(`[ERROR] Ingestion HTTP failure: ${errorText}`, "error");
+          setUploadStatus({ text: `Ingestion HTTP failure: ${errorText}`, type: "error" });
+        }
+      } catch (err: any) {
+        addLog(`[ERROR] Ingestion request failed: ${err.message || err}`, "error");
+        setUploadStatus({ text: `Ingestion request failed: ${err.message || err}`, type: "error" });
+      }
+    };
+    
+    reader.onerror = () => {
+      addLog(`[ERROR] Error reading file "${file.name}"`, "error");
+      setUploadStatus({ text: `Error reading file "${file.name}"`, type: "error" });
+    };
+    
+    reader.readAsText(file);
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1188,11 +1264,7 @@ const fetchProfile = async () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      addLog(`[VECTOR] Reading document file: "${file.name}" (${file.size} bytes)`, "info");
-      
-      setTimeout(() => {
-        addLog(`[SUCCESS] Tokenized document into 4 chunks. Embedded with text-embedding-ada-002. Upserted to Qdrant collection 'ai_engineer_kb'.`, "success");
-      }, 1000);
+      ingestFile(file);
     }
   };
 
@@ -3078,7 +3150,10 @@ const fetchProfile = async () => {
                         className="flex items-center gap-3 bg-[var(--bg-input)] rounded-2xl px-4 py-3 border shadow-inner focus-within:ring-2 focus-within:ring-[var(--accent-soft)] transition-all"
                         style={{ borderColor: "var(--border)" }}
                       >
+                        <label htmlFor="chat-message-input" className="sr-only">Ask the AI agent</label>
                         <input 
+                          id="chat-message-input"
+                          name="chatMessage"
                           type="text"
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
@@ -3251,7 +3326,10 @@ const fetchProfile = async () => {
                           Search cognitive indices using cosine similarity. Enter keywords to query embedded workspace files.
                         </p>
                         <form onSubmit={handleVectorSearch} className="flex gap-2">
+                          <label htmlFor="qdrant-search-input" className="sr-only">Search query</label>
                           <input 
+                            id="qdrant-search-input"
+                            name="qdrantSearchQuery"
                             type="text"
                             value={vectorQuery}
                             onChange={(e) => setVectorQuery(e.target.value)}
@@ -3325,17 +3403,26 @@ const fetchProfile = async () => {
                           Split, embed, and ingest PDF, Markdown, or text files into your Qdrant semantic storage.
                         </p>
                         
-                        <label className="mt-5 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer transition-all"
+                        {uploadStatus && (
+                          <div className="mt-4 px-4 py-2.5 rounded-xl border text-[11px] font-mono leading-relaxed max-w-xs mx-auto animate-pulse"
+                            style={{ 
+                              background: uploadStatus.type === "error" ? "rgba(239,68,68,0.06)" : uploadStatus.type === "success" ? "rgba(34,197,94,0.06)" : "rgba(251,191,36,0.06)",
+                              borderColor: uploadStatus.type === "error" ? "rgba(239,68,68,0.2)" : uploadStatus.type === "success" ? "rgba(34,197,94,0.2)" : "rgba(251,191,36,0.2)",
+                              color: uploadStatus.type === "error" ? "#f87171" : uploadStatus.type === "success" ? "#4ade80" : "#fbbf24"
+                            }}>
+                            {uploadStatus.text}
+                          </div>
+                        )}
+                        
+                        <label htmlFor="vector-file-upload" className="mt-5 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer transition-all"
                           style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                           Browse System Files
-                          <input type="file" className="hidden" onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              const name = e.target.files[0].name;
-                              addLog(`[VECTOR] File selected: "${name}". Tokenizing...`, "info");
-                              setTimeout(() => addLog(`[SUCCESS] File "${name}" ingested successfully.`, "success"), 1000);
-                            }
-                          }} />
                         </label>
+                        <input id="vector-file-upload" name="vectorFile" type="file" className="hidden" onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            ingestFile(e.target.files[0]);
+                          }
+                        }} />
                       </div>
                     </div>
                   </div>

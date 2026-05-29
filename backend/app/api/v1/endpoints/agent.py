@@ -299,16 +299,16 @@ import json
 
 def search_qdrant_embeddings(query_vector: list, limit: int = 3):
     url = "http://localhost:6333/collections/ai_engineer_kb/points/search"
-    payload = {
+    payload = {{
         "vector": query_vector,
         "limit": limit,
         "with_payload": True
-    }
+    }}
     # Direct urllib POST to Qdrant REST api
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"}
+        headers={{"Content-Type": "application/json"}}
     )
     with urllib.request.urlopen(req) as res:
         return json.loads(res.read().decode("utf-8"))

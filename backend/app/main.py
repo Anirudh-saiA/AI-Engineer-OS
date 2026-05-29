@@ -5,6 +5,7 @@ from app.api.v1.router import api_router
 from app.db.base_class import Base
 from app.db.session import engine
 import app.models.profile # Force map models to Base registry
+import app.models.document
 
 # Auto-generate PostgreSQL schemas on startup
 Base.metadata.create_all(bind=engine)
