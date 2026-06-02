@@ -4,6 +4,7 @@ import urllib.request
 import urllib.error
 import datetime
 import re
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -499,11 +500,30 @@ def chat_with_mentor(
     prompt_message = query.message
     session_id = query.session_id
     
-    # 1. Fetch user profile context if onboarded
+    # 1. Edge Case & Input Validations
+    if not prompt_message or not prompt_message.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Query message cannot be empty or contain only whitespace."
+        )
+        
+    if len(prompt_message) > 15000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Query message length exceeds the maximum allowed boundary of 15,000 characters."
+        )
+        
+    if "\x00" in prompt_message or "\\x00" in prompt_message:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Query message contains invalid characters or binary payloads."
+        )
+    
+    # 2. Fetch user profile context if onboarded
     profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
     dev_name = profile.full_name if profile else "Developer"
     
-    # 2. Resolve/Sync Active Session Thread in DB
+    # 3. Resolve/Sync Active Session Thread in DB
     if not session_id:
         # Fallback to last active session
         last_sess = db.query(models.ChatSession).filter(
@@ -526,7 +546,7 @@ def chat_with_mentor(
             db.add(db_sess)
             db.commit()
 
-    # 3. Save User Prompt message to database immediately
+    # 4. Save User Prompt message to database immediately
     user_msg_id = "msg-" + str(int(datetime.datetime.utcnow().timestamp())) + "-user"
     db_msg = models.ChatMessage(
         id=user_msg_id,
@@ -542,6 +562,89 @@ def chat_with_mentor(
     if session_obj:
         session_obj.updated_at = datetime.datetime.utcnow()
     db.commit()
+
+    # 5. Project Builder Interception
+    from app.core.project_templates import PROJECT_TEMPLATES
+    lower_msg = prompt_message.lower()
+    intercepted_reply = None
+    
+    if "ai agent project" in lower_msg or "agent project" in lower_msg:
+        intercepted_reply = PROJECT_TEMPLATES["agent"]
+        title = "Multi-Agent Developer Sandbox Orchestrator"
+        desc = "An elite, production-grade sandbox execution environment that spins up temporary container sandboxes to execute code and streams back stdout telemetry in real-time."
+        repo = "https://github.com/developer/ai-agent-sandbox"
+        cat = "AI Agents"
+        skills = "FastAPI, Docker Engine SDK, PostgreSQL, Python"
+    elif "rag project" in lower_msg:
+        intercepted_reply = PROJECT_TEMPLATES["rag"]
+        title = "High-Performance Semantic RAG Repository Search"
+        desc = "An elite vector search pipeline enabling rapid monorepo indexing, slide chunking, Qdrant embeddings generation, and contextual question-answering."
+        repo = "https://github.com/developer/high-perf-rag"
+        cat = "RAG Systems"
+        skills = "Qdrant, OpenAI API, Gemini Flash, FastAPI"
+    elif "cv project" in lower_msg or "computer vision project" in lower_msg:
+        intercepted_reply = PROJECT_TEMPLATES["cv"]
+        title = "Computer Vision & Intelligent OCR Analyzer"
+        desc = "A real-time image scanning pipeline utilizing OpenCV filters, YOLO models, and Postgres telemetry to identify objects and serialize bounding coordinates."
+        repo = "https://github.com/developer/cv-ocr-intelligence"
+        cat = "Machine Learning"
+        skills = "OpenCV, YOLOv8, Tesseract OCR, FastAPI"
+    elif "saas project" in lower_msg:
+        intercepted_reply = PROJECT_TEMPLATES["saas"]
+        title = "Stripe-Monetized Developer SaaS Boilerplate"
+        desc = "A production-ready subscription gate featuring secure webhook listeners, transactional rollback safety, and custom Next.js checkout portals."
+        repo = "https://github.com/developer/saas-stripe-monetized"
+        cat = "Web Development"
+        skills = "Stripe SDK, FastAPI, SQLAlchemy, PostgreSQL"
+        
+    if intercepted_reply:
+        # Save Assistant reply to Database
+        assistant_msg_id = "msg-" + str(int(datetime.datetime.utcnow().timestamp())) + "-assistant"
+        db_assistant_msg = models.ChatMessage(
+            id=assistant_msg_id,
+            session_id=session_id,
+            sender="assistant",
+            text=intercepted_reply,
+            timestamp=datetime.datetime.utcnow()
+        )
+        db.add(db_assistant_msg)
+        
+        # Log to Database Project model to verify functional DB operations and update profile
+        try:
+            exists = db.query(models.Project).filter(
+                models.Project.user_id == uid,
+                models.Project.title == title
+            ).first()
+            if not exists:
+                new_proj = models.Project(
+                    user_id=uid,
+                    title=title,
+                    description=desc,
+                    repository_link=repo,
+                    status="in_progress",
+                    category=cat,
+                    hours_spent=0,
+                    skills=skills
+                )
+                db.add(new_proj)
+                # Award XP points to active user profile
+                if profile:
+                    profile.xp_points += 50
+                db.flush()
+        except Exception as db_err:
+            db.rollback()
+            print(f"Project telemetry logging failed: {db_err}")
+            
+        if session_obj:
+            session_obj.updated_at = datetime.datetime.utcnow()
+        db.commit()
+        
+        return ChatResponse(
+            sender="assistant",
+            text=intercepted_reply,
+            timestamp=datetime.datetime.now().strftime("%H:%M"),
+            session_id=session_id
+        )
 
     # 4. Fetch User Progress & Telemetry Context
     goals = db.query(models.UserGoal).filter(models.UserGoal.user_id == uid).all()

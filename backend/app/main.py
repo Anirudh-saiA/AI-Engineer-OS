@@ -39,10 +39,17 @@ def migrate_db():
         except Exception:
             # If query fails, it means columns do not exist. Add them.
             try:
+                # Rollback aborted transaction to allow subsequent DDL commands in PostgreSQL
+                try:
+                    conn.execute(text("ROLLBACK"))
+                except Exception:
+                    pass
+                
                 # Run ALTER TABLE commands
                 conn.execute(text("ALTER TABLE projects ADD COLUMN category VARCHAR DEFAULT 'General'"))
                 conn.execute(text("ALTER TABLE projects ADD COLUMN hours_spent INTEGER DEFAULT 0"))
                 conn.execute(text("ALTER TABLE projects ADD COLUMN skills VARCHAR"))
+                
                 # If using postgreSQL/SQLite we might need to commit
                 try:
                     conn.commit()
