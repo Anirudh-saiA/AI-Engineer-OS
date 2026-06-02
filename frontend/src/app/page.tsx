@@ -11,6 +11,7 @@ import DatabaseTab from "./components/DatabaseTab";
 import VectorTab from "./components/VectorTab";
 import AnalyticsTab from "./components/AnalyticsTab";
 import { API_BASE_URL } from "./config";
+import { isPlaceholder } from "./firebase";
 
 type Tab = "dashboard" | "agent" | "database" | "vector" | "analytics" | "settings" | "profile";
 
@@ -1769,28 +1770,54 @@ const fetchProfile = async () => {
               AI-Engineer-OS is an autonomous developer workspace. Code, deploy, and manage intelligent agents with a single platform — powered by FastAPI, PostgreSQL, and vector search.
             </p>
 
+            {/* Premium Interactive Warning Alert Card */}
+            {isPlaceholder && (
+              <div className="z-10 w-full max-w-xl mx-auto p-5 rounded-2xl border bg-amber-500/10 border-amber-500/20 text-amber-500/90 text-xs font-semibold text-center leading-relaxed animate-fade-up delay-2.5 flex flex-col items-center gap-2 shadow-lg backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  <span className="font-black uppercase tracking-wider">Restricted Demo Mode Active</span>
+                </div>
+                <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                  Live authentication popups are currently locked because Firebase project credentials are not configured in Vercel's environment variables. 
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                  <button 
+                    onClick={signInMockDeveloper}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-extrabold text-[10px] tracking-wide hover:scale-105 transition-all shadow-md cursor-pointer select-none"
+                  >
+                    ⚡ Bypass to Mock Sandbox
+                  </button>
+                  <span className="text-slate-500 text-[10px] font-mono">or add .env.local keys to your Vercel project Settings.</span>
+                </div>
+              </div>
+            )}
+
             {/* Auth Buttons */}
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-lg sm:max-w-2xl mx-auto pt-2 animate-fade-up delay-3">
               <button 
                 onClick={signInWithGoogle}
-                className="btn-accent w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none"
+                disabled={isPlaceholder}
+                className="btn-accent w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ fontSize: "14px" }}
+                title={isPlaceholder ? "Auth keys missing. Please use Bypass Mock Sandbox instead." : "Sign In with Google"}
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
                 </svg>
-                Sign In with Google
+                Sign In with Google {isPlaceholder && "🔒"}
               </button>
 
               <button 
                 onClick={signInWithGithub}
-                className="btn-outline w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none"
+                disabled={isPlaceholder}
+                className="btn-outline w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ fontSize: "14px" }}
+                title={isPlaceholder ? "Auth keys missing. Please use Bypass Mock Sandbox instead." : "Sign In with GitHub"}
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                 </svg>
-                Sign In with GitHub
+                Sign In with GitHub {isPlaceholder && "🔒"}
               </button>
             </div>
 
