@@ -225,3 +225,25 @@ class DailyTask(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
+class ErrorAnalysis(Base):
+    """
+    Stored debugging analysis results for user error submissions.
+    Powers the AI Debugging Assistant history and learning analytics.
+    """
+    __tablename__ = "error_analyses"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    error_text = Column(Text, nullable=False)
+    error_type = Column(String, nullable=True)
+    categories = Column(String, nullable=True)        # Comma-separated category names
+    file_name = Column(String, nullable=True)
+    line_number = Column(Integer, nullable=True)
+    severity = Column(String, default="medium")        # low, medium, high, critical
+    explanation = Column(Text, nullable=True)
+    root_cause = Column(Text, nullable=True)
+    suggested_fixes = Column(Text, nullable=True)      # JSON-encoded list of strings
+    ai_enhanced = Column(Boolean, default=False)       # True if AI API was used for analysis
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
