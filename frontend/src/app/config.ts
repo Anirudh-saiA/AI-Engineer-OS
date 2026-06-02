@@ -1,2 +1,4 @@
 // Central configuration for frontend API endpoints
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// NEXT_PUBLIC_API_URL should be set in Vercel environment variables
+// Fallback points to the live Render backend for production
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-engineer-os-backend.onrender.com";
