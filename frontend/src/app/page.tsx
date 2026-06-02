@@ -5,15 +5,51 @@ import { useAuth } from "./context/AuthContext";
 import OnboardingWizard from "./onboarding/OnboardingWizard";
 import ProfileTab from "./components/ProfileTab";
 import SettingsTab from "./components/SettingsTab";
+import DashboardTab from "./components/DashboardTab";
+import AgentTab from "./components/AgentTab";
+import DatabaseTab from "./components/DatabaseTab";
+import VectorTab from "./components/VectorTab";
+import AnalyticsTab from "./components/AnalyticsTab";
 import { API_BASE_URL } from "./config";
 
-type Tab = "dashboard" | "agent" | "database" | "vector" | "settings" | "profile";
+type Tab = "dashboard" | "agent" | "database" | "vector" | "analytics" | "settings" | "profile";
 
 interface Message {
   id: string;
   sender: "user" | "assistant";
   text: string;
   timestamp: string;
+}
+
+interface IngestedDocument {
+  id: number;
+  name: string;
+  source_type: string;
+  topic?: string;
+  upload_date: string;
+  content?: string;
+}
+
+interface RoadmapSubNode {
+  id: string;
+  title: string;
+  description: string;
+  checklist: string[];
+}
+
+interface RoadmapNode {
+  id: string;
+  title: string;
+  description: string;
+  subNodes: RoadmapSubNode[];
+}
+
+interface RoadmapTrack {
+  title: string;
+  icon: string;
+  accent: string;
+  description: string;
+  nodes: RoadmapNode[];
 }
 
 // ================= PREMIUM LIGHTWEIGHT REACT MARKDOWN COMPILER =================
@@ -303,7 +339,7 @@ const [profileExists, setProfileExists] = useState<boolean>(true);
 const [roadmap, setRoadmap] = useState<any[]>([]);
 const [profileData, setProfileData] = useState<any | null>(null);
 const [selectedRoadmapTrack, setSelectedRoadmapTrack] = useState<string>("calibrated");
-const [activeDetailSubNode, setActiveDetailSubNode] = useState<any | null>(null);
+const [activeDetailSubNode, setActiveDetailSubNode] = useState<RoadmapSubNode | null>(null);
 const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({});
 
   // AI Motivation System states
@@ -367,7 +403,7 @@ useEffect(() => {
   }
 }, [roadmap]);
 
-const staticRoadmaps: Record<string, any> = {
+const staticRoadmaps: Record<string, RoadmapTrack> = {
   ai_engineer: {
     title: "AI Engineer",
     icon: "🤖",
@@ -869,6 +905,31 @@ const staticRoadmaps: Record<string, any> = {
   const [vectorSearching, setVectorSearching] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+  const [uploadedDocs, setUploadedDocs] = useState<IngestedDocument[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+
+  // YouTube Transcript Ingestion States
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeIngesting, setYoutubeIngesting] = useState(false);
+  const [youtubeResult, setYoutubeResult] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+
+  // GitHub Repository Ingestion States
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [githubIngesting, setGithubIngesting] = useState(false);
+  const [githubResult, setGithubResult] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+
+  // Study Buddy & YouTube Video Notes States
+  const [selectedDoc, setSelectedDoc] = useState<IngestedDocument | null>(null);
+  const [selectedDocLoading, setSelectedDocLoading] = useState(false);
+  const [docNotes, setDocNotes] = useState("");
+  const [studyTab, setStudyTab] = useState<"notes" | "chat">("notes");
+  const [docChatHistory, setDocChatHistory] = useState<{ id: string; sender: "user" | "assistant"; text: string; citations?: string[]; beginner_explanation?: string }[]>([]);
+  const [docChatQuery, setDocChatQuery] = useState("");
+  const [docChatLoading, setDocChatLoading] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
 
   // Tab 5: Settings States
   const [activeModel, setActiveModel] = useState("gemini-3.5-flash");
@@ -973,6 +1034,7 @@ const fetchProfile = async () => {
         fetchMotivation();
         fetchChatSessions();
         fetchDailyTasks();
+        fetchUploadedDocuments();
       } else {
         setLogs((prev) => [
           ...prev,
@@ -981,6 +1043,13 @@ const fetchProfile = async () => {
       }
     }
   }, [user, authLoading]);
+
+  // Sync Vector Tab documents fetch
+  useEffect(() => {
+    if (user && activeTab === "vector") {
+      fetchUploadedDocuments();
+    }
+  }, [activeTab, user]);
 
   // Scroll Chat to bottom
   useEffect(() => {
@@ -1187,6 +1256,237 @@ const fetchProfile = async () => {
     }
   };
 
+  // Vector Tab: Fetch Stored PDF Documents from Database
+  const fetchUploadedDocuments = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/documents`, {
+        headers: {
+          "Authorization": `Bearer ${user.uid}`
+        }
+      });
+      if (res.ok) {
+        const data = (await res.json()) as IngestedDocument[];
+        setUploadedDocs(data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch uploaded documents:", err);
+    }
+  };
+
+  // Fetch Document details including its full content
+  const fetchDocumentDetails = async (docId: number) => {
+    if (!user) return;
+    setSelectedDocLoading(true);
+    addLog(`[RAG] Loading document details for ID: #${docId}...`, "info");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/document/${docId}`, {
+        headers: {
+          "Authorization": `Bearer ${user.uid}`
+        }
+      });
+      if (res.ok) {
+        const data = (await res.json()) as IngestedDocument;
+        setSelectedDoc(data);
+        const storedNotes = localStorage.getItem(`aios_notes_${docId}`);
+        setDocNotes(storedNotes || "");
+        setDocChatHistory([]);
+        setDocChatQuery("");
+        setStudyTab("notes");
+        addLog(`[SUCCESS] Loaded study buddy context for "${data.name}".`, "success");
+      } else {
+        addLog(`[ERROR] Failed to retrieve document contents: ${res.statusText}`, "error");
+      }
+    } catch (err: any) {
+      console.error("Failed to load document:", err);
+      addLog(`[ERROR] Fetching document failed: ${err.message || err}`, "error");
+    } finally {
+      setSelectedDocLoading(false);
+    }
+  };
+
+  // Notes Change Handler
+  const handleNotesChange = (text: string) => {
+    setDocNotes(text);
+    if (selectedDoc) {
+      localStorage.setItem(`aios_notes_${selectedDoc.id}`, text);
+    }
+  };
+
+  // AI Summarize Notes Generator
+  const generateAISummary = async () => {
+    if (!user || !selectedDoc || summarizing) return;
+    setSummarizing(true);
+    addLog(`[YOUTUBE] Triggering AI Video Summarization...`, "info");
+    try {
+      const prompt = "Generate a comprehensive, high-fidelity, structured summary of this video's transcript. Break it down into key concepts, key takeaways, and a structured outline. Keep it in beautiful Markdown format with clear sections.";
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({
+          query: prompt,
+          limit: 5,
+          document_id: selectedDoc.id
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const summaryText = data.answer;
+        const updatedNotes = docNotes 
+          ? `${docNotes}\n\n---\n### 🤖 AI Video Summary\n${summaryText}` 
+          : `### 🤖 AI Video Summary\n${summaryText}`;
+        handleNotesChange(updatedNotes);
+        addLog(`[SUCCESS] AI Summary appended to notes successfully!`, "success");
+      } else {
+        addLog(`[ERROR] AI Summary failed: ${res.statusText}`, "error");
+      }
+    } catch (err: any) {
+      console.error("Failed to generate AI summary:", err);
+      addLog(`[ERROR] AI Summary generation failed: ${err.message || err}`, "error");
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
+  // Chat query specialized for single video
+  const handleDocChatSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedDoc || !docChatQuery.trim() || docChatLoading) return;
+
+    const query = docChatQuery.trim();
+    setDocChatQuery("");
+    
+    const userMsgId = `user-${Date.now()}`;
+    const userMessage = { id: userMsgId, sender: "user" as const, text: query };
+    setDocChatHistory(prev => [...prev, userMessage]);
+    setDocChatLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({
+          query: query,
+          limit: 5,
+          document_id: selectedDoc.id
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const assistantMsgId = `assistant-${Date.now()}`;
+        const citations = data.citations || [];
+        
+        setDocChatHistory(prev => [
+          ...prev, 
+          { 
+            id: assistantMsgId, 
+            sender: "assistant" as const, 
+            text: data.answer, 
+            citations,
+            beginner_explanation: data.beginner_explanation
+          }
+        ]);
+      } else {
+        addLog(`[ERROR] AI Chat error: ${res.statusText}`, "error");
+      }
+    } catch (err: any) {
+      console.error("Failed to query doc chat:", err);
+      addLog(`[ERROR] AI Chat failed: ${err.message || err}`, "error");
+    } finally {
+      setDocChatLoading(false);
+    }
+  };
+
+  // Vector Tab: Upload PDF File directly as binary multipart data
+  const uploadPdfFile = (file: File) => {
+    if (!user) return;
+
+    // 1. File Type check
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      setUploadStatus({ text: "❌ Validation failed: Only PDF files (.pdf) are allowed.", type: "error" });
+      addLog(`[ERROR] File validation failed: '${file.name}' is not a PDF.`, "error");
+      return;
+    }
+
+    // 2. File Size check (10MB)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setUploadStatus({ text: "❌ Validation failed: File size exceeds the 10MB limit.", type: "error" });
+      addLog(`[ERROR] File size validation failed: '${file.name}' exceeds the 10MB safety boundary.`, "error");
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus({ text: `Initializing upload for '${file.name}'...`, type: "info" });
+    addLog(`[VECTOR] Uploading PDF document: '${file.name}' (${(file.size / 1024).toFixed(1)} KB)...`, "info");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/api/v1/upload-pdf`);
+    xhr.setRequestHeader("Authorization", `Bearer ${user.uid}`);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percent);
+        setUploadStatus({ text: `Uploading PDF document: ${percent}%...`, type: "info" });
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText) as { message?: string };
+          addLog(`[SUCCESS] PDF '${file.name}' uploaded: ${data.message || "Stored on backend."}`, "success");
+          setUploadStatus({ text: `✓ PDF '${file.name}' uploaded successfully!`, type: "success" });
+          fetchUploadedDocuments();
+        } catch (e) {
+          addLog(`[SUCCESS] PDF uploaded, but failed to parse response.`, "success");
+          setUploadStatus({ text: `✓ PDF uploaded successfully!`, type: "success" });
+        }
+      } else {
+        let errDetail = "Upload rejected by backend.";
+        try {
+          const data = JSON.parse(xhr.responseText);
+          errDetail = data.detail || errDetail;
+        } catch (e) {}
+        addLog(`[ERROR] PDF upload failed: ${errDetail}`, "error");
+        setUploadStatus({ text: `❌ Upload failed: ${errDetail}`, type: "error" });
+      }
+      setUploading(false);
+      setUploadProgress(0);
+    };
+
+    xhr.onerror = () => {
+      addLog("[ERROR] Network boundary error during PDF upload.", "error");
+      setUploadStatus({ text: "❌ Connection error: Could not reach backend upload gateway.", type: "error" });
+      setUploading(false);
+      setUploadProgress(0);
+    };
+
+    xhr.send(formData);
+  };
+
+  // Router for Drag-and-Drop and Browse actions
+  const handleIncomingFile = (file: File) => {
+    if (file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf") {
+      uploadPdfFile(file);
+    } else {
+      ingestFile(file);
+    }
+  };
+
   // Vector Tab: File Ingestion Pipeline
   const ingestFile = (file: File) => {
     if (!user) return;
@@ -1224,6 +1524,7 @@ const fetchProfile = async () => {
             addLog(`[VECTOR] Ingesting file... Tokenized into ${data.chunks_count} chunks... Upserted to Qdrant!`, "success");
             addLog(`[SUCCESS] ${data.message}`, "success");
             setUploadStatus({ text: `[VECTOR] Ingesting file... Tokenized into ${data.chunks_count} chunks... Upserted to Qdrant!`, type: "success" });
+            fetchUploadedDocuments();
           } else {
             addLog(`[ERROR] Ingestion failed: ${data.message}`, "error");
             setUploadStatus({ text: `Ingestion failed: ${data.message}`, type: "error" });
@@ -1247,6 +1548,121 @@ const fetchProfile = async () => {
     reader.readAsText(file);
   };
 
+  // YouTube Transcript Ingestion Pipeline
+  const ingestYoutubeVideo = async () => {
+    if (!user || !youtubeUrl.trim()) return;
+
+    const url = youtubeUrl.trim();
+
+    // Basic URL validation
+    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+      setYoutubeResult({ text: "❌ Invalid URL: Please enter a valid YouTube video URL.", type: "error" });
+      addLog("[ERROR] YouTube URL validation failed. URL must be from youtube.com or youtu.be.", "error");
+      return;
+    }
+
+    setYoutubeIngesting(true);
+    setYoutubeResult({ text: "🔄 Extracting transcript from YouTube video...", type: "info" });
+    addLog(`[YOUTUBE] Initiating transcript extraction for: ${url}`, "info");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/ingest-youtube`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({ url })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const title = data.video_metadata?.title || "Unknown Video";
+        const channel = data.video_metadata?.channel || "Unknown Channel";
+        const wordCount = data.word_count?.toLocaleString() || "0";
+        const chunks = data.chunks_count || 0;
+
+        setYoutubeResult({
+          text: `✅ Transcript Extracted — "${title}" by ${channel}\n📝 ${wordCount} words processed • ${chunks} chunks created • Knowledge stored successfully`,
+          type: "success"
+        });
+        addLog(`[SUCCESS] YouTube transcript ingested: "${title}" — ${wordCount} words, ${chunks} chunks stored.`, "success");
+        setYoutubeUrl("");
+        fetchUploadedDocuments();
+      } else {
+        let errDetail = "Failed to process YouTube video.";
+        try {
+          const errData = await res.json();
+          errDetail = errData.detail || errDetail;
+        } catch (e) {}
+        setYoutubeResult({ text: `❌ ${errDetail}`, type: "error" });
+        addLog(`[ERROR] YouTube ingestion failed: ${errDetail}`, "error");
+      }
+    } catch (err: any) {
+      setYoutubeResult({ text: "❌ Connection error: Could not reach backend API.", type: "error" });
+      addLog("[ERROR] Network error during YouTube transcript ingestion.", "error");
+    } finally {
+      setYoutubeIngesting(false);
+    }
+  };
+
+  // GitHub Repository Ingestion Pipeline
+  const ingestGithubRepo = async () => {
+    if (!user || !githubUrl.trim()) return;
+
+    const url = githubUrl.trim();
+
+    // Basic URL validation
+    if (!url.includes("github.com")) {
+      setGithubResult({ text: "❌ Invalid URL: Please enter a valid GitHub repository URL.", type: "error" });
+      addLog("[ERROR] GitHub URL validation failed. URL must be from github.com.", "error");
+      return;
+    }
+
+    setGithubIngesting(true);
+    setGithubResult({ text: "🔄 Connecting and fetching repository documentation zipball...", type: "info" });
+    addLog(`[GITHUB] Connecting to repository: ${url}`, "info");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/rag/ingest-github`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({ url, token: githubToken || undefined })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const filesIndexed = data.files_indexed || 0;
+        const chunksCreated = data.chunks_created || 0;
+
+        setGithubResult({
+          text: `✅ Repository Processed Successfully!\n🐙 Files Indexed: ${filesIndexed}\n📝 Chunks Created: ${chunksCreated}\n⚡ Stored in Qdrant Vector Search`,
+          type: "success"
+        });
+        addLog(`[SUCCESS] GitHub repo ingested: ${filesIndexed} documentation files indexed, ${chunksCreated} chunks stored.`, "success");
+        setGithubUrl("");
+        setGithubToken("");
+        fetchUploadedDocuments();
+      } else {
+        let errDetail = "Failed to ingest GitHub repository.";
+        try {
+          const errData = await res.json();
+          errDetail = errData.detail || errDetail;
+        } catch (e) {}
+        setGithubResult({ text: `❌ ${errDetail}`, type: "error" });
+        addLog(`[ERROR] GitHub ingestion failed: ${errDetail}`, "error");
+      }
+    } catch (err: any) {
+      setGithubResult({ text: "❌ Connection error: Could not reach backend API.", type: "error" });
+      addLog("[ERROR] Network error during GitHub repo ingestion.", "error");
+    } finally {
+      setGithubIngesting(false);
+    }
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1264,7 +1680,7 @@ const fetchProfile = async () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      ingestFile(file);
+      handleIncomingFile(file);
     }
   };
 
@@ -1537,6 +1953,7 @@ const fetchProfile = async () => {
                 { id: "agent" as Tab, label: "Agent Terminal", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
                 { id: "database" as Tab, label: "Database Explorer", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg> },
                 { id: "vector" as Tab, label: "Vector Search", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> },
+                { id: "analytics" as Tab, label: "Analytics", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg> },
                 { id: "settings" as Tab, label: "Settings", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
                 { id: "profile" as Tab, label: "Profile", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg> },
               ]).map((tab) => (
@@ -1641,6 +2058,7 @@ const fetchProfile = async () => {
                     {activeTab === "agent" && "Agent Terminal"}
                     {activeTab === "database" && "Database Explorer"}
                     {activeTab === "vector" && "Vector Search"}
+                    {activeTab === "analytics" && "Project Analytics"}
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "profile" && "Developer Profile"}
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono flex-shrink-0 hidden sm:inline-block"
@@ -1684,1749 +2102,115 @@ const fetchProfile = async () => {
               
               {/* ═══════ TAB 1: DASHBOARD ═══════ */}
               {activeTab === "dashboard" && (
-                <div className="space-y-6 animate-fadeIn">
-                  
-                  {/* Custom CSS Animation Injector */}
-                  <style dangerouslySetInnerHTML={{__html: `
-                    @keyframes breath {
-                      0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(6,182,212,0.3); }
-                      50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 40px rgba(6,182,212,0.6); }
-                      100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(6,182,212,0.3); }
-                    }
-                    @keyframes driftSparkle {
-                      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-                      100% { transform: translateY(-300px) rotate(360deg); opacity: 0; }
-                    }
-                    .animate-breath {
-                      animation: breath 12s infinite ease-in-out;
-                    }
-                  `}} />
-
-                  {/* ═══════ AI MOTIVATIONAL CELEBRATORY POPUP ═══════ */}
-                  {showMotivationPopup && motivationData && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn p-4">
-                      
-                      {/* CSS Sparkles Confetti Container */}
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-                        {Array.from({ length: 25 }).map((_, i) => {
-                          const left = Math.random() * 100;
-                          const delay = Math.random() * 3;
-                          const duration = 2 + Math.random() * 2;
-                          const size = 6 + Math.random() * 8;
-                          const colors = ["#f59e0b", "#3b82f6", "#10b981", "#ef4444", "#a855f7"];
-                          const randColor = colors[Math.floor(Math.random() * colors.length)];
-                          return (
-                            <div
-                              key={i}
-                              className="absolute bottom-0 rounded-full"
-                              style={{
-                                left: `${left}%`,
-                                width: `${size}px`,
-                                height: `${size}px`,
-                                background: randColor,
-                                opacity: 0.7,
-                                animation: `driftSparkle ${duration}s infinite ease-out`,
-                                animationDelay: `${delay}s`,
-                                boxShadow: `0 0 10px ${randColor}`
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      <div className="card max-w-lg w-full rounded-3xl p-8 border text-center space-y-6 relative overflow-hidden shadow-2xl animate-scale-in"
-                        style={{ borderColor: "var(--accent)", background: "#121218" }}>
-                        
-                        <div className="absolute top-[-30%] left-[-20%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
-
-                        <div className="flex flex-col items-center gap-3">
-                          <span className="text-5xl animate-bounce">🎉</span>
-                          <h3 className="text-2xl font-black text-white tracking-tight mt-2">
-                            {motivationData.popup_title || "Milestone Unlocked!"}
-                          </h3>
-                          <p className="text-xs font-mono text-[var(--accent)] font-black uppercase tracking-widest mt-0.5">
-                            AI Telemetry Congratulatory Node
-                          </p>
-                        </div>
-
-                        <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-5 text-sm text-slate-300 font-sans leading-relaxed">
-                          "{motivationData.popup_message || motivationData.mentor_message}"
-                        </div>
-
-                        <div className="space-y-4">
-                          <p className="text-xs text-slate-400 font-medium">
-                            Your active {profileData?.streak_count || 1}-day streak and skills proficiency index are synchronized with our platform servers.
-                          </p>
-                          
-                          <div className="flex gap-3 justify-center">
-                            <button
-                              onClick={() => {
-                                setShowMotivationPopup(false);
-                                sessionStorage.setItem(`aios-motivation-dismissed-${motivationData.popup_title}`, "true");
-                              }}
-                              className="py-2.5 px-8 rounded-xl bg-[var(--accent)] text-white hover:shadow-[0_0_15px_var(--accent-glow)] text-xs font-mono font-bold tracking-wide transition-all shadow-md cursor-pointer"
-                            >
-                              Let's Keep Coding! ⚡
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══════ POMODORO / BREATHING TIMER MODAL ═══════ */}
-                  {showBreatherModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn p-4">
-                      <div className="card max-w-md w-full rounded-3xl p-8 border text-center space-y-6 relative overflow-hidden shadow-2xl animate-scale-in"
-                        style={{ borderColor: "rgba(255,255,255,0.1)", background: "#121218" }}>
-                        
-                        <div className="absolute top-[-30%] left-[-20%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-cyan-500/20 to-transparent blur-[80px] pointer-events-none"></div>
-
-                        <div className="flex justify-between items-center border-b border-[var(--border)] pb-2 relative z-10">
-                          <h4 className="font-mono text-xs text-slate-400 uppercase tracking-widest font-bold">
-                            🧘 Burnout Mitigation: Breathing Space
-                          </h4>
-                          <button 
-                            onClick={() => setShowBreatherModal(false)}
-                            className="text-xs text-slate-400 hover:text-white font-mono cursor-pointer"
-                          >
-                            [Exit]
-                          </button>
-                        </div>
-
-                        <div className="relative flex flex-col items-center justify-center py-6 space-y-6">
-                          
-                          <div className="relative w-44 h-44 rounded-full border border-cyan-500/20 flex items-center justify-center">
-                            <div className="absolute w-36 h-36 rounded-full bg-cyan-500/10 border-2 border-cyan-400/60 shadow-[0_0_30px_rgba(6,182,212,0.4)] animate-breath flex items-center justify-center">
-                              
-                              <BreathingSpace />
-
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5 relative z-10">
-                          <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                            Let your chest expand as the circle expands. Focus only on the rhythm of your breath.
-                          </p>
-                          <p className="text-[10px] font-mono text-slate-500">
-                            This customized breathing guide decreases heart rate variability, stabilizes brain waves, and clears cognitive memory pools to combat developer burnout.
-                          </p>
-                        </div>
-
-                        <div className="flex gap-3 justify-center relative z-10">
-                          <button
-                            onClick={() => setShowBreatherModal(false)}
-                            className="btn-accent py-2 px-6 rounded-xl text-xs font-mono font-bold tracking-wider cursor-pointer"
-                          >
-                            Resume Study Work ⚡
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══════ AI MENTOR MOTIVATION PANEL (PREMIUM GLASSMORPHIC) ═══════ */}
-                  {!motivationLoading && motivationData && (
-                    <div className="card rounded-3xl p-6 md:p-8 animate-fade-up relative overflow-hidden flex flex-col md:flex-row items-center md:items-start gap-6 border"
-                      style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(18, 18, 24, 0.4)", backdropFilter: "blur(20px)" }}>
-                      
-                      <div className="absolute top-[-30%] right-[-10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
-                      <div className="absolute bottom-[-20%] left-[-10%] w-[250px] h-[250px] rounded-full bg-gradient-to-br from-[var(--secondary-soft)] to-transparent blur-[60px] pointer-events-none"></div>
-
-                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-lg relative flex-shrink-0 animate-float"
-                        style={{ 
-                          background: "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))", 
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
-                        }}>
-                        {(() => {
-                          const bio = profileData?.bio || "";
-                          if (bio.includes("Algorithmic Sherpa")) return "🧙‍♂️";
-                          if (bio.includes("SaaS Evangelist")) return "🦁";
-                          if (bio.includes("Rapid Prototype Guru")) return "🚀";
-                          return "🤖";
-                        })()}
-                        <span className="absolute bottom-[-4px] right-[-4px] flex h-4 w-4">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-[#121218]"></span>
-                        </span>
-                      </div>
-
-                      <div className="flex-1 space-y-3.5 text-center md:text-left relative z-10">
-                        <div>
-                          <h4 className="text-xs font-mono font-bold tracking-widest text-slate-400 uppercase">
-                            AI Coach Notification
-                          </h4>
-                          <h3 className="text-lg font-black tracking-tight mt-1 text-white flex items-center justify-center md:justify-start gap-2">
-                            <span>AI Mentor:</span> 
-                            <span className="text-[var(--accent)] text-sm px-2.5 py-0.5 rounded-full border bg-[var(--accent-soft)]" style={{ borderColor: "var(--accent)" }}>
-                              {(() => {
-                                const bio = profileData?.bio || "";
-                                if (bio.includes("Algorithmic Sherpa")) return "Algorithmic Sherpa";
-                                if (bio.includes("SaaS Evangelist")) return "SaaS Evangelist";
-                                if (bio.includes("Rapid Prototype Guru")) return "Rapid Prototype Guru";
-                                return "Pragmatic Architect";
-                              })()}
-                            </span>
-                          </h3>
-                        </div>
-
-                        <p className="text-slate-200 text-sm italic font-medium leading-relaxed max-w-3xl border-l-2 border-[var(--accent)] pl-4 py-1 text-left">
-                          "{motivationData.mentor_message}"
-                        </p>
-
-                        <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                          <button
-                            onClick={() => setActiveTab("agent")}
-                            className="py-2 px-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] text-xs font-mono font-bold tracking-wide transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                          >
-                            💬 Consult Mentor
-                          </button>
-                          <button
-                            onClick={() => setShowBreatherModal(true)}
-                            className="py-2 px-4 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)] hover:shadow-[0_0_15px_var(--accent-glow)] text-xs font-mono font-bold tracking-wide transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                          >
-                            🧘 Take a 5-Min Break
-                          </button>
-                          {motivationData.notifications.length > 1 && (
-                            <button
-                              onClick={() => setShowNotifPanel(!showNotifPanel)}
-                              className="py-2 px-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-amber-500 text-xs font-mono font-bold tracking-wide transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                            >
-                              🔔 Alert Center ({motivationData.notifications.length - 1})
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══════ MENTOR ALERTS CENTER PANEL ═══════ */}
-                  {showNotifPanel && motivationData && motivationData.notifications && (
-                    <div className="card rounded-3xl p-6 border animate-fadeIn space-y-4"
-                      style={{ borderColor: "rgba(255,255,255,0.08)", background: "var(--bg-card)" }}>
-                      <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
-                        <h4 className="font-mono text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-2">
-                          <span>🔔</span> Mentor Active Alert Center
-                        </h4>
-                        <button 
-                          onClick={() => setShowNotifPanel(false)}
-                          className="text-xs text-slate-400 hover:text-white font-mono cursor-pointer"
-                        >
-                          [Close]
-                        </button>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        {motivationData.notifications.map((notif: any) => {
-                          let typeColor = "var(--accent)";
-                          let icon = "💡";
-                          if (notif.type === "warning") {
-                            typeColor = "#f59e0b";
-                            icon = "⚠️";
-                          } else if (notif.type === "success") {
-                            typeColor = "#22c55e";
-                            icon = "🏆";
-                          } else if (notif.type === "error") {
-                            typeColor = "#ef4444";
-                            icon = "🚨";
-                          }
-
-                          return (
-                            <div key={notif.id} className="flex items-start gap-3 p-3.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] transition-all hover:border-slate-700">
-                              <span className="text-lg flex-shrink-0" style={{ color: typeColor }}>{icon}</span>
-                              <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="text-xs font-semibold text-slate-200">{notif.message}</p>
-                                <p className="text-[9px] font-mono text-slate-500">{notif.timestamp}</p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ═══════ AI METRIC INSIGHTS GRID ═══════ */}
-                  {!motivationLoading && motivationData && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up">
-                      {motivationData.insights.map((insight: any) => (
-                        <div key={insight.id} className="card rounded-2xl p-5 border flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-                          style={{ borderColor: "rgba(255,255,255,0.06)", background: "var(--bg-card)" }}>
-                          
-                          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] mb-3">
-                            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                              {insight.title}
-                            </span>
-                            <span className="text-2xl animate-float">{insight.icon}</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            <h3 className="text-xl font-black" style={{ color: insight.color }}>
-                              {insight.metric}
-                            </h3>
-                            <p className="text-[10px] text-slate-400 leading-relaxed">
-                              {insight.description}
-                            </p>
-                          </div>
-
-                          {/* Small interaction for specific cards */}
-                          {insight.id === "struggle-tracker" && profileData?.weak_topics?.length > 0 && (
-                            <button
-                              onClick={() => {
-                                const latestTopic = profileData.weak_topics[profileData.weak_topics.length - 1];
-                                setActiveTab("agent");
-                                setTimeout(() => {
-                                  const inputEl = document.querySelector("textarea") as HTMLTextAreaElement;
-                                  if (inputEl) {
-                                    inputEl.value = `As my AI Mentor, please simplify the concept of "${latestTopic}" step by step for me.`;
-                                  }
-                                }, 100);
-                              }}
-                              className="mt-3 py-1.5 w-full text-center rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/25 hover:border-red-400 text-[9px] font-mono font-bold transition-all cursor-pointer"
-                            >
-                              ⚡ Simplify Concept
-                            </button>
-                          )}
-
-                          {insight.id === "burnout-radar" && insight.metric.includes("High") && (
-                            <button
-                              onClick={() => setShowBreatherModal(true)}
-                              className="mt-3 py-1.5 w-full text-center rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 hover:border-amber-400 text-[9px] font-mono font-bold transition-all cursor-pointer animate-pulse"
-                            >
-                              🧘 Launch Relax Session
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    
-                    {/* Stat Card 1 */}
-                    <div className="card stat-card-1 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-1">
-                      <div>
-                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>FastAPI Gateway</p>
-                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Uvicorn</h3>
-                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: fastapiOnline ? "var(--success)" : "var(--error)" }}>
-                          {fastapiOnline ? "● Healthy" : "○ Locked"}
-                        </p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                        style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
-                        ⚡
-                      </div>
-                    </div>
-
-                    {/* Stat Card 2 */}
-                    <div className="card stat-card-2 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-2">
-                      <div>
-                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Postgres DB</p>
-                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Port 5434</h3>
-                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--success)" }}>● Pool Active</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                        style={{ background: "var(--secondary-soft)", color: "var(--secondary-text)" }}>
-                        🐘
-                      </div>
-                    </div>
-
-                    {/* Stat Card 3 */}
-                    <div className="card stat-card-3 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-3">
-                      <div>
-                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Qdrant Vector</p>
-                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>Port 6333</h3>
-                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--accent-text)" }}>● Cosine online</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                        style={{ background: "rgba(245,158,11,0.1)", color: "var(--warning)" }}>
-                        🎯
-                      </div>
-                    </div>
-
-                    {/* Stat Card 4 */}
-                    <div className="card stat-card-4 rounded-2xl p-5 flex items-center justify-between animate-fade-up delay-4">
-                      <div>
-                        <p className="text-[11px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Workspace</p>
-                        <h3 className="text-2xl font-black mt-1" style={{ color: "var(--text-primary)" }}>AI-OS</h3>
-                        <p className="text-[10px] font-mono mt-1 font-semibold" style={{ color: "var(--secondary-text)" }}>Branch: main</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                        style={{ background: "var(--secondary-soft)", color: "var(--secondary-text)" }}>
-                        📂
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ═══════ TODAY'S PLAN (PERSONAL AI COACH) CHECKLIST ═══════ */}
-                  <div className="card rounded-3xl p-6 md:p-8 animate-fade-up delay-5 relative overflow-hidden"
-                    style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
-                    
-                    <div className="absolute top-[-25%] left-[-15%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[100px] pointer-events-none"></div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)] relative z-10">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl animate-float">📅</span>
-                        <div>
-                          <h3 className="text-base sm:text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-                            Today's Plan (AI Coach Scheduler)
-                          </h3>
-                          <p className="text-xs font-mono font-bold mt-0.5 text-slate-400">
-                            Custom dynamic checklists generated based on roadmap & weak topics. +20 XP per task!
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Progress summary badge */}
-                      {(() => {
-                        const total = dailyTasks.length;
-                        const completed = dailyTasks.filter(t => t.completed).length;
-                        const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-                        return (
-                          <div className="flex items-center gap-3 font-mono text-[10px] font-bold">
-                            <span className="text-slate-400">Completed: {completed} / {total}</span>
-                            <span className="px-2.5 py-1 rounded-full text-white bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]">
-                              {pct}% Achieved
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Progress Slider Bar */}
-                    {(() => {
-                      const total = dailyTasks.length;
-                      const completed = dailyTasks.filter(t => t.completed).length;
-                      const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-                      return (
-                        <div className="w-full bg-[var(--bg-secondary)] h-2 rounded-full mt-4 overflow-hidden border border-[var(--border)] relative z-10">
-                          <div className="h-full rounded-full transition-all duration-500 bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]"
-                            style={{ width: `${pct}%` }} />
-                        </div>
-                      );
-                    })()}
-
-                    {/* Planner Checklist List */}
-                    {plannerLoading ? (
-                      <div className="flex flex-col items-center justify-center py-8 gap-3 relative z-10 animate-pulse">
-                        <div className="w-8 h-8 rounded-full border-2 border-[var(--accent-soft)] border-t-[var(--accent)] animate-spin"></div>
-                        <p className="font-mono text-[10px] text-slate-400">AI Coach generating today's tasks...</p>
-                      </div>
-                    ) : (!dailyTasks || dailyTasks.length === 0) ? (
-                      <div className="text-center py-8 relative z-10">
-                        <span className="text-2xl mb-1 block">🏆</span>
-                        <p className="text-[10px] font-mono text-slate-400">Your AI coach is compiling your calendar goals...</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 relative z-10 animate-fadeIn">
-                        {dailyTasks.map((task) => {
-                          let badgeBg = "rgba(245,158,11,0.08)";
-                          let badgeText = "Study 📚";
-                          let badgeColor = "var(--warning)";
-                          
-                          if (task.category === "dsa") {
-                            badgeBg = "rgba(34,197,94,0.08)";
-                            badgeText = "DSA 🧠";
-                            badgeColor = "var(--success)";
-                          } else if (task.category === "coding") {
-                            badgeBg = "rgba(168,85,247,0.08)";
-                            badgeText = "Coding 💻";
-                            badgeColor = "#a855f7";
-                          } else if (task.category === "revision") {
-                            badgeBg = "rgba(239,68,68,0.08)";
-                            badgeText = "Revision 🔄";
-                            badgeColor = "#ef4444";
-                          }
-
-                          return (
-                            <button
-                              key={task.id}
-                              onClick={() => handleToggleDailyTask(task.id)}
-                              className="card rounded-2xl p-5 text-left border cursor-pointer transition-all duration-300 hover:translate-y-[-2px] flex flex-col justify-between gap-4 h-full relative"
-                              style={{
-                                borderColor: task.completed ? "var(--success)" : "var(--border)",
-                                background: task.completed ? "rgba(34,197,94,0.02)" : "var(--bg-card)",
-                                boxShadow: task.completed ? "0 0 10px rgba(34,197,94,0.04)" : "var(--shadow-sm)"
-                              }}
-                            >
-                              <div className="space-y-3 w-full">
-                                {/* Header category badge + checkbox */}
-                                <div className="flex items-center justify-between w-full">
-                                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono border"
-                                    style={{ background: badgeBg, color: badgeColor, borderColor: `${badgeColor}25` }}>
-                                    {badgeText}
-                                  </span>
-                                  <div className="w-5 h-5 rounded-md border flex items-center justify-center font-bold text-[10px] flex-shrink-0 transition-all duration-300"
-                                    style={{
-                                      borderColor: task.completed ? "var(--success)" : "var(--border)",
-                                      background: task.completed ? "var(--success)" : "transparent",
-                                      color: task.completed ? "white" : "transparent"
-                                    }}>
-                                    ✓
-                                  </div>
-                                </div>
-
-                                <p className="text-[11px] font-semibold leading-relaxed break-words"
-                                  style={{
-                                    color: task.completed ? "var(--text-muted)" : "var(--text-primary)",
-                                    textDecoration: task.completed ? "line-through" : "none"
-                                  }}>
-                                  {task.task_text}
-                                </p>
-                              </div>
-
-                              <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 pt-2 border-t border-[var(--border)] mt-auto w-full">
-                                <span>Status: {task.completed ? "Done" : "Pending"}</span>
-                                <span className="font-bold text-[var(--accent)]">+20 XP</span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ═══════ STREAK CONSISTENCY COACH ═══════ */}
-                  <div className="card rounded-3xl p-6 md:p-8 animate-fade-up delay-6 relative overflow-hidden"
-                    style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
-                    
-                    <div className="absolute top-[-25%] right-[-15%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-[rgba(249,115,22,0.15)] to-transparent blur-[100px] pointer-events-none"></div>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-[var(--border)] relative z-10">
-                      <div className="flex items-center gap-4">
-                        {/* Massive pulsing flame counter with warm radial backglow */}
-                        <div className="relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0 bg-orange-500/10 border border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.15)] overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/20 to-red-500/20 animate-pulse"></div>
-                          <span className="text-3xl sm:text-4xl animate-bounce relative z-10" style={{ animationDuration: '2s' }}>🔥</span>
-                        </div>
-                        <div>
-                          <h3 className="text-base sm:text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-                            Streak Consistency Coach
-                          </h3>
-                          <p className="text-xs font-mono font-bold mt-0.5 text-slate-400">
-                            Build coding habits daily. Track your active check-ins, roadmap completions, and learning focus sessions.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Streak Stats Badge */}
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-[10px] font-mono font-bold text-slate-400 uppercase">Current Streak</p>
-                          <p className="text-xl sm:text-2xl font-black text-orange-500 font-mono tracking-tight">
-                            {profileData?.streak_count || 1} { (profileData?.streak_count || 1) === 1 ? "Day" : "Days" }
-                          </p>
-                        </div>
-                        <div className="h-8 w-[1px] bg-[var(--border)]"></div>
-                        <div>
-                          <p className="text-[10px] font-mono font-bold text-slate-400 uppercase">Personal Best</p>
-                          <p className="text-xl sm:text-2xl font-black text-amber-500 font-mono tracking-tight">
-                            {profileData?.longest_streak || 1} { (profileData?.longest_streak || 1) === 1 ? "Day" : "Days" }
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 7-Day Consistency Row (Mon-Sun / Last 7 Days) */}
-                    <div className="mt-6 relative z-10">
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-                        <span>📆</span> 7-Day Consistency Tracker
-                      </h4>
-                      <div className="grid grid-cols-7 gap-2 sm:gap-4 bg-[var(--bg-secondary)] p-4 rounded-2xl border border-[var(--border)]">
-                        {getLast7Days().map((day) => {
-                          return (
-                            <div key={day.dateStr} className={`flex flex-col items-center p-2.5 rounded-xl border transition-all duration-300 ${
-                              day.isCompleted
-                                ? "bg-orange-500/5 border-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.06)]"
-                                : day.isToday
-                                  ? "bg-[var(--bg-card)] border-[var(--accent)]"
-                                  : "bg-[var(--bg-card)] border-[var(--border)]"
-                            }`}>
-                              <span className="text-[10px] font-mono font-bold text-slate-400 mb-1">
-                                {day.label}
-                              </span>
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg transition-all duration-300 ${
-                                day.isCompleted
-                                  ? "bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)] animate-pulse"
-                                  : "bg-[var(--bg-secondary)] text-slate-600 border border-[var(--border)]"
-                              }`}>
-                                {day.isCompleted ? "🔥" : "💤"}
-                              </div>
-                              <span className="text-[8px] font-mono font-semibold text-slate-500 mt-1">
-                                {day.isToday ? "Today" : day.dateStr.slice(8, 10)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Milestone Badges & Progress */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 relative z-10">
-                      {[
-                        { title: "Habit Builder", days: 3, xp: 50, icon: "🌱", color: "#10b981", bg: "rgba(16,185,129,0.05)" },
-                        { title: "Consistency King", days: 7, xp: 150, icon: "👑", color: "#f59e0b", bg: "rgba(245,158,11,0.05)" },
-                        { title: "AI Unstoppable", days: 14, xp: 300, icon: "🚀", color: "#ec4899", bg: "rgba(236,72,153,0.05)" }
-                      ].map((milestone) => {
-                        const current = profileData?.streak_count || 1;
-                        const pct = Math.min(100, Math.round((current / milestone.days) * 100));
-                        const completed = current >= milestone.days;
-                        return (
-                          <div key={milestone.title} className="card rounded-2xl p-4 border flex flex-col justify-between gap-3"
-                            style={{
-                              background: milestone.bg,
-                              borderColor: completed ? milestone.color : "var(--border)",
-                              boxShadow: completed ? `0 0 12px ${milestone.color}15` : "none"
-                            }}>
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                                style={{ background: completed ? milestone.color : "var(--bg-secondary)", color: completed ? "white" : "slate-400" }}>
-                                {milestone.icon}
-                              </div>
-                              <div>
-                                <h5 className="text-xs font-black" style={{ color: "var(--text-primary)" }}>{milestone.title}</h5>
-                                <p className="text-[9px] font-mono font-bold text-slate-400 mt-0.5">{milestone.days}-Day Streak • +{milestone.xp} XP</p>
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-[9px] font-mono font-bold text-slate-500">
-                                <span>{completed ? "Unlocked! 🎉" : "Progress"}</span>
-                                <span>{pct}%</span>
-                              </div>
-                              <div className="w-full bg-[var(--bg-secondary)] h-1.5 rounded-full overflow-hidden border border-[var(--border)]">
-                                <div className="h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${pct}%`, background: completed ? milestone.color : "var(--accent)" }} />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* ═══════ COGNITIVE ROADMAP CANVASES & INTERACTIVE BLUEPRINTS ═══════ */}
-                  <div className="card rounded-3xl p-6 md:p-8 animate-fade-up relative overflow-hidden"
-                    style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
-                    
-                    {/* Floating ambient radial background decor */}
-                    <div className="absolute top-[-25%] right-[-15%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[100px] pointer-events-none"></div>
-
-                    {/* Canvas Header */}
-                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 mb-6 border-b border-[var(--border)] relative z-10">
-                      <div className="flex items-center gap-3">
-                        <span className="text-4xl animate-float">🗺️</span>
-                        <div>
-                          <h3 className="text-base sm:text-lg font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-                            Cognitive Roadmap Hub
-                          </h3>
-                          <p className="text-xs font-mono font-bold mt-0.5" style={{ color: "var(--text-muted)" }}>
-                            Select, explore, and check off specialized learning trails
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Track Selector Tab Buttons */}
-                      <div className="flex flex-wrap gap-2 max-w-full overflow-x-auto py-1">
-                        {roadmap && roadmap.length > 0 && (
-                          <button
-                            onClick={() => setSelectedRoadmapTrack("calibrated")}
-                            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 border ${
-                              selectedRoadmapTrack === "calibrated"
-                                ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-[var(--shadow-glow)]"
-                                : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-slate-400 text-slate-400"
-                            }`}
-                            style={{ fontSize: "12px" }}
-                          >
-                            🎯 Calibrated Path
-                          </button>
-                        )}
-                        {Object.entries(staticRoadmaps).map(([key, value]) => {
-                          const isSelected = selectedRoadmapTrack === key;
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => setSelectedRoadmapTrack(key)}
-                              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 border ${
-                                isSelected
-                                  ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent-text)] shadow-[var(--shadow-glow)]"
-                                  : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-slate-400 text-slate-400"
-                              }`}
-                              style={{ fontSize: "12px" }}
-                            >
-                              <span>{value.icon}</span>
-                              <span>{value.title}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Canvas Main Area */}
-                    <div className="relative z-10">
-                      
-                      {/* CASE A: CALIBRATED ROADMAP TIMELINE */}
-                      {selectedRoadmapTrack === "calibrated" && roadmap && roadmap.length > 0 && (
-                        <div className="space-y-8 animate-fadeIn">
-                          
-                          {/* Gamified Mastery Summary Banner */}
-                          {(() => {
-                            const totalRoadmapTasks = roadmap.reduce((acc, curr) => acc + (curr.tasks?.length || 0), 0);
-                            const completedRoadmapTasks = profileData?.completed_tasks?.length || 0;
-                            const overallPercent = totalRoadmapTasks > 0 ? Math.round((completedRoadmapTasks / totalRoadmapTasks) * 100) : 0;
-
-                            return (
-                              <div className="glass-card rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border"
-                                style={{ borderColor: "var(--border)", background: "var(--bg-sidebar)", boxShadow: "var(--shadow-md)" }}>
-                                
-                                <div className="absolute top-[-40%] left-[-10%] w-[250px] h-[250px] bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[70px] pointer-events-none"></div>
-                                
-                                {/* Info / Progress Text */}
-                                <div className="flex-1 space-y-2 z-10 w-full">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-2xl animate-float">🔥</span>
-                                    <div>
-                                      <h4 className="text-sm font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-                                        Personalized Mastery Roadmap Progress
-                                      </h4>
-                                      <p className="text-[10px] font-mono text-[var(--accent-text)] font-bold uppercase mt-0.5">
-                                        ⚡ Streak: {profileData?.streak_count || 1} Days • 👑 XP Accumulation: {profileData?.xp_points || 100} XP
-                                      </p>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Progress bar */}
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between items-center text-[10px] font-mono font-bold" style={{ color: "var(--text-muted)" }}>
-                                      <span>Objectives Mastered: {completedRoadmapTasks} / {totalRoadmapTasks}</span>
-                                      <span style={{ color: "var(--accent-text)" }}>{overallPercent}%</span>
-                                    </div>
-                                    <div className="w-full bg-[var(--bg-secondary)] h-2.5 rounded-full overflow-hidden border border-[var(--border)] relative">
-                                      <div 
-                                        className="h-full rounded-full transition-all duration-700 bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
-                                        style={{ width: `${overallPercent}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Dynamic Badge/Status icon */}
-                                <div className="z-10 flex-shrink-0 flex items-center justify-center bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 w-full md:w-auto md:min-w-[140px] text-center"
-                                  style={{ boxShadow: "var(--shadow-sm)" }}>
-                                  <div>
-                                    <span className="text-3xl block">🏆</span>
-                                    <span className="text-[10px] font-mono font-black uppercase tracking-wider block mt-1" style={{ color: "var(--text-muted)" }}>
-                                      {overallPercent === 100 ? "AI Architect" : "OS Initiate"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                              </div>
-                            );
-                          })()}
-
-                          {/* Roadmap Node Timeline */}
-                          <div className="relative pl-9 sm:pl-12 space-y-8 before:absolute before:left-[16px] sm:before:left-[20px] before:top-2 before:bottom-2 before:w-[3px] before:bg-[var(--border)]">
-                            {roadmap.map((node, index) => {
-                              const isActive = node.status === "active";
-                              const isCompleted = node.status === "completed";
-                              const isLocked = node.status === "locked";
-
-                              let circleBg = "var(--bg-card)";
-                              let circleBorder = "var(--border)";
-                              let circleTextColor = "var(--text-muted)";
-                              let cardBorder = "var(--border)";
-                              let cardGlow = "none";
-
-                              if (isActive) {
-                                circleBg = "var(--accent)";
-                                circleBorder = "var(--accent)";
-                                circleTextColor = "var(--text-inverse)";
-                                cardBorder = "var(--accent)";
-                                cardGlow = "0 0 16px var(--accent-glow)";
-                              } else if (isCompleted) {
-                                circleBg = "var(--success)";
-                                circleBorder = "var(--success)";
-                                circleTextColor = "var(--text-inverse)";
-                              }
-
-                              // Extract tasks and compute weekly progress
-                              const nodeTasks = node.tasks || [];
-                              const completedWeeklyTasks = nodeTasks.filter((task: string) => 
-                                profileData?.completed_tasks?.includes(`${node.node_id}:${task}`)
-                              ).length;
-                              const weeklyPercent = nodeTasks.length > 0 ? Math.round((completedWeeklyTasks / nodeTasks.length) * 100) : 0;
-
-                              return (
-                                <div key={node.node_id} className="relative flex flex-col gap-2 transition-all hover:translate-x-1 duration-200">
-                                  {/* Step Circle Indicator */}
-                                  <div 
-                                    className={`absolute left-[-32px] sm:left-[-38px] w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] rounded-full flex items-center justify-center font-black text-xs border-2 z-15 transition-all duration-300 ${
-                                      isActive ? "animate-pulse" : ""
-                                    }`}
-                                    style={{
-                                      background: circleBg,
-                                      borderColor: circleBorder,
-                                      color: circleTextColor,
-                                      boxShadow: isActive ? "0 0 10px var(--accent)" : "none"
-                                    }}
-                                  >
-                                    {isCompleted ? "✓" : index + 1}
-                                  </div>
-
-                                  {/* Stage Card */}
-                                  <div className="flex-1 card rounded-2xl p-5 md:p-6 flex flex-col justify-between gap-5 transition-all duration-300 border"
-                                    style={{
-                                      borderColor: cardBorder,
-                                      boxShadow: cardGlow,
-                                      background: "var(--bg-card)"
-                                    }}
-                                  >
-                                    {/* Card header: stage details */}
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
-                                      <div className="space-y-1.5 flex-1">
-                                        <div className="flex items-center gap-2.5 flex-wrap">
-                                          <h4 className="text-base font-extrabold" style={{ color: isActive ? "var(--accent-text)" : "var(--text-primary)" }}>
-                                            Week {index + 1}: {node.title}
-                                          </h4>
-                                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-                                            isActive 
-                                              ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
-                                              : isCompleted 
-                                                ? "bg-green-500/10 text-green-500 border-green-500/25" 
-                                                : "bg-gray-500/10 text-gray-500 border-gray-500/25"
-                                          }`}>
-                                            {node.status}
-                                          </span>
-                                        </div>
-                                        <p className="text-xs font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                                          {node.description}
-                                        </p>
-                                      </div>
-
-                                      {/* Stage-level progress metrics */}
-                                      {nodeTasks.length > 0 && !isLocked && (
-                                        <div className="flex flex-col items-stretch md:items-end w-full md:w-auto min-w-[120px] space-y-1">
-                                          <div className="flex justify-between items-center text-[9px] font-mono font-bold text-slate-400">
-                                            <span>Stage Check: {completedWeeklyTasks} / {nodeTasks.length}</span>
-                                            <span style={{ color: weeklyPercent === 100 ? "var(--success)" : "var(--accent-text)" }}>{weeklyPercent}%</span>
-                                          </div>
-                                          <div className="w-full md:w-32 bg-[var(--bg-secondary)] h-1.5 rounded-full overflow-hidden border border-[var(--border)] relative">
-                                            <div 
-                                              className="h-full rounded-full transition-all duration-300"
-                                              style={{ 
-                                                width: `${weeklyPercent}%`,
-                                                background: weeklyPercent === 100 ? "var(--success)" : "var(--accent)"
-                                              }}
-                                            />
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {isLocked && (
-                                        <div className="flex items-center gap-1.5 text-xs font-mono font-black" style={{ color: "var(--text-muted)" }}>
-                                          <span>Locked Stage</span>
-                                          <span>🔒</span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Actionable Subtask Checkboxes (Notion / Duolingo Style) */}
-                                    {nodeTasks.length > 0 && !isLocked && (
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-up">
-                                        {nodeTasks.map((task: string, i: number) => {
-                                          const isChecked = !!profileData?.completed_tasks?.includes(`${node.node_id}:${task}`);
-                                          return (
-                                            <button
-                                              key={i}
-                                              onClick={async () => {
-                                                addLog(`[SYSTEM] Syncing task checklist item: "${task}"...`, "system");
-                                                try {
-                                                  const res = await fetch(`${API_BASE_URL}/api/v1/profile/roadmap/task/toggle`, {
-                                                    method: "POST",
-                                                    headers: {
-                                                      "Content-Type": "application/json",
-                                                      "Authorization": `Bearer ${user.uid}`
-                                                    },
-                                                    body: JSON.stringify({
-                                                      node_id: node.node_id,
-                                                      task_text: task,
-                                                      completed: !isChecked
-                                                    })
-                                                  });
-                                                  if (res.ok) {
-                                                    const data = await res.json();
-                                                    addLog(`[SUCCESS] Task Checklist updated. XP and milestones recalculated!`, "success");
-                                                    fetchProfile();
-                                                  } else {
-                                                    throw new Error(`HTTP ${res.status}`);
-                                                  }
-                                                } catch (err) {
-                                                  addLog(`[ERROR] Connection failed. Sandbox telemetry updates suspended.`, "error");
-                                                }
-                                              }}
-                                              className="flex items-center gap-3 p-3.5 rounded-xl border text-left cursor-pointer transition-all hover:bg-[var(--bg-secondary)]"
-                                              style={{
-                                                borderColor: isChecked ? "var(--success)" : "var(--border)",
-                                                background: isChecked ? "rgba(34,197,94,0.02)" : "var(--bg-card)"
-                                              }}
-                                            >
-                                              <div className="w-5 h-5 rounded-md border flex items-center justify-center font-bold text-[10px] flex-shrink-0 transition-all duration-300"
-                                                style={{
-                                                  borderColor: isChecked ? "var(--success)" : "var(--border)",
-                                                  background: isChecked ? "var(--success)" : "transparent",
-                                                  color: isChecked ? "white" : "transparent"
-                                                }}>
-                                                ✓
-                                              </div>
-                                              <span className="text-[11px] font-semibold leading-snug break-words flex-1"
-                                                style={{ 
-                                                  color: isChecked ? "var(--text-muted)" : "var(--text-primary)",
-                                                  textDecoration: isChecked ? "line-through" : "none"
-                                                }}>
-                                                {task}
-                                              </span>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* CASE B: STANDARD DETAILED BRANCHING MAPS */}
-                      {selectedRoadmapTrack !== "calibrated" && staticRoadmaps[selectedRoadmapTrack] && (
-                        <div className="space-y-12 py-4">
-                          
-                          {/* Track Details Card */}
-                          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                              <h4 className="text-base font-extrabold flex items-center gap-2">
-                                <span>{staticRoadmaps[selectedRoadmapTrack].icon}</span>
-                                <span>Integrated {staticRoadmaps[selectedRoadmapTrack].title} Curriculum Blueprint</span>
-                              </h4>
-                              <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                                {staticRoadmaps[selectedRoadmapTrack].description} Click any sub-node card to open its detailed checklist.
-                              </p>
-                            </div>
-                            
-                            {/* Track overall checklist progress */}
-                            {(() => {
-                              const track = staticRoadmaps[selectedRoadmapTrack];
-                              let totalTasks = 0;
-                              let completedTasks = 0;
-                              track.nodes.forEach((node: any) => {
-                                node.subNodes.forEach((sub: any) => {
-                                  totalTasks += sub.checklist.length;
-                                  sub.checklist.forEach((task: string) => {
-                                    if (checkedTasks[`${sub.id}-${task}`]) {
-                                      completedTasks++;
-                                    }
-                                  });
-                                });
-                              });
-
-                              return (
-                                <span className="text-xs font-mono font-black px-3.5 py-1.5 rounded-full self-stretch md:self-auto text-center"
-                                  style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
-                                  🎯 Mastery Check: {completedTasks} / {totalTasks} Checked
-                                </span>
-                              );
-                            })()}
-                          </div>
-
-                          {/* Node Timeline Visual Graph */}
-                          <div className="space-y-10 relative before:absolute before:left-1/2 before:top-4 before:bottom-4 before:w-[2px] before:bg-[var(--border)] before:hidden md:before:block">
-                            {staticRoadmaps[selectedRoadmapTrack].nodes.map((node: any, idx: number) => (
-                              <div key={node.id} className="space-y-6 relative z-10">
-                                
-                                {/* Yellow Centered Main Subject Node */}
-                                <div className="flex justify-center">
-                                  <div className="px-6 py-3 rounded-2xl border-2 text-sm font-black shadow-md tracking-wider flex items-center gap-2.5 transition-all hover:scale-102 select-none"
-                                    style={{
-                                      background: theme === "dark" ? "#3f2b0f" : "#fef9c3",
-                                      borderColor: "var(--warning)",
-                                      color: theme === "dark" ? "#fef08a" : "#854d0e"
-                                    }}>
-                                    <span>🔶</span>
-                                    <span>{node.title}</span>
-                                  </div>
-                                </div>
-
-                                {/* Vertical dashed connector */}
-                                <div className="w-[2px] h-6 border-l-2 border-dashed border-[var(--border)] mx-auto"></div>
-
-                                {/* Sub-Nodes Grid branching down */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-                                  {node.subNodes.map((sub: any) => {
-                                    const subTotal = sub.checklist.length;
-                                    const subCompleted = sub.checklist.filter((task: string) => checkedTasks[`${sub.id}-${task}`]).length;
-                                    const isSubCompleted = subTotal > 0 && subCompleted === subTotal;
-
-                                    return (
-                                      <button
-                                        key={sub.id}
-                                        onClick={() => setActiveDetailSubNode(sub)}
-                                        className="card rounded-2xl p-5 text-left transition-all duration-300 hover:translate-y-[-4px] flex flex-col justify-between h-full group relative cursor-pointer"
-                                        style={{
-                                          border: `1px solid ${isSubCompleted ? "var(--success)" : "var(--border)"}`,
-                                          background: isSubCompleted ? "rgba(34,197,94,0.02)" : "var(--bg-card)",
-                                          boxShadow: isSubCompleted ? "0 0 10px rgba(34,197,94,0.06)" : "var(--shadow-sm)"
-                                        }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = isSubCompleted ? "var(--success)" : "var(--accent)"; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = isSubCompleted ? "var(--success)" : "var(--border)"; }}
-                                      >
-                                        <div className="space-y-2">
-                                          <div className="flex items-center justify-between gap-3">
-                                            <h5 className="text-xs sm:text-sm font-extrabold group-hover:text-[var(--accent)] transition-colors leading-tight" style={{ color: "var(--text-primary)" }}>
-                                              {sub.title}
-                                            </h5>
-                                            {isSubCompleted ? (
-                                              <span className="text-xs font-bold" style={{ color: "var(--success)" }}>✓</span>
-                                            ) : (
-                                              <span className="text-[10px] font-mono font-bold text-slate-400">
-                                                {subCompleted}/{subTotal}
-                                              </span>
-                                            )}
-                                          </div>
-                                          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                                            {sub.description}
-                                          </p>
-                                        </div>
-
-                                        {subTotal > 0 && (
-                                          <div className="w-full bg-[var(--bg-secondary)] h-1 rounded-full overflow-hidden mt-4 border border-[var(--border)]">
-                                            <div 
-                                              className="h-full rounded-full transition-all duration-300"
-                                              style={{ 
-                                                width: `${(subCompleted / subTotal) * 100}%`,
-                                                background: isSubCompleted ? "var(--success)" : "var(--accent)"
-                                              }}
-                                            />
-                                          </div>
-                                        )}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-
-                                {/* Dash gap to next segment */}
-                                {idx < staticRoadmaps[selectedRoadmapTrack].nodes.length - 1 && (
-                                  <div className="w-[2px] h-10 border-l-2 border-dashed border-[var(--border)] mx-auto"></div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-
-                  {/* ═══════ SLIDE-OVER FROSTED GLASS POP-UP DETAIL DRAWER ═══════ */}
-                  {activeDetailSubNode && (
-                    <div className="fixed inset-0 z-50 flex justify-end"
-                      style={{ background: "var(--bg-overlay)", backdropFilter: "blur(6px)" }}
-                      onClick={() => setActiveDetailSubNode(null)}
-                    >
-                      <div className="w-full max-w-lg h-full p-6 md:p-8 flex flex-col justify-between overflow-y-auto animate-slide-left relative"
-                        style={{ 
-                          background: "var(--bg-card)", 
-                          borderLeft: "1px solid var(--border)",
-                          boxShadow: "var(--shadow-lg)"
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* Ambient subtle drawer background blur */}
-                        <div className="absolute top-[-30%] right-[-10%] w-[350px] h-[350px] bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
-
-                        <div className="space-y-7 relative z-10">
-                          
-                          {/* Close / Header */}
-                          <div className="flex items-start justify-between pb-4 border-b border-[var(--border)]">
-                            <div>
-                              <span className="text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full" style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
-                                🔶 Sub-Topic Blueprint Detail
-                              </span>
-                              <h3 className="text-base sm:text-lg font-black tracking-tight mt-2.5" style={{ color: "var(--text-primary)" }}>
-                                {activeDetailSubNode.title}
-                              </h3>
-                            </div>
-                            <button 
-                              onClick={() => setActiveDetailSubNode(null)}
-                              className="w-8 h-8 rounded-xl border border-[var(--border)] flex items-center justify-center font-bold text-xs cursor-pointer hover:border-[var(--accent)] hover:text-[var(--accent-text)] transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-
-                          {/* Description */}
-                          <div className="space-y-2">
-                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Learning Scope:</h4>
-                            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                              {activeDetailSubNode.description}
-                            </p>
-                          </div>
-
-                          {/* Mastery Checklist */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-between" style={{ color: "var(--text-muted)" }}>
-                              <span>Checklist Objectives:</span>
-                              <span className="text-[10px] font-mono text-[var(--accent-text)]">
-                                {activeDetailSubNode.checklist.filter((task: string) => checkedTasks[`${activeDetailSubNode.id}-${task}`]).length} / {activeDetailSubNode.checklist.length} Completed
-                              </span>
-                            </h4>
-                            <div className="space-y-2">
-                              {activeDetailSubNode.checklist.map((task: string, i: number) => {
-                                const taskId = `${activeDetailSubNode.id}-${task}`;
-                                const isChecked = !!checkedTasks[taskId];
-
-                                return (
-                                  <button
-                                    key={i}
-                                    onClick={() => toggleChecklistTask(taskId)}
-                                    className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left cursor-pointer transition-all hover:bg-[var(--bg-secondary)]"
-                                    style={{
-                                      borderColor: isChecked ? "var(--success)" : "var(--border)",
-                                      background: isChecked ? "rgba(34,197,94,0.02)" : "var(--bg-card)"
-                                    }}
-                                  >
-                                    <div className="w-5 h-5 rounded-md border flex items-center justify-center font-bold text-xs"
-                                      style={{
-                                        borderColor: isChecked ? "var(--success)" : "var(--border)",
-                                        background: isChecked ? "var(--success)" : "transparent",
-                                        color: isChecked ? "white" : "transparent"
-                                      }}>
-                                      ✓
-                                    </div>
-                                    <span className="text-xs font-semibold leading-snug"
-                                      style={{ 
-                                        color: isChecked ? "var(--text-muted)" : "var(--text-primary)",
-                                        textDecoration: isChecked ? "line-through" : "none"
-                                      }}>
-                                      {task}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                        </div>
-
-                        {/* Footer Exercises */}
-                        <div className="pt-6 border-t border-[var(--border)] mt-8 space-y-4 relative z-10">
-                          <div className="bg-[var(--accent-soft)] border border-[var(--accent)] rounded-2xl p-4 text-[10px] sm:text-xs font-mono leading-relaxed text-[var(--accent-text)] font-semibold">
-                            💡 Setup and verify this curriculum segment inside your AIOS sandboxed docker containers directly from the Agent Terminal tab!
-                          </div>
-                          
-                          <button
-                            onClick={() => {
-                              setActiveDetailSubNode(null);
-                              addLog(`[SYSTEM] Practice Exercise Loaded: Active study session spawned for blueprint node "${activeDetailSubNode.title}"`, "info");
-                            }}
-                            className="btn-accent w-full py-4 rounded-2xl font-black text-xs uppercase cursor-pointer transition-all active:scale-95"
-                          >
-                            Launch Sandbox Practice Session 🪐
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Console + Quick Actions */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
-                    {/* Console Terminal */}
-                    <div className="lg:col-span-8 card rounded-2xl p-6 flex flex-col min-h-[400px] animate-fade-up delay-3">
-                      <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: "1px solid var(--border)" }}>
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full flex items-center justify-center" style={{ background: "var(--accent-soft)" }}>
-                            <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ background: "var(--accent)" }}></span>
-                          </span>
-                          <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Cognitive OS Console</h3>
-                        </div>
-                        <button 
-                          onClick={() => setLogs([])}
-                          className="text-[10px] font-mono cursor-pointer transition-colors"
-                          style={{ color: "var(--text-muted)" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-text)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-                        >
-                          Clear
-                        </button>
-                      </div>
-
-                      <div className="flex-1 rounded-xl p-4 font-mono text-[12px] leading-7 overflow-y-auto space-y-1 max-h-[300px]"
-                        style={{ background: "var(--bg-code)", color: "var(--text-code)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        {logs.map((log, idx) => {
-                          let color = "#a1a1aa";
-                          if (log.type === "system") color = "#818cf8";
-                          else if (log.type === "success") color = "#4ade80";
-                          else if (log.type === "config") color = "#22d3ee";
-                          else if (log.type === "error") color = "#f87171";
-                          else if (log.type === "info") color = "#fbbf24";
-                          return (
-                            <div key={idx} style={{ color }} className="font-semibold">
-                              {log.text}
-                            </div>
-                          );
-                        })}
-                        <div className="pt-2 flex items-center gap-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "#e2e8f0" }}>
-                          <span className="font-bold" style={{ color: "var(--accent)" }}>$</span>
-                          <span className="animate-cursor-blink">
-                            aios-agent --active
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Developer Tools + Module Maps */}
-                    <div className="lg:col-span-4 flex flex-col gap-6">
-                      
-                      <div className="card rounded-2xl p-6 animate-fade-up delay-4">
-                        <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" 
-                          style={{ color: "var(--accent-text)", borderBottom: "1px solid var(--border)" }}>
-                          Developer Tools
-                        </h3>
-                        <div className="space-y-3">
-                          <button 
-                            onClick={fetchStatus}
-                            className="btn-accent w-full py-2.5 px-4 rounded-xl text-xs"
-                          >
-                            Sync API Gateway Status
-                          </button>
-                          <button 
-                            onClick={() => {
-                              addLog("[SYSTEM] Instantiating Sandboxed Docker Container...", "system");
-                              setTimeout(() => addLog("[SUCCESS] Sandbox online at localhost:9001 (Ubuntu 22.04)", "success"), 1000);
-                            }}
-                            className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs"
-                          >
-                            Launch Sandbox Container
-                          </button>
-                          <button 
-                            onClick={() => {
-                              addLog("[SYSTEM] Running standard test execution suite...", "system");
-                              setTimeout(() => addLog("[SUCCESS] Complete check passed. 0 errors, 12 warnings.", "success"), 800);
-                            }}
-                            className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs"
-                          >
-                            Run Test Suites
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="card rounded-2xl p-6 animate-fade-up delay-5">
-                        <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" 
-                          style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
-                          Module Maps
-                        </h3>
-                        <ul className="space-y-3 font-mono text-[11px]">
-                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/frontend</span>
-                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>Next.js v14</span>
-                          </li>
-                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/backend</span>
-                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>FastAPI v0.100</span>
-                          </li>
-                          <li className="flex items-center justify-between pb-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>/rag-system</span>
-                            <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>LlamaIndex/Qdrant</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DashboardTab
+                  dailyTasks={dailyTasks}
+                  plannerLoading={plannerLoading}
+                  handleToggleDailyTask={handleToggleDailyTask}
+                  profileData={profileData}
+                  getLast7Days={getLast7Days}
+                  roadmap={roadmap}
+                  selectedRoadmapTrack={selectedRoadmapTrack}
+                  setSelectedRoadmapTrack={setSelectedRoadmapTrack}
+                  staticRoadmaps={staticRoadmaps}
+                  activeDetailSubNode={activeDetailSubNode}
+                  setActiveDetailSubNode={setActiveDetailSubNode}
+                  checkedTasks={checkedTasks}
+                  toggleChecklistTask={toggleChecklistTask}
+                  logs={logs}
+                  setLogs={setLogs}
+                  addLog={addLog}
+                  fetchStatus={fetchStatus}
+                  fastapiOnline={fastapiOnline}
+                  activeModel={activeModel}
+                  user={user}
+                  API_BASE_URL={API_BASE_URL}
+                  fetchProfile={fetchProfile}
+                  setShowBreatherModal={setShowBreatherModal}
+                />
               )}
 
-              {/* ═══════ TAB 2: AGENT TERMINAL ═══════ */}
+              {/* ═══════ TAB 2: COGNITIVE AGENT TERMINAL ═══════ */}
               {activeTab === "agent" && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-190px)] animate-fadeIn">
-                  
-                  {/* Column 1: Chat History Sessions Sidebar */}
-                  <div className="lg:col-span-3 flex flex-col gap-4 h-full overflow-hidden">
-                    <button
-                      onClick={startNewChat}
-                      className="btn-accent w-full py-3.5 px-4 rounded-2xl font-bold text-xs tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shadow-[var(--shadow-glow)]"
-                    >
-                      <span>➕</span> New Conversation
-                    </button>
-
-                    {/* Sessions scroll list */}
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                      {chatSessions.map((session) => {
-                        const isActive = session.id === activeSessionId;
-                        return (
-                          <div
-                            key={session.id}
-                            onClick={() => {
-                              setActiveSessionId(session.id);
-                              addLog(`[SYSTEM] Switched active chat session context to "${session.title}"`, "info");
-                            }}
-                            className="group p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between gap-3 relative hover:translate-x-1"
-                            style={{
-                              borderColor: isActive ? "var(--accent)" : "var(--border)",
-                              background: isActive ? "var(--accent-soft)" : "var(--bg-card)",
-                              boxShadow: isActive ? "0 0 10px rgba(255,107,53,0.05)" : "var(--shadow-sm)"
-                            }}
-                          >
-                            {isActive && (
-                              <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r bg-[var(--accent)]" />
-                            )}
-                            <div className="min-w-0 flex-1 pl-1">
-                              <h5 className="text-xs font-bold truncate" style={{ color: isActive ? "var(--accent-text)" : "var(--text-primary)" }}>
-                                {session.title}
-                              </h5>
-                              <span className="text-[9px] font-mono text-slate-500 mt-1 block">
-                                {session.messages.length} messages
-                              </span>
-                            </div>
-
-                            <button
-                              onClick={(e) => deleteChatSession(session.id, e)}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] cursor-pointer opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 hover:text-red-500"
-                              style={{ color: "var(--text-muted)" }}
-                              title="Delete Session"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Column 2: Central Chat Workspace */}
-                  <div className="lg:col-span-6 card rounded-3xl flex flex-col overflow-hidden h-full border border-[var(--border)]">
-                    
-                    {/* Chat Area Header */}
-                    <div className="px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-                        <div>
-                          <h4 className="text-xs font-black tracking-tight" style={{ color: "var(--text-primary)" }}>AI Mentor Console</h4>
-                          <span className="text-[9px] font-mono text-slate-400">Context bounds active</span>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold px-2.5 py-1 rounded-full uppercase border"
-                        style={{ background: "var(--accent-soft)", color: "var(--accent-text)", borderColor: "var(--accent)" }}>
-                        ⚡ Gemini 3.5 Flash
-                      </span>
-                    </div>
-
-                    {/* Chat Messages */}
-                    <div className="flex-1 p-5 overflow-y-auto space-y-5 custom-scrollbar bg-[var(--bg-input)]/20">
-                      {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
-                          <span className="text-5xl animate-float">🤖</span>
-                          <div>
-                            <h3 className="text-sm font-black" style={{ color: "var(--text-primary)" }}>AI-OS Cognitive Architect Workspace</h3>
-                            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                              Select a quick shortcut prompt card below or type your instruction to design system databases and sandbox docker APIs.
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        messages.map((msg) => (
-                          <div 
-                            key={msg.id} 
-                            className={`flex items-start gap-3.5 max-w-[90%] ${
-                              msg.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
-                            }`}
-                          >
-                            {/* Avatar */}
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-[10px] shadow-sm flex-shrink-0"
-                              style={msg.sender === "user" 
-                                ? { background: "var(--accent)", color: "white" }
-                                : { background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }
-                              }>
-                              {msg.sender === "user" ? (user.displayName?.[0] || "U") : "Ω"}
-                            </div>
-
-                            {/* Bubble Card */}
-                            <div className="group relative flex flex-col gap-1">
-                              <div className={`rounded-2xl p-4 text-[12.5px] leading-relaxed shadow-sm transition-all duration-200 border ${
-                                msg.sender === "user" 
-                                  ? "rounded-tr-none" 
-                                  : "rounded-tl-none"
-                              }`}
-                              style={msg.sender === "user"
-                                ? { background: "var(--accent)", color: "white", borderColor: "var(--accent)" }
-                                : { background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-primary)" }
-                              }>
-                                {msg.sender === "user" ? (
-                                  <div className="whitespace-pre-line font-sans font-semibold">{msg.text}</div>
-                                ) : (
-                                  <div className="font-sans space-y-1.5">{parseMarkdownToReact(msg.text)}</div>
-                                )}
-                                
-                                <div className="flex justify-between items-center text-[8px] font-mono mt-2.5 opacity-60">
-                                  <span>{msg.timestamp}</span>
-                                  {msg.sender === "assistant" && msg.text && (
-                                    <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(msg.text);
-                                        addLog("[SUCCESS] Copied AI Mentor response to clipboard.", "success");
-                                      }}
-                                      className="py-0.5 px-1.5 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer"
-                                      title="Copy Message Text"
-                                    >
-                                      📋 Copy
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-
-                      {/* AI Thinking Multi-Stage Loader */}
-                      {agentThinking && (
-                        <div className="flex items-start gap-3.5 max-w-[85%] mr-auto animate-pulse">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0"
-                            style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
-                            Ω
-                          </div>
-                          <div className="rounded-2xl rounded-tl-none p-4 text-[11px] font-mono tracking-wider flex items-center gap-2.5 border"
-                            style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                            
-                            {/* Bouncing Brackets loader */}
-                            <span className="flex items-center gap-1 font-bold text-[var(--accent)] animate-bounce font-mono">
-                              <span>[</span>
-                              <span className="h-2 w-2 rounded-full bg-[var(--accent)] inline-block animate-ping" />
-                              <span>]</span>
-                            </span>
-                            
-                            <span className="font-semibold">
-                              {agentThinkingStep === 0 && "🔍 Analyzing monorepo framework index..."}
-                              {agentThinkingStep === 1 && "🚀 Ingesting vector search indexes..."}
-                              {agentThinkingStep === 2 && "💡 Formulating optimal coding templates..."}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div ref={chatEndRef} />
-                    </div>
-
-                    {/* Chat Input & Categorized prompt cards */}
-                    <div className="p-4" style={{ borderTop: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
-                      
-                      {/* Floating Prompt Library Cards Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                        {[
-                          { title: "Boilerplate", text: "⚡ FastAPI Relational Code", cmd: "/code Build FastAPI database schemas with transaction borders" },
-                          { title: "Database", text: "🐘 Verify SQL Migrations", cmd: "/db Trigger postgres check queries and health" },
-                          { title: "Semantic RAG", text: "🎯 Cosine Search Qdrant", cmd: "/rag Cosine similarity points search indices" },
-                          { title: "Blueprints", text: "💡 Project Architect ideas", cmd: "/idea Suggest 3 personalized advanced project ideas" },
-                          { title: "Report", text: "📊 Skill Mastery stats", cmd: "/summary Retrieve active skill levels, XP logs, and streaks" },
-                          { title: "Sandbox", text: "🐛 Resilient Lock Debug", cmd: "/debug Correct transaction locks in SQLite/PostgreSQL completions" },
-                        ].map((chip, i) => (
-                          <button 
-                            key={i}
-                            onClick={() => handleSendMessage(chip.cmd)}
-                            className="p-2.5 rounded-xl text-left border hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all cursor-pointer flex flex-col justify-between gap-1 group bg-[var(--bg-card)]"
-                          >
-                            <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-slate-500 group-hover:text-[var(--accent)]">{chip.title}</span>
-                            <span className="text-[10px] font-semibold text-slate-300 truncate">{chip.text}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Custom Perplexity-style input box */}
-                      <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} 
-                        className="flex items-center gap-3 bg-[var(--bg-input)] rounded-2xl px-4 py-3 border shadow-inner focus-within:ring-2 focus-within:ring-[var(--accent-soft)] transition-all"
-                        style={{ borderColor: "var(--border)" }}
-                      >
-                        <label htmlFor="chat-message-input" className="sr-only">Ask the AI agent</label>
-                        <input 
-                          id="chat-message-input"
-                          name="chatMessage"
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="Ask the AI agent to write schemas, check sandbox files..."
-                          className="flex-1 text-[13px] outline-none bg-transparent"
-                          style={{ color: "var(--text-primary)" }}
-                        />
-                        
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-mono text-slate-500 border border-[var(--border)] rounded px-1.5 py-0.5 select-none hidden xs:inline">
-                            8,192 tokens
-                          </span>
-                          <button type="submit" 
-                            className="w-8 h-8 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent)] text-white hover:scale-105 transition-all flex items-center justify-center font-bold text-xs select-none shadow-[var(--shadow-glow)] cursor-pointer"
-                          >
-                            ➔
-                          </button>
-                        </div>
-                      </form>
-
-                    </div>
-                  </div>
-
-                  {/* Column 3: Chat Sidebar (Workspace Context) */}
-                  <div className="lg:col-span-3 flex flex-col gap-5 h-full overflow-y-auto pr-1">
-                    
-                    <div className="card rounded-2xl p-5">
-                      <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-3 pb-1" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
-                        Cognitive Topology
-                      </h4>
-                      <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                        Currently routing through **Antigravity v0.1** custom developer setup. Synced with local monorepo schemas and SQLite/PostgreSQL telemetry databases.
-                      </p>
-                    </div>
-
-                    <div className="card rounded-2xl p-5">
-                      <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-3 pb-1" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
-                        Cognitive CLI Slash Tags
-                      </h4>
-                      <ul className="space-y-3 font-mono text-[10px]">
-                        {[
-                          { cmd: "/code [prompt]", desc: "Generates code structures" },
-                          { cmd: "/db [query]", desc: "Triggers PostgreSQL diagnostic queries" },
-                          { cmd: "/rag [concept]", desc: "Searches vector databases indices" },
-                          { cmd: "/idea [track]", desc: "Compiles personalized project blueprints" },
-                          { cmd: "/summary [profile]", desc: "Audits active XP logs & streaks" },
-                          { cmd: "/debug [code]", desc: "Audits transaction rollback exceptions" },
-                        ].map((item, i) => (
-                          <li key={i} className="flex flex-col gap-0.5">
-                            <span className="font-bold" style={{ color: "var(--accent-text)" }}>{item.cmd}</span>
-                            <span style={{ color: "var(--text-muted)" }}>{item.desc}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                  </div>
-                </div>
+                <AgentTab
+                  chatSessions={chatSessions}
+                  activeSessionId={activeSessionId}
+                  setActiveSessionId={setActiveSessionId}
+                  startNewChat={startNewChat}
+                  deleteChatSession={deleteChatSession}
+                  messages={messages}
+                  chatInput={chatInput}
+                  setChatInput={setChatInput}
+                  handleSendMessage={handleSendMessage}
+                  agentThinking={agentThinking}
+                  agentThinkingStep={agentThinkingStep}
+                  chatEndRef={chatEndRef}
+                  parseMarkdownToReact={parseMarkdownToReact}
+                  user={user}
+                  addLog={addLog}
+                />
               )}
 
               {/* ═══════ TAB 3: DATABASE EXPLORER ═══════ */}
               {activeTab === "database" && (
-                <div className="space-y-6 animate-fadeIn">
-                  
-                  <div className="card rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-base font-black" style={{ color: "var(--text-primary)" }}>PostgreSQL Transaction Logs</h3>
-                      <p className="text-[11px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Pool engine on 127.0.0.1:5434 • Models synchronized.
-                      </p>
-                    </div>
-                    <div className="flex gap-3 w-full sm:w-auto">
-                      <button 
-                        onClick={triggerDbCheck}
-                        disabled={dbChecking}
-                        className="btn-accent flex-1 sm:flex-none py-2.5 px-5 rounded-xl text-xs flex items-center justify-center gap-2"
-                      >
-                        {dbChecking && <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin"></span>}
-                        Live DB Check
-                      </button>
-                      <button 
-                        onClick={insertMockTelemetry}
-                        className="btn-outline flex-1 sm:flex-none py-2.5 px-5 rounded-xl text-xs"
-                      >
-                        Insert Mock
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Mobile Cards */}
-                  <div className="sm:hidden space-y-3">
-                    {telemetryTable.map((row) => (
-                      <div key={row.id} className="card rounded-xl p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-[11px]" style={{ color: "var(--text-muted)" }}>
-                            ID: <span className="font-extrabold" style={{ color: "var(--text-primary)" }}>{row.id}</span>
-                          </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono`}
-                            style={{
-                              background: row.status === "success" ? "rgba(34,197,94,0.1)" : row.status === "warning" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
-                              color: row.status === "success" ? "var(--success)" : row.status === "warning" ? "var(--warning)" : "var(--error)",
-                              border: `1px solid ${row.status === "success" ? "rgba(34,197,94,0.2)" : row.status === "warning" ? "rgba(245,158,11,0.2)" : "rgba(239,68,68,0.2)"}`
-                            }}>
-                            {row.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-mono uppercase font-bold" style={{ color: "var(--text-muted)" }}>Event</p>
-                          <p className="text-[12px] font-mono font-bold break-all" style={{ color: "var(--accent-text)" }}>{row.event}</p>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] font-mono pt-2" style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                          <span>⏱️ {row.duration === 0 ? "timeout" : `${row.duration} ms`}</span>
-                          <span>📅 {row.timestamp}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop Table */}
-                  <div className="hidden sm:block card rounded-2xl overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-[13px]">
-                        <thead>
-                          <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)" }}>
-                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Transaction ID</th>
-                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Event Name</th>
-                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Status</th>
-                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Duration</th>
-                            <th className="p-4 font-bold font-mono text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Timestamp</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {telemetryTable.map((row) => (
-                            <tr key={row.id} className="transition-colors" style={{ borderBottom: "1px solid var(--border)" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                            >
-                              <td className="p-4 font-mono font-bold" style={{ color: "var(--text-primary)" }}>{row.id}</td>
-                              <td className="p-4 font-mono font-bold" style={{ color: "var(--accent-text)" }}>{row.event}</td>
-                              <td className="p-4">
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono"
-                                  style={{
-                                    background: row.status === "success" ? "rgba(34,197,94,0.1)" : row.status === "warning" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
-                                    color: row.status === "success" ? "var(--success)" : row.status === "warning" ? "var(--warning)" : "var(--error)",
-                                  }}>
-                                  {row.status.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="p-4 font-mono" style={{ color: "var(--text-secondary)" }}>{row.duration === 0 ? "timeout" : `${row.duration} ms`}</td>
-                              <td className="p-4 font-mono" style={{ color: "var(--text-muted)" }}>{row.timestamp}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                <DatabaseTab
+                  telemetryTable={telemetryTable}
+                  dbChecking={dbChecking}
+                  triggerDbCheck={triggerDbCheck}
+                  insertMockTelemetry={insertMockTelemetry}
+                />
               )}
 
-              {/* ═══════ TAB 4: VECTOR SEARCH ═══════ */}
+              {/* ═══════ TAB 4: VECTOR RAG EXPLORER ═══════ */}
               {activeTab === "vector" && (
-                <div className="space-y-6 animate-fadeIn">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
-                    <div className="lg:col-span-7 flex flex-col gap-6">
-                      
-                      <div className="card rounded-2xl p-6">
-                        <h3 className="text-base font-black mb-2" style={{ color: "var(--text-primary)" }}>Qdrant Vector Search</h3>
-                        <p className="text-[12px] leading-relaxed mb-4" style={{ color: "var(--text-muted)" }}>
-                          Search cognitive indices using cosine similarity. Enter keywords to query embedded workspace files.
-                        </p>
-                        <form onSubmit={handleVectorSearch} className="flex gap-2">
-                          <label htmlFor="qdrant-search-input" className="sr-only">Search query</label>
-                          <input 
-                            id="qdrant-search-input"
-                            name="qdrantSearchQuery"
-                            type="text"
-                            value={vectorQuery}
-                            onChange={(e) => setVectorQuery(e.target.value)}
-                            placeholder="Type query for nearest-neighbor docs..."
-                            className="flex-1 rounded-xl px-4 py-2.5 text-[13px] transition-all outline-none"
-                            style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
-                          />
-                          <button type="submit" disabled={vectorSearching} className="btn-accent py-2.5 px-5 rounded-xl text-xs flex items-center justify-center gap-2">
-                            {vectorSearching && <span className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin"></span>}
-                            Search
-                          </button>
-                        </form>
-                      </div>
+                <VectorTab
+                  uploadedDocs={uploadedDocs}
+                  selectedDoc={selectedDoc}
+                  setSelectedDoc={setSelectedDoc}
+                  selectedDocLoading={selectedDocLoading}
+                  fetchDocumentDetails={fetchDocumentDetails}
+                  dragActive={dragActive}
+                  uploading={uploading}
+                  uploadProgress={uploadProgress}
+                  uploadStatus={uploadStatus}
+                  handleDrag={handleDrag}
+                  handleDrop={handleDrop}
+                  handleIncomingFile={handleIncomingFile}
+                  youtubeUrl={youtubeUrl}
+                  setYoutubeUrl={setYoutubeUrl}
+                  youtubeIngesting={youtubeIngesting}
+                  youtubeResult={youtubeResult}
+                  ingestYoutubeVideo={ingestYoutubeVideo}
+                  githubUrl={githubUrl}
+                  setGithubUrl={setGithubUrl}
+                  githubToken={githubToken}
+                  setGithubToken={setGithubToken}
+                  githubIngesting={githubIngesting}
+                  githubResult={githubResult}
+                  ingestGithubRepo={ingestGithubRepo}
+                  vectorQuery={vectorQuery}
+                  setVectorQuery={setVectorQuery}
+                  vectorSearching={vectorSearching}
+                  vectorResults={vectorResults}
+                  handleVectorSearch={handleVectorSearch}
+                  studyTab={studyTab}
+                  setStudyTab={setStudyTab}
+                  docNotes={docNotes}
+                  handleNotesChange={handleNotesChange}
+                  docChatHistory={docChatHistory}
+                  docChatQuery={docChatQuery}
+                  setDocChatQuery={setDocChatQuery}
+                  handleDocChatSearch={handleDocChatSearch}
+                  docChatLoading={docChatLoading}
+                  summarizing={summarizing}
+                  generateAISummary={generateAISummary}
+                  parseMarkdownToReact={parseMarkdownToReact}
+                  addLog={addLog}
+                />
+              )}
 
-                      <div className="card rounded-2xl p-6 flex-1 min-h-[250px]">
-                        <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}>
-                          Match Results
-                        </h4>
-                        {vectorResults.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-10 text-center">
-                            <span className="text-3xl mb-3" style={{ opacity: 0.3 }}>🔍</span>
-                            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>No matching vectors. Type a query above to search.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {vectorResults.map((res, i) => (
-                              <div key={i} className="p-4 rounded-xl flex items-start justify-between gap-4 transition-all"
-                                style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
-                              >
-                                <div className="space-y-1">
-                                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase"
-                                    style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
-                                    {res.category}
-                                  </span>
-                                  <p className="text-[12px] font-mono leading-relaxed mt-1" style={{ color: "var(--text-secondary)" }}>{res.doc}</p>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                  <span className="text-sm font-black font-mono" style={{ color: "var(--text-primary)" }}>
-                                    {(res.score * 100).toFixed(1)}%
-                                  </span>
-                                  <p className="text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>Similarity</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Drag & Drop Zone */}
-                    <div className="lg:col-span-5 flex flex-col">
-                      <div 
-                        onDragEnter={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDragOver={handleDrag}
-                        onDrop={handleDrop}
-                        className="flex-1 rounded-3xl border-2 border-dashed p-8 flex flex-col items-center justify-center text-center transition-all min-h-[350px] relative"
-                        style={{ 
-                          borderColor: dragActive ? "var(--accent)" : "var(--border)", 
-                          background: dragActive ? "var(--accent-soft)" : "var(--bg-card)",
-                          transform: dragActive ? "scale(1.01)" : "scale(1)"
-                        }}
-                      >
-                        <span className="text-5xl mb-4 animate-float">📁</span>
-                        <h4 className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Drag & Drop Knowledge Base</h4>
-                        <p className="text-[11px] leading-relaxed mt-2 max-w-xs mx-auto" style={{ color: "var(--text-muted)" }}>
-                          Split, embed, and ingest PDF, Markdown, or text files into your Qdrant semantic storage.
-                        </p>
-                        
-                        {uploadStatus && (
-                          <div className="mt-4 px-4 py-2.5 rounded-xl border text-[11px] font-mono leading-relaxed max-w-xs mx-auto animate-pulse"
-                            style={{ 
-                              background: uploadStatus.type === "error" ? "rgba(239,68,68,0.06)" : uploadStatus.type === "success" ? "rgba(34,197,94,0.06)" : "rgba(251,191,36,0.06)",
-                              borderColor: uploadStatus.type === "error" ? "rgba(239,68,68,0.2)" : uploadStatus.type === "success" ? "rgba(34,197,94,0.2)" : "rgba(251,191,36,0.2)",
-                              color: uploadStatus.type === "error" ? "#f87171" : uploadStatus.type === "success" ? "#4ade80" : "#fbbf24"
-                            }}>
-                            {uploadStatus.text}
-                          </div>
-                        )}
-                        
-                        <label htmlFor="vector-file-upload" className="mt-5 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer transition-all"
-                          style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                          Browse System Files
-                        </label>
-                        <input id="vector-file-upload" name="vectorFile" type="file" className="hidden" onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            ingestFile(e.target.files[0]);
-                          }
-                        }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* ═══════ TAB 7: ANALYTICS ═══════ */}
+              {activeTab === "analytics" && (
+                <AnalyticsTab user={user} onProjectAdded={fetchProfile} />
               )}
 
               {/* ═══════ TAB 5: SETTINGS ═══════ */}

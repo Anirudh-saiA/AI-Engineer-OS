@@ -71,6 +71,9 @@ class ProjectDetails(BaseModel):
     repository_link: Optional[str] = None
     status: str
     completed_at: Optional[datetime] = None
+    category: str = "General"
+    hours_spent: int = 0
+    skills: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -161,5 +164,15 @@ class AIMotivationResponse(BaseModel):
     show_popup: bool = False
     insights: List[InsightCard] = []
     notifications: List[NotificationItem] = []
+
+
+class ProjectAnalyticsResponse(BaseModel):
+    projects_started: int
+    projects_completed: int
+    completion_rate: float
+    favorite_category: str
+    hours_spent: int
+    success_rate: float
+    skills_gained: List[str]
 
 

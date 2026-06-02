@@ -3,7 +3,9 @@ import json
 import urllib.request
 import urllib.error
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.api.deps import verify_token
+from app.api.deps import verify_token, get_db
+from sqlalchemy.orm import Session
+from app.models.document import Document
 from app.schemas import vector as schemas
 
 router = APIRouter()
@@ -230,7 +232,11 @@ def search_vector_kb(query_data: schemas.VectorSearchQuery, current_user: dict =
         return {"engine": "local_semantic_overlap_fallback", "results": results}
 
 @router.post("/ingest")
-def ingest_vector_doc(payload: schemas.VectorIngestPayload, current_user: dict = Depends(verify_token)):
+def ingest_vector_doc(
+    payload: schemas.VectorIngestPayload,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
     """
     Receives text documents, splits them using sliding window chunking,
     generates embeddings, and upserts them to Qdrant.
@@ -240,6 +246,42 @@ def ingest_vector_doc(payload: schemas.VectorIngestPayload, current_user: dict =
 
     if not content.strip():
         raise HTTPException(status_code=400, detail="Document content cannot be empty.")
+
+    # Save document in PostgreSQL so it displays inside frontend Knowledge Directory list
+    file_lower = filename.lower()
+    if file_lower.endswith(".pdf"):
+        source_type = "pdf"
+    elif file_lower.endswith(".md"):
+        source_type = "md"
+    else:
+        source_type = "txt"
+
+    # Check if a document with the same name already exists for the active user
+    db_doc = db.query(Document).filter(
+        Document.user_id == current_user["uid"],
+        Document.name == filename
+    ).first()
+
+    if db_doc:
+        db_doc.content = content
+        db_doc.source_type = source_type
+    else:
+        db_doc = Document(
+            user_id=current_user["uid"],
+            name=filename,
+            source_type=source_type,
+            topic="general",
+            content=content
+        )
+        db.add(db_doc)
+        
+    try:
+        db.commit()
+        db.refresh(db_doc)
+    except Exception as dbe:
+        # Log database error but don't block the ingestion since vector storage is primary
+        import logging
+        logging.getLogger("uvicorn.error").error(f"Error saving document registration in PostgreSQL: {dbe}")
 
     # 1. Perform sliding window text chunking
     chunks = recursive_chunk_text(content, chunk_size=400, overlap=80)

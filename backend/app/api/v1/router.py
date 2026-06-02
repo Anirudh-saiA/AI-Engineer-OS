@@ -8,3 +8,7 @@ api_router.include_router(agent.router, prefix="/agent", tags=["Agent"])
 api_router.include_router(vector.router, prefix="/vector", tags=["Vector"])
 api_router.include_router(rag.router, prefix="/rag", tags=["RAG"])
 
+# Expose POST /upload-pdf directly under /api/v1/upload-pdf
+api_router.post("/upload-pdf", tags=["RAG"])(rag.upload_pdf)
+
+

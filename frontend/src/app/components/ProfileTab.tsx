@@ -22,6 +22,9 @@ export default function ProfileTab({ user }: ProfileTabProps) {
   const [projDesc, setProjDesc] = useState("");
   const [projRepo, setProjRepo] = useState("");
   const [projStatus, setProjStatus] = useState<"in_progress" | "completed">("completed");
+  const [projCategory, setProjCategory] = useState("RAG Systems");
+  const [projHours, setProjHours] = useState<number>(0);
+  const [projSkills, setProjSkills] = useState("");
   const [submittingProject, setSubmittingProject] = useState(false);
 
   // Heatmap hover states
@@ -69,6 +72,9 @@ export default function ProfileTab({ user }: ProfileTabProps) {
           description: projDesc,
           repository_link: projRepo || null,
           status: projStatus,
+          category: projCategory,
+          hours_spent: Number(projHours) || 0,
+          skills: projSkills || null,
         }),
       });
 
@@ -77,6 +83,9 @@ export default function ProfileTab({ user }: ProfileTabProps) {
         setProjDesc("");
         setProjRepo("");
         setProjStatus("completed");
+        setProjCategory("RAG Systems");
+        setProjHours(0);
+        setProjSkills("");
         setAddingProject(false);
         await fetchProfileData();
       }
@@ -496,6 +505,50 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-mono text-slate-400 uppercase">Category Track</label>
+                  <select
+                    value={projCategory}
+                    onChange={(e) => setProjCategory(e.target.value)}
+                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+                  >
+                    <option value="RAG Systems">RAG Systems</option>
+                    <option value="AI Agents">AI Agents</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Backend Development">Backend Development</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="Deep Learning">Deep Learning</option>
+                    <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                    <option value="DevOps / MLOps">DevOps / MLOps</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-mono text-slate-400 uppercase">Hours Spent</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={projHours || ""}
+                    onChange={(e) => setProjHours(Number(e.target.value))}
+                    placeholder="e.g. 15"
+                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-mono text-slate-400 uppercase">Skills Gained (Tags)</label>
+                  <input
+                    type="text"
+                    value={projSkills}
+                    onChange={(e) => setProjSkills(e.target.value)}
+                    placeholder="e.g. Python, Docker, Qdrant"
+                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <label className="text-[9px] font-mono text-slate-400 uppercase">Status:</label>
@@ -530,21 +583,46 @@ export default function ProfileTab({ user }: ProfileTabProps) {
             <div className="space-y-4">
               {profile.projects.map((proj: any, idx: number) => (
                 <div key={idx} className="p-5 bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] rounded-2xl transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h5 className="text-xs font-bold font-sans">{proj.title}</h5>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-bold font-mono border ${
+                      <span className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] text-[9px] font-mono font-semibold text-slate-400">
+                        📁 {proj.category || "General"}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold font-mono border ${
                         proj.status === "completed" 
                           ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
                           : "bg-amber-500/10 text-amber-500 border-amber-500/25"
                       }`}>
                         {proj.status.replace("_", " ").toUpperCase()}
                       </span>
+                      {proj.hours_spent !== undefined && proj.hours_spent > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[9px] font-mono font-semibold">
+                          ⏱️ {proj.hours_spent} hours
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[10px] text-slate-400 font-sans leading-relaxed">{proj.description}</p>
+                    
+                    {proj.description && (
+                      <p className="text-[10px] text-slate-400 font-sans leading-relaxed">{proj.description}</p>
+                    )}
+
+                    {proj.skills && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {proj.skills.split(",").map((s: string) => {
+                          const clean = s.trim();
+                          if (!clean) return null;
+                          return (
+                            <span key={clean} className="text-[8px] font-bold font-mono px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] text-slate-400">
+                              #{clean}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                     
                     {proj.completed_at && (
-                      <p className="text-[9px] font-mono text-slate-500">Completed: {new Date(proj.completed_at).toLocaleDateString()}</p>
+                      <p className="text-[9px] font-mono text-slate-500 mt-1">Completed: {new Date(proj.completed_at).toLocaleDateString()}</p>
                     )}
                   </div>
 
@@ -553,7 +631,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                       href={proj.repository_link}
                       target="_blank"
                       rel="noreferrer"
-                      className="py-1.5 px-3.5 bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)] text-[10px] font-mono rounded-xl shadow-sm text-center self-start transition-all"
+                      className="py-1.5 px-3.5 bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)] text-[10px] font-mono rounded-xl shadow-sm text-center self-start sm:self-center transition-all whitespace-nowrap"
                     >
                       View Code 📁
                     </a>

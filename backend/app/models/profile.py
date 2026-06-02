@@ -130,6 +130,9 @@ class Project(Base):
     repository_link = Column(String, nullable=True)
     status = Column(String, default="in_progress") # 'in_progress', 'completed'
     completed_at = Column(DateTime, nullable=True)
+    category = Column(String, default="General")
+    hours_spent = Column(Integer, default=0)
+    skills = Column(String, nullable=True) # Comma-separated list of skills
 
 class Streak(Base):
     """

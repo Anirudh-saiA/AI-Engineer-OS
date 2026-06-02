@@ -185,7 +185,11 @@ def upsert_document_chunks(
             return len(chunks)
     raise IOError("Failed to upsert points to Qdrant server.")
 
-def search_rag_collection(query_text: str, limit: int = 5) -> List[dict]:
+def search_rag_collection(
+    query_text: str,
+    limit: int = 5,
+    document_id: Optional[int] = None
+) -> List[dict]:
     """
     Generates search query embedding vector and queries Qdrant for Top K results.
     """
@@ -200,6 +204,18 @@ def search_rag_collection(query_text: str, limit: int = 5) -> List[dict]:
         "limit": limit,
         "with_payload": True
     }
+    
+    if document_id is not None:
+        payload["filter"] = {
+            "must": [
+                {
+                    "key": "document_id",
+                    "match": {
+                        "value": int(document_id)
+                    }
+                }
+            ]
+        }
     
     req = urllib.request.Request(
         url,
@@ -222,7 +238,7 @@ def search_rag_collection(query_text: str, limit: int = 5) -> List[dict]:
             
             # Boost raw scores in local fallback mode using a noise-gate threshold to filter random collisions
             if is_fallback:
-                if raw_score < 0.23:
+                if raw_score < 0.03:
                     score = 0.0
                 else:
                     score = min(1.0, raw_score * 5.5)

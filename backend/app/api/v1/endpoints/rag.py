@@ -1,3 +1,4 @@
+import os
 import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
@@ -6,11 +7,136 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, verify_token
 from app.models.document import Document
 from app.schemas import document as schemas
-from app.rag import ingestion, chunking, vectorstore, generation
+from app.rag import ingestion, chunking, vectorstore, generation, youtube, github
 
 logger = logging.getLogger("uvicorn.error")
 
+# Resolve UPLOAD_DIR: backend/app/uploads
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
 router = APIRouter()
+
+@router.post("/upload-pdf")
+async def upload_pdf(
+    file: UploadFile = File(...),
+    topic: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Accepts PDF uploads, validates file type and size, stores the PDF
+    file on local disk storage, and logs metadata inside PostgreSQL.
+    """
+    filename = file.filename
+    content_type = file.content_type
+    
+    # 1. File Type and Extension Verification
+    file_lower = filename.lower()
+    if not file_lower.endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File extension must be .pdf"
+        )
+        
+    if content_type != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File content type must be application/pdf"
+        )
+
+    # 2. Secure Directory Isolation per User
+    user_upload_dir = os.path.join(UPLOAD_DIR, current_user["uid"])
+    os.makedirs(user_upload_dir, exist_ok=True)
+    
+    # 3. Stream File and Verify Size Boundary (Max 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
+    file_size = 0
+    safe_filename = os.path.basename(filename)
+    out_file_path = os.path.join(user_upload_dir, safe_filename)
+    
+    try:
+        with open(out_file_path, "wb") as f:
+            while True:
+                chunk = await file.read(1024 * 1024) # Read in 1MB chunks
+                if not chunk:
+                    break
+                file_size += len(chunk)
+                if file_size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="File size exceeds the 10MB safety boundary."
+                    )
+                f.write(chunk)
+    except HTTPException as he:
+        if os.path.exists(out_file_path):
+            try:
+                os.remove(out_file_path)
+            except Exception:
+                pass
+        raise he
+    except Exception as e:
+        if os.path.exists(out_file_path):
+            try:
+                os.remove(out_file_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to persist file: {str(e)}"
+        )
+
+    # 4. Extract PDF text and write JSON metadata
+    try:
+        metadata = ingestion.extract_pdf_metadata_and_text(out_file_path, safe_filename)
+        cleaned_text = metadata["cleaned_text"]
+        
+        # Save JSON metadata file
+        import json
+        json_path = os.path.splitext(out_file_path)[0] + ".json"
+        metadata_to_save = {
+            "document_name": metadata["document_name"],
+            "page_count": metadata["page_count"],
+            "raw_text": metadata["raw_text"]
+        }
+        with open(json_path, "w", encoding="utf-8") as jf:
+            json.dump(metadata_to_save, jf, indent=2, ensure_ascii=False)
+    except Exception as e:
+        # Cleanup uploaded PDF if parsing fails to avoid invalid files on disk
+        if os.path.exists(out_file_path):
+            try:
+                os.remove(out_file_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to parse PDF document content: {str(e)}"
+        )
+
+    # 5. Save metadata and parsed content in PostgreSQL
+    db_doc = Document(
+        user_id=current_user["uid"],
+        name=safe_filename,
+        source_type="pdf",
+        topic=topic or "general",
+        content=cleaned_text
+    )
+    db.add(db_doc)
+    db.commit()
+    db.refresh(db_doc)
+
+    return {
+        "status": "success",
+        "message": f"File '{safe_filename}' uploaded and stored successfully.",
+        "document": {
+            "id": db_doc.id,
+            "name": db_doc.name,
+            "source_type": db_doc.source_type,
+            "topic": db_doc.topic,
+            "upload_date": db_doc.upload_date.isoformat()
+        },
+        "file_size_bytes": file_size
+    }
 
 @router.post("/upload-document", response_model=schemas.DocumentResponse)
 async def upload_document(
@@ -39,7 +165,25 @@ async def upload_document(
     file_lower = filename.lower()
     try:
         if file_lower.endswith(".pdf") or content_type == "application/pdf":
-            raw_text = ingestion.extract_text_from_pdf(file_bytes)
+            # For PDFs, extract metadata and store the JSON file
+            user_upload_dir = os.path.join(UPLOAD_DIR, current_user["uid"])
+            os.makedirs(user_upload_dir, exist_ok=True)
+            safe_filename = os.path.basename(filename)
+            
+            metadata = ingestion.extract_pdf_metadata_and_text(file_bytes, safe_filename)
+            raw_text = metadata["raw_text"]
+            
+            # Save the JSON metadata file
+            import json
+            json_path = os.path.join(user_upload_dir, os.path.splitext(safe_filename)[0] + ".json")
+            metadata_to_save = {
+                "document_name": metadata["document_name"],
+                "page_count": metadata["page_count"],
+                "raw_text": metadata["raw_text"]
+            }
+            with open(json_path, "w", encoding="utf-8") as jf:
+                json.dump(metadata_to_save, jf, indent=2, ensure_ascii=False)
+                
             source_type = "pdf"
         elif file_lower.endswith((".txt", ".md")) or "text" in content_type:
             raw_text = ingestion.extract_text_from_txt_or_md(file_bytes)
@@ -97,6 +241,40 @@ def generate_embeddings(
     if not db_doc:
         raise HTTPException(status_code=404, detail="Document not found or access denied.")
 
+    # Fallback safety: If content is still in the pending processing state, extract it now
+    if db_doc.content == "[PENDING PROCESSING]" and db_doc.source_type == "pdf":
+        user_upload_dir = os.path.join(UPLOAD_DIR, current_user["uid"])
+        pdf_path = os.path.join(user_upload_dir, db_doc.name)
+        if os.path.exists(pdf_path):
+            try:
+                metadata = ingestion.extract_pdf_metadata_and_text(pdf_path, db_doc.name)
+                db_doc.content = metadata["cleaned_text"]
+                db.commit()
+                db.refresh(db_doc)
+                
+                # Write the JSON metadata file if not present
+                import json
+                json_path = os.path.splitext(pdf_path)[0] + ".json"
+                if not os.path.exists(json_path):
+                    metadata_to_save = {
+                        "document_name": metadata["document_name"],
+                        "page_count": metadata["page_count"],
+                        "raw_text": metadata["raw_text"]
+                    }
+                    with open(json_path, "w", encoding="utf-8") as jf:
+                        json.dump(metadata_to_save, jf, indent=2, ensure_ascii=False)
+            except Exception as e:
+                logger.error(f"Fallback parsing failed during embedding generation: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Failed to parse pending PDF document: {str(e)}"
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="PDF source file not found on disk to process pending document."
+            )
+
     # 1. Perform sliding window text chunking
     chunks = chunking.chunk_document_text(db_doc.content, chunk_size=1000, chunk_overlap=200)
     if not chunks:
@@ -123,6 +301,247 @@ def generate_embeddings(
         "chunks_count": len(chunks)
     }
 
+@router.post("/ingest-youtube", response_model=schemas.YouTubeIngestResponse)
+def ingest_youtube(
+    payload: schemas.YouTubeIngestRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Accepts a YouTube URL, extracts the video transcript (captions),
+    cleans and chunks the text, generates embeddings, and stores
+    everything in PostgreSQL + Qdrant for RAG retrieval.
+    """
+    url = payload.url
+    topic = payload.topic or "general"
+
+    if not url or not url.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="YouTube URL is required."
+        )
+
+    # 1. Extract transcript and video metadata
+    try:
+        result = youtube.ingest_youtube_video(url)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"YouTube ingestion failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process YouTube video: {str(e)}"
+        )
+
+    transcript_text = result["transcript_text"]
+    video_title = result["title"]
+    video_channel = result["channel"]
+    video_url = result["video_url"]
+    video_id = result["video_id"]
+    word_count = result["word_count"]
+
+    # 2. Store document record in PostgreSQL
+    doc_name = video_title if video_title else f"YouTube: {video_id}"
+    db_doc = Document(
+        user_id=current_user["uid"],
+        name=doc_name,
+        source_type="youtube",
+        topic=topic,
+        content=f"[YOUTUBE_VIDEO_ID: {video_id}]\n\n{transcript_text}"
+    )
+    db.add(db_doc)
+    db.commit()
+    db.refresh(db_doc)
+
+    # 3. Chunk the transcript text
+    chunks = chunking.chunk_document_text(transcript_text, chunk_size=1000, chunk_overlap=200)
+    if not chunks:
+        return schemas.YouTubeIngestResponse(
+            status="partial_success",
+            message=f"Transcript extracted from '{doc_name}' but produced no text chunks.",
+            document=schemas.DocumentResponse(
+                id=db_doc.id,
+                name=db_doc.name,
+                source_type=db_doc.source_type,
+                topic=db_doc.topic,
+                upload_date=db_doc.upload_date
+            ),
+            video_metadata=schemas.YouTubeVideoMeta(
+                title=video_title,
+                channel=video_channel,
+                video_url=video_url
+            ),
+            word_count=word_count,
+            chunks_count=0
+        )
+
+    # 4. Generate embeddings and upsert to Qdrant
+    try:
+        vectorstore.upsert_document_chunks(
+            document_id=db_doc.id,
+            document_name=doc_name,
+            source_type="youtube",
+            topic=topic,
+            chunks=chunks
+        )
+        embed_status = "success"
+        embed_message = (
+            f"Transcript extracted from '{doc_name}'. "
+            f"{word_count:,} words processed, {len(chunks)} chunks created. "
+            f"Knowledge stored successfully."
+        )
+    except Exception as e:
+        embed_status = "partial_success"
+        embed_message = (
+            f"Transcript extracted from '{doc_name}'. "
+            f"{word_count:,} words processed, {len(chunks)} chunks created locally, "
+            f"but Qdrant upsert failed: {str(e)}"
+        )
+        logger.warning(f"Qdrant upsert failed for YouTube video {video_id}: {e}")
+
+    return schemas.YouTubeIngestResponse(
+        status=embed_status,
+        message=embed_message,
+        document=schemas.DocumentResponse(
+            id=db_doc.id,
+            name=db_doc.name,
+            source_type=db_doc.source_type,
+            topic=db_doc.topic,
+            upload_date=db_doc.upload_date
+        ),
+        video_metadata=schemas.YouTubeVideoMeta(
+            title=video_title,
+            channel=video_channel,
+            video_url=video_url
+        ),
+        word_count=word_count,
+        chunks_count=len(chunks)
+    )
+
+@router.post("/ingest-github", response_model=schemas.GitHubIngestResponse)
+def ingest_github(
+    payload: schemas.GitHubIngestRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Accepts a GitHub repository URL, downloads its default branch ZIP archive,
+    extracts documentation and README markdown files, splits them into semantic
+    chunks, registers each file in PostgreSQL, and generates vector embeddings for Qdrant.
+    """
+    import datetime
+    url = payload.url
+    topic = payload.topic or "general"
+    
+    if not url or not url.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="GitHub repository URL is required."
+        )
+        
+    try:
+        doc_files = github.ingest_github_documentation(url, token=payload.token)
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(val_err)
+        )
+    except Exception as e:
+        logger.error(f"GitHub ingestion processing failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while parsing the GitHub repository: {str(e)}"
+        )
+        
+    if not doc_files:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No markdown documentation files or README found in the repository."
+        )
+        
+    org, repo = github.parse_github_url(url)
+    
+    files_indexed = 0
+    chunks_created = 0
+    embeddings_generated = 0
+    
+    for file_item in doc_files:
+        file_path = file_item["path"]
+        content = file_item["content"]
+        
+        # 1. Register file in PostgreSQL database as a unique document
+        doc_name = f"{org}/{repo}: {file_path}"
+        
+        # Check if the document already exists for this user to avoid duplicate entries
+        existing_doc = db.query(Document).filter(
+            Document.user_id == current_user["uid"],
+            Document.name == doc_name
+        ).first()
+        
+        if existing_doc:
+            db_doc = existing_doc
+            db_doc.content = content
+            db_doc.upload_date = datetime.datetime.utcnow()
+        else:
+            db_doc = Document(
+                user_id=current_user["uid"],
+                name=doc_name,
+                source_type="github",
+                topic=topic,
+                content=content
+            )
+            db.add(db_doc)
+            
+        db.commit()
+        db.refresh(db_doc)
+        files_indexed += 1
+        
+        # 2. Chunk repository document contents
+        chunks = chunking.chunk_document_text(content, chunk_size=1000, chunk_overlap=200)
+        if not chunks:
+            continue
+            
+        chunks_created += len(chunks)
+        
+        # 3. Compute vector embeddings and load into Qdrant
+        try:
+            vectorstore.upsert_document_chunks(
+                document_id=db_doc.id,
+                document_name=doc_name,
+                source_type="github",
+                topic=topic,
+                chunks=chunks
+            )
+            embeddings_generated += len(chunks)
+        except Exception as qdrant_err:
+            logger.warning(f"Qdrant vector load skipped for file '{file_path}': {qdrant_err}")
+            continue
+            
+    # Commit any changes remaining
+    db.commit()
+    
+    message = (
+        f"Repository '{org}/{repo}' parsed successfully. "
+        f"{files_indexed} markdown files indexed, {chunks_created} chunks generated "
+        f"and stored in Qdrant."
+    )
+    
+    return schemas.GitHubIngestResponse(
+        status="success",
+        message=message,
+        files_indexed=files_indexed,
+        chunks_created=chunks_created,
+        embeddings_generated=embeddings_generated
+    )
+
 @router.post("/search", response_model=List[schemas.RAGSearchMatch])
 def search_rag(
     query_data: schemas.RAGSearchQuery,
@@ -136,11 +555,23 @@ def search_rag(
     """
     limit = query_data.limit or 5
     query = query_data.query
+    document_id = query_data.document_id
+
+    target_doc = None
+    if document_id:
+        target_doc = db.query(Document).filter(
+            Document.id == document_id,
+            Document.user_id == current_user["uid"]
+        ).first()
 
     # 1. Fetch dense semantic results from Qdrant
     semantic_results = []
     try:
-        semantic_results = vectorstore.search_rag_collection(query, limit=limit * 2)
+        semantic_results = vectorstore.search_rag_collection(
+            query,
+            limit=limit * 2,
+            document_id=document_id
+        )
     except Exception as e:
         logger.warning(f"Qdrant RAG semantic search bypassed or offline: {e}")
 
@@ -153,7 +584,10 @@ def search_rag(
             "by", "from", "as", "be", "this", "that", "these", "those", "or", "but",
             "me", "my", "you", "your", "we", "our", "us", "about"
         }
-        user_docs = db.query(Document).filter(Document.user_id == current_user["uid"]).all()
+        if target_doc:
+            user_docs = [target_doc]
+        else:
+            user_docs = db.query(Document).filter(Document.user_id == current_user["uid"]).all()
         raw_query_words = set(w.strip("?,.!:;()[]{}'\"") for w in query.lower().split())
         query_words = {w for w in raw_query_words if w not in STOP_WORDS and len(w) > 1}
         
@@ -259,10 +693,11 @@ def ask_rag(
     """
     limit = query_data.limit or 5
     query = query_data.query
-
+    document_id = query_data.document_id
+ 
     # 1. Retrieve most relevant context chunks using the optimized hybrid search
     search_results = search_rag(
-        schemas.RAGSearchQuery(query=query, limit=limit),
+        schemas.RAGSearchQuery(query=query, limit=limit, document_id=document_id),
         db=db,
         current_user=current_user
     )

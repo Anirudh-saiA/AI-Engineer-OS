@@ -103,15 +103,19 @@ def generate_contextual_answer(query: str, retrieved_chunks: List[dict]) -> dict
     # Generate simple answer based on matching chunks
     if retrieved_chunks:
         best_chunk = retrieved_chunks[0]["chunk_text"]
-        short_snippet = best_chunk[:180] + "..." if len(best_chunk) > 180 else best_chunk
+        
+        # Clean up any technical prepended tags like [YOUTUBE_VIDEO_ID: ...] from the display text
+        import re
+        display_text = re.sub(r'\[YOUTUBE_VIDEO_ID:\s*[\w-]+\]\n*', '', best_chunk).strip()
+        short_snippet = display_text[:280] + "..." if len(display_text) > 280 else display_text
+        
         answer = (
-            f"[OFFLINE RAG FALLBACK]: Based on the retrieved context from {citations[0]}, "
-            f"we scanned the matching paragraphs and found the following details: '{short_snippet}' "
-            f"Please set your OPENAI_API_KEY or GEMINI_API_KEY environment variables to unlock real-time generative responses."
+            f"Here is what I found in the video transcript (**{citations[0]}**):\n\n"
+            f"\"{short_snippet}\"\n\n"
+            f"💡 *Tip: To unlock advanced conversational AI replies, please set your OpenAI or Gemini API keys under the Settings tab.*"
         )
         beginner_explanation = (
-            f"This is a local fallback explanation. The retrieved document is '{citations[0]}' "
-            f"which discusses terms like {retrieved_chunks[0].get('topic', 'general')}."
+            f"This is a quick summary from **{citations[0]}** discussing the topic *{retrieved_chunks[0].get('topic', 'general')}*."
         )
     else:
         answer = "Based on the provided documents, I could not find enough relevant context to answer this query."
