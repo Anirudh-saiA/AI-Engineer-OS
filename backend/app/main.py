@@ -32,32 +32,35 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 from sqlalchemy import text
 @app.on_event("startup")
 def migrate_db():
-    with engine.connect() as conn:
-        # Check if category column exists in projects
-        try:
-            conn.execute(text("SELECT category FROM projects LIMIT 1"))
-        except Exception:
-            # If query fails, it means columns do not exist. Add them.
+    try:
+        with engine.connect() as conn:
+            # Check if category column exists in projects
             try:
-                # Rollback aborted transaction to allow subsequent DDL commands in PostgreSQL
+                conn.execute(text("SELECT category FROM projects LIMIT 1"))
+            except Exception:
+                # If query fails, it means columns do not exist. Add them.
                 try:
-                    conn.execute(text("ROLLBACK"))
-                except Exception:
-                    pass
-                
-                # Run ALTER TABLE commands
-                conn.execute(text("ALTER TABLE projects ADD COLUMN category VARCHAR DEFAULT 'General'"))
-                conn.execute(text("ALTER TABLE projects ADD COLUMN hours_spent INTEGER DEFAULT 0"))
-                conn.execute(text("ALTER TABLE projects ADD COLUMN skills VARCHAR"))
-                
-                # If using postgreSQL/SQLite we might need to commit
-                try:
-                    conn.commit()
-                except Exception:
-                    pass
-                print("Database migrated successfully: Added custom analytics columns to projects table.")
-            except Exception as e:
-                print("Migration warning (possibly already applied or running parallel):", e)
+                    # Rollback aborted transaction to allow subsequent DDL commands in PostgreSQL
+                    try:
+                        conn.execute(text("ROLLBACK"))
+                    except Exception:
+                        pass
+                    
+                    # Run ALTER TABLE commands
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN category VARCHAR DEFAULT 'General'"))
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN hours_spent INTEGER DEFAULT 0"))
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN skills VARCHAR"))
+                    
+                    # If using postgreSQL/SQLite we might need to commit
+                    try:
+                        conn.commit()
+                    except Exception:
+                        pass
+                    print("Database migrated successfully: Added custom analytics columns to projects table.")
+                except Exception as e:
+                    print("Migration warning (possibly already applied or running parallel):", e)
+    except Exception as global_err:
+        print("Database startup migration bypassed safely to prevent server crash:", global_err)
 
 @app.get("/", tags=["Root"])
 def root():
