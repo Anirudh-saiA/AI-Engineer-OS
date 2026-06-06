@@ -705,6 +705,196 @@ def analyze_dependency_conflict(error_text: str) -> Dict[str, Any]:
 
 
 # =============================================================================
+# BEGINNER-FRIENDLY ANALOGIES
+# =============================================================================
+
+BEGINNER_ANALOGIES: Dict[str, str] = {
+    "NameError": "Imagine calling someone by a name they don't have. You said 'Hey, Alex!' but nobody named Alex is in the room. Your code is trying to use a name (variable) that doesn't exist yet.",
+    "TypeError": "It's like trying to add apples and oranges — literally. You asked Python to combine two things that don't mix, like adding a word to a number.",
+    "ValueError": "Think of a vending machine that only accepts coins. You inserted a valid coin slot (right type), but the coin is from another country (wrong value). The shape is right, but the content isn't accepted.",
+    "KeyError": "Imagine looking for a book in a library by its title, but that title doesn't exist in the catalog. You asked for a specific key in your data, but that key was never added.",
+    "IndexError": "Picture a train with 5 cars numbered 0-4. You tried to board car #5, but it doesn't exist. You went past the end of the list.",
+    "ImportError": "It's like trying to use a tool that isn't in your toolbox. You need to go buy it first (install the package) before you can use it.",
+    "ModuleNotFoundError": "Imagine ordering a pizza from a restaurant that doesn't exist in your neighborhood. The delivery app can't find it because it was never set up. You need to install the package first.",
+    "AttributeError": "It's like asking a dog to fly. Dogs don't have wings (that attribute). Your object doesn't have the method or property you're trying to use.",
+    "ZeroDivisionError": "Imagine trying to split a pizza among zero people. It's mathematically impossible — you can't divide something into zero parts.",
+    "RecursionError": "Picture standing between two mirrors facing each other — you see infinite reflections. Your function keeps calling itself forever without a stopping point.",
+    "SyntaxError": "It's like writing a sentence without proper grammar. Python can't understand what you wrote because the structure (syntax) doesn't follow the rules.",
+    "FileNotFoundError": "Imagine looking for a file in a folder on your desk, but that folder is empty or doesn't exist. Your code is trying to open a file that isn't where it expects.",
+    "ConnectionError": "It's like trying to call someone whose phone is turned off. The server you're trying to reach isn't responding.",
+    "TimeoutError": "Imagine waiting at a restaurant for your order, but after an hour, you give up and leave. Your request took too long and the system stopped waiting.",
+}
+
+
+# =============================================================================
+# CODE IMPROVEMENT KNOWLEDGE BASE
+# =============================================================================
+
+CODE_IMPROVEMENT_KB: List[Dict[str, str]] = [
+    {
+        "pattern": r'(\w+)\[[\"\'](\w+)[\"\']\]',
+        "name": "Unsafe dictionary access",
+        "before": 'data["key"]',
+        "after": 'data.get("key", default_value)',
+        "reason": "Prevents KeyError if the key is missing. The .get() method returns a default value instead of crashing."
+    },
+    {
+        "pattern": r'except\s*:',
+        "name": "Bare except clause",
+        "before": "except:",
+        "after": "except (ValueError, TypeError) as e:",
+        "reason": "Catching all exceptions hides bugs silently. Always catch specific exception types so unexpected errors are still visible."
+    },
+    {
+        "pattern": r'==\s*None',
+        "name": "Equality check with None",
+        "before": "if x == None:",
+        "after": "if x is None:",
+        "reason": "Use 'is None' instead of '== None'. The 'is' operator checks identity (correct for None), while '==' can be overridden by custom classes."
+    },
+    {
+        "pattern": r'for\s+\w+\s+in\s+range\(len\(',
+        "name": "Manual index iteration",
+        "before": "for i in range(len(items)):\n    item = items[i]",
+        "after": "for i, item in enumerate(items):",
+        "reason": "enumerate() is more Pythonic, less error-prone, and gives you both the index and value cleanly."
+    },
+    {
+        "pattern": r'f?[\"\']\s*\+\s*str\(',
+        "name": "String concatenation with str()",
+        "before": '"Value: " + str(x) + " items"',
+        "after": 'f"Value: {x} items"',
+        "reason": "f-strings are faster, more readable, and less error-prone than manual string concatenation."
+    },
+    {
+        "pattern": r'type\(\w+\)\s*==',
+        "name": "Type comparison with type()",
+        "before": "if type(x) == int:",
+        "after": "if isinstance(x, int):",
+        "reason": "isinstance() respects inheritance and is the recommended way to check types in Python."
+    },
+    {
+        "pattern": r'\.append\(.*\)\s*$',
+        "name": "Building list with append in loop",
+        "before": "result = []\nfor x in data:\n    result.append(x * 2)",
+        "after": "result = [x * 2 for x in data]",
+        "reason": "List comprehensions are more concise, more Pythonic, and slightly faster than manual append loops."
+    },
+    {
+        "pattern": r'open\(',
+        "name": "File opened without context manager",
+        "before": "f = open('file.txt')\ndata = f.read()\nf.close()",
+        "after": "with open('file.txt') as f:\n    data = f.read()",
+        "reason": "The 'with' statement ensures the file is always closed, even if an error occurs. This prevents resource leaks."
+    },
+]
+
+
+def get_beginner_analogy(error_type: str) -> str:
+    """Returns a beginner-friendly real-world analogy for the given error type."""
+    return BEGINNER_ANALOGIES.get(error_type, "")
+
+
+def build_chain_of_events(parsed: Dict[str, Any], error_text: str) -> List[str]:
+    """
+    Constructs the failure chain from stack frames and error context.
+    Returns a list of strings describing each step from trigger to visible error.
+    """
+    chain = []
+    frames = parsed.get("frames", [])
+    error_type = parsed.get("error_type", "UnknownError")
+    message = parsed.get("message", "")
+
+    if frames:
+        # Build chain from frames (bottom-up is how Python tracebacks work)
+        if len(frames) > 1:
+            first = frames[0]
+            chain.append(
+                f"Execution started in '{first.get('file', 'unknown')}'"
+                + (f" at line {first['line']}" if first.get('line') else "")
+                + (f" in function '{first['function']}'" if first.get('function') else "")
+            )
+
+            for frame in frames[1:-1]:
+                chain.append(
+                    f"Called into '{frame.get('file', 'unknown')}'"
+                    + (f" at line {frame['line']}" if frame.get('line') else "")
+                    + (f" in function '{frame['function']}'" if frame.get('function') else "")
+                )
+
+        last = frames[-1] if frames else None
+        if last:
+            chain.append(
+                f"The failing operation occurred in '{last.get('file', 'unknown')}'"
+                + (f" at line {last['line']}" if last.get('line') else "")
+                + (f" inside function '{last['function']}'" if last.get('function') else "")
+            )
+
+    # Always add the final error as the last chain step
+    chain.append(f"Python raised {error_type}: {message}")
+
+    # If no frames, provide a simpler 2-step chain
+    if not frames and len(chain) <= 1:
+        chain = [
+            f"Your code attempted an operation that violates {error_type} constraints",
+            f"Python raised {error_type}: {message}"
+        ]
+
+    return chain
+
+
+def generate_code_suggestions(error_text: str, error_type: str) -> List[Dict[str, str]]:
+    """
+    Scans the error text for known anti-patterns and generates safer code alternatives.
+    Returns a list of suggestion dicts with: name, before, after, reason.
+    """
+    suggestions = []
+
+    for pattern_info in CODE_IMPROVEMENT_KB:
+        if re.search(pattern_info["pattern"], error_text, re.IGNORECASE):
+            suggestions.append({
+                "name": pattern_info["name"],
+                "before": pattern_info["before"],
+                "after": pattern_info["after"],
+                "reason": pattern_info["reason"]
+            })
+
+    # Add error-type-specific suggestions
+    if error_type == "KeyError":
+        msg_match = re.search(r"KeyError:\s*['\"]?(\w+)", error_text)
+        key_name = msg_match.group(1) if msg_match else "key"
+        suggestions.append({
+            "name": f"Safe dictionary access for '{key_name}'",
+            "before": f'data["{key_name}"]',
+            "after": f'data.get("{key_name}", None)',
+            "reason": f"Prevents KeyError when '{key_name}' is missing from the dictionary."
+        })
+    elif error_type == "IndexError":
+        suggestions.append({
+            "name": "Boundary-checked list access",
+            "before": "value = my_list[index]",
+            "after": "value = my_list[index] if index < len(my_list) else default_value",
+            "reason": "Checks the list length before accessing to prevent IndexError on short lists."
+        })
+    elif error_type == "AttributeError":
+        suggestions.append({
+            "name": "Safe attribute access with getattr",
+            "before": "result = obj.method()",
+            "after": "result = getattr(obj, 'method', lambda: None)()",
+            "reason": "Uses getattr with a fallback to prevent AttributeError when the method might not exist."
+        })
+    elif error_type in ("TypeError", "ValueError"):
+        suggestions.append({
+            "name": "Input validation before processing",
+            "before": "result = int(user_input)",
+            "after": "try:\n    result = int(user_input)\nexcept (TypeError, ValueError):\n    result = 0  # or handle gracefully",
+            "reason": "Wrapping conversions in try/except prevents crashes from unexpected input types or values."
+        })
+
+    return suggestions
+
+
+# =============================================================================
 # MAIN ANALYSIS ORCHESTRATOR
 # =============================================================================
 
@@ -712,23 +902,36 @@ def analyze_error(error_text: str) -> Dict[str, Any]:
     """
     Complete error analysis pipeline.
     Parses, classifies, and generates structured analysis for any error input.
-    Returns a comprehensive analysis dictionary.
+    Returns a comprehensive analysis dictionary with mentor-grade output.
     """
-    if not error_text or not error_text.strip():
-        return {
-            "error_type": "EmptyInput",
-            "file": None,
-            "line": None,
-            "message": "No error text provided",
-            "categories": ["Validation Error"],
-            "explanation": "The error input is empty. Please paste a stack trace, error log, or API response.",
-            "root_cause": "No content was submitted for analysis.",
-            "suggested_fixes": ["Paste a complete error message, stack trace, or log output"],
-            "best_practices": ["Always copy the full error output, including the traceback"],
-            "learning_notes": "A good error report includes: the full stack trace, what you were trying to do, and what you expected to happen.",
-            "severity": "low",
-            "frames": []
+    empty_result = {
+        "error_type": "EmptyInput",
+        "file": None,
+        "line": None,
+        "message": "No error text provided",
+        "categories": ["Validation Error"],
+        "explanation": "The error input is empty. Please paste a stack trace, error log, or API response.",
+        "root_cause": "No content was submitted for analysis.",
+        "suggested_fixes": ["Paste a complete error message, stack trace, or log output"],
+        "best_practices": ["Always copy the full error output, including the traceback"],
+        "learning_notes": "A good error report includes: the full stack trace, what you were trying to do, and what you expected to happen.",
+        "severity": "low",
+        "frames": [],
+        # New mentor fields
+        "beginner_explanation": "",
+        "chain_of_events": [],
+        "code_suggestions": [],
+        "recommended_fix": "",
+        "learning_mode": {
+            "concept": "",
+            "common_mistakes": [],
+            "prevention_tips": [],
+            "real_world_examples": []
         }
+    }
+
+    if not error_text or not error_text.strip():
+        return empty_result
 
     # Step 1: Parse the stack trace
     parsed = parse_stack_trace(error_text)
@@ -807,6 +1010,31 @@ def analyze_error(error_text: str) -> Dict[str, Any]:
         ]
         learning_notes = "Debugging is a skill that improves with practice. The key steps are: 1) Read the error message, 2) Find the file and line number, 3) Understand what the code was trying to do, 4) Fix the root cause, not just the symptom."
 
+    # Step 5: Generate enhanced mentor fields
+    beginner_analogy = get_beginner_analogy(error_type)
+    beginner_explanation = beginner_analogy if beginner_analogy else explanation
+    chain_of_events = build_chain_of_events(parsed, error_text)
+    code_suggestions = generate_code_suggestions(error_text, error_type)
+    recommended_fix = suggested_fixes[0] if suggested_fixes else ""
+
+    # Build structured learning mode
+    learning_mode = {
+        "concept": learning_notes,
+        "common_mistakes": [],
+        "prevention_tips": [],
+        "real_world_examples": []
+    }
+
+    # Populate learning mode from KB
+    if error_type in PYTHON_ERROR_KB:
+        kb = PYTHON_ERROR_KB[error_type]
+        learning_mode["common_mistakes"] = kb.get("fixes", [])[:3]
+        learning_mode["prevention_tips"] = kb.get("best_practices", [])
+        learning_mode["real_world_examples"] = [
+            f"When processing API responses, always validate the structure before accessing nested fields.",
+            f"In production systems, {error_type} often surfaces when external data doesn't match expected schemas."
+        ]
+
     return {
         "error_type": error_type,
         "file": parsed.get("file"),
@@ -819,5 +1047,11 @@ def analyze_error(error_text: str) -> Dict[str, Any]:
         "best_practices": best_practices,
         "learning_notes": learning_notes,
         "severity": severity,
-        "frames": parsed.get("frames", [])
+        "frames": parsed.get("frames", []),
+        # Enhanced mentor fields
+        "beginner_explanation": beginner_explanation,
+        "chain_of_events": chain_of_events,
+        "code_suggestions": code_suggestions,
+        "recommended_fix": recommended_fix,
+        "learning_mode": learning_mode
     }
