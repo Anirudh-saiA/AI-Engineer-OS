@@ -6,6 +6,8 @@ from app.db.base_class import Base
 from app.db.session import engine
 import app.models.profile # Force map models to Base registry
 import app.models.document
+# Ensure all models (including LearningNote) are registered with Base.metadata
+# so create_all() can auto-generate their tables on startup
 
 # Auto-generate PostgreSQL schemas on startup
 Base.metadata.create_all(bind=engine)
@@ -59,6 +61,34 @@ def migrate_db():
                     print("Database migrated successfully: Added custom analytics columns to projects table.")
                 except Exception as e:
                     print("Migration warning (possibly already applied or running parallel):", e)
+
+            # Migrate error_analyses table: add enhanced AI mentor columns
+            mentor_columns = [
+                ("beginner_explanation", "TEXT"),
+                ("chain_of_events", "TEXT"),
+                ("code_suggestions", "TEXT"),
+                ("learning_concepts", "TEXT"),
+                ("recommended_fix", "TEXT"),
+                ("search_text", "TEXT"),
+            ]
+            for col_name, col_type in mentor_columns:
+                try:
+                    conn.execute(text(f"SELECT {col_name} FROM error_analyses LIMIT 1"))
+                except Exception:
+                    try:
+                        try:
+                            conn.execute(text("ROLLBACK"))
+                        except Exception:
+                            pass
+                        conn.execute(text(f"ALTER TABLE error_analyses ADD COLUMN {col_name} {col_type}"))
+                        try:
+                            conn.commit()
+                        except Exception:
+                            pass
+                        print(f"Migration: Added '{col_name}' column to error_analyses.")
+                    except Exception as col_err:
+                        print(f"Migration warning for error_analyses.{col_name}: {col_err}")
+
     except Exception as global_err:
         print("Database startup migration bypassed safely to prevent server crash:", global_err)
 

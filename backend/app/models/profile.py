@@ -228,7 +228,8 @@ class DailyTask(Base):
 class ErrorAnalysis(Base):
     """
     Stored debugging analysis results for user error submissions.
-    Powers the AI Debugging Assistant history and learning analytics.
+    Powers the AI Debugging Assistant history, learning analytics,
+    and the AI Mentor teaching pipeline.
     """
     __tablename__ = "error_analyses"
 
@@ -246,4 +247,29 @@ class ErrorAnalysis(Base):
     ai_enhanced = Column(Boolean, default=False)       # True if AI API was used for analysis
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    # Enhanced mentor fields (Feature 1-5)
+    beginner_explanation = Column(Text, nullable=True)  # Plain-English explanation with analogy
+    chain_of_events = Column(Text, nullable=True)       # JSON-encoded list of failure chain steps
+    code_suggestions = Column(Text, nullable=True)      # JSON-encoded list of code improvement objects
+    learning_concepts = Column(Text, nullable=True)     # JSON: concept, common mistakes, prevention, examples
+    recommended_fix = Column(Text, nullable=True)       # The single top-priority fix
+    search_text = Column(Text, nullable=True)           # Concatenated searchable text for full-text filtering
 
+
+class LearningNote(Base):
+    """
+    Saved learning insights from debugging sessions.
+    Enables the Learning Mode feature — users can revisit concepts,
+    track common mistakes, and review prevention techniques.
+    """
+    __tablename__ = "learning_notes"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    error_analysis_id = Column(Integer, ForeignKey("error_analyses.id", ondelete="CASCADE"), index=True, nullable=True)
+    concept_name = Column(String, nullable=False)             # e.g. "Dictionary key access", "List indexing"
+    concept_explanation = Column(Text, nullable=True)         # Full concept explanation
+    common_mistakes = Column(Text, nullable=True)             # JSON-encoded list of strings
+    prevention_tips = Column(Text, nullable=True)             # JSON-encoded list of strings
+    real_world_examples = Column(Text, nullable=True)         # JSON-encoded list of strings
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
