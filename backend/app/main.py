@@ -31,38 +31,41 @@ if settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 @app.on_event("startup")
 def migrate_db():
     try:
-        with engine.connect() as conn:
-            # Check if category column exists in projects
-            try:
-                conn.execute(text("SELECT category FROM projects LIMIT 1"))
-            except Exception:
-                # If query fails, it means columns do not exist. Add them.
-                try:
-                    # Rollback aborted transaction to allow subsequent DDL commands in PostgreSQL
-                    try:
-                        conn.execute(text("ROLLBACK"))
-                    except Exception:
-                        pass
-                    
-                    # Run ALTER TABLE commands
+        # Check database columns using Inspector instead of executing SELECT queries
+        inspector = inspect(engine)
+        
+        # 1. Projects table check/migration
+        existing_project_cols = []
+        try:
+            existing_project_cols = [col["name"] for col in inspector.get_columns("projects")]
+        except Exception as e:
+            print("Could not inspect projects columns:", e)
+            
+        if existing_project_cols:
+            # Check and add columns to projects
+            with engine.begin() as conn:
+                if "category" not in existing_project_cols:
                     conn.execute(text("ALTER TABLE projects ADD COLUMN category VARCHAR DEFAULT 'General'"))
+                    print("Migration: Added 'category' column to projects.")
+                if "hours_spent" not in existing_project_cols:
                     conn.execute(text("ALTER TABLE projects ADD COLUMN hours_spent INTEGER DEFAULT 0"))
+                    print("Migration: Added 'hours_spent' column to projects.")
+                if "skills" not in existing_project_cols:
                     conn.execute(text("ALTER TABLE projects ADD COLUMN skills VARCHAR"))
-                    
-                    # If using postgreSQL/SQLite we might need to commit
-                    try:
-                        conn.commit()
-                    except Exception:
-                        pass
-                    print("Database migrated successfully: Added custom analytics columns to projects table.")
-                except Exception as e:
-                    print("Migration warning (possibly already applied or running parallel):", e)
+                    print("Migration: Added 'skills' column to projects.")
 
-            # Migrate error_analyses table: add enhanced AI mentor columns
+        # 2. Error analyses table check/migration
+        existing_error_cols = []
+        try:
+            existing_error_cols = [col["name"] for col in inspector.get_columns("error_analyses")]
+        except Exception as e:
+            print("Could not inspect error_analyses columns:", e)
+
+        if existing_error_cols:
             mentor_columns = [
                 ("beginner_explanation", "TEXT"),
                 ("chain_of_events", "TEXT"),
@@ -72,23 +75,11 @@ def migrate_db():
                 ("search_text", "TEXT"),
             ]
             for col_name, col_type in mentor_columns:
-                try:
-                    conn.execute(text(f"SELECT {col_name} FROM error_analyses LIMIT 1"))
-                except Exception:
-                    try:
-                        try:
-                            conn.execute(text("ROLLBACK"))
-                        except Exception:
-                            pass
+                if col_name not in existing_error_cols:
+                    with engine.begin() as conn:
                         conn.execute(text(f"ALTER TABLE error_analyses ADD COLUMN {col_name} {col_type}"))
-                        try:
-                            conn.commit()
-                        except Exception:
-                            pass
                         print(f"Migration: Added '{col_name}' column to error_analyses.")
-                    except Exception as col_err:
-                        print(f"Migration warning for error_analyses.{col_name}: {col_err}")
-
+                        
     except Exception as global_err:
         print("Database startup migration bypassed safely to prevent server crash:", global_err)
 
