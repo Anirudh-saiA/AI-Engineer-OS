@@ -6,8 +6,8 @@ from app.db.base_class import Base
 from app.db.session import engine
 import app.models.profile # Force map models to Base registry
 import app.models.document
-# Ensure all models (including LearningNote) are registered with Base.metadata
-# so create_all() can auto-generate their tables on startup
+# Ensure all models (including LearningNote, RecurringErrorPattern, etc.)
+# are registered with Base.metadata so create_all() can auto-generate tables
 
 # Auto-generate PostgreSQL schemas on startup
 Base.metadata.create_all(bind=engine)
@@ -73,6 +73,12 @@ def migrate_db():
                 ("learning_concepts", "TEXT"),
                 ("recommended_fix", "TEXT"),
                 ("search_text", "TEXT"),
+                # Week 15: Confidence scoring & analytics
+                ("confidence_root_cause", "INTEGER"),
+                ("confidence_fix", "INTEGER"),
+                ("confidence_explanation", "INTEGER"),
+                ("resolution_time_seconds", "INTEGER"),
+                ("was_fix_helpful", "BOOLEAN"),
             ]
             for col_name, col_type in mentor_columns:
                 if col_name not in existing_error_cols:
@@ -83,9 +89,22 @@ def migrate_db():
     except Exception as global_err:
         print("Database startup migration bypassed safely to prevent server crash:", global_err)
 
+
+@app.on_event("startup")
+def initialize_search():
+    """Initialize semantic search index on startup."""
+    try:
+        from app.core.semantic_search import initialize_search_index
+        initialize_search_index()
+        print("[Startup] Semantic search index initialized.")
+    except Exception as e:
+        print(f"[Startup] Semantic search init skipped: {e}")
+
+
 @app.get("/", tags=["Root"])
 def root():
     return {
         "message": f"Welcome to {settings.PROJECT_NAME}!",
         "docs_url": f"{settings.API_V1_STR}/docs"
     }
+

@@ -255,6 +255,13 @@ class ErrorAnalysis(Base):
     recommended_fix = Column(Text, nullable=True)       # The single top-priority fix
     search_text = Column(Text, nullable=True)           # Concatenated searchable text for full-text filtering
 
+    # Week 15: Confidence scoring & analytics
+    confidence_root_cause = Column(Integer, nullable=True)  # 0-99
+    confidence_fix = Column(Integer, nullable=True)         # 0-99
+    confidence_explanation = Column(Integer, nullable=True)  # 0-99
+    resolution_time_seconds = Column(Integer, nullable=True) # time to resolve
+    was_fix_helpful = Column(Boolean, nullable=True)         # user feedback
+
 
 class LearningNote(Base):
     """
@@ -273,3 +280,38 @@ class LearningNote(Base):
     prevention_tips = Column(Text, nullable=True)             # JSON-encoded list of strings
     real_world_examples = Column(Text, nullable=True)         # JSON-encoded list of strings
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class RecurringErrorPattern(Base):
+    """
+    Tracks recurring error patterns per user.
+    Used to detect weak areas and suggest targeted learning modules.
+    """
+    __tablename__ = "recurring_error_patterns"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    error_type = Column(String, nullable=False, index=True)
+    occurrence_count = Column(Integer, default=1)
+    first_seen = Column(DateTime, default=datetime.datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.datetime.utcnow)
+    weak_area_category = Column(String, nullable=True)
+    suggested_module = Column(String, nullable=True)
+    is_addressed = Column(Boolean, default=False)
+
+
+class DebuggingAnalyticsSnapshot(Base):
+    """
+    Periodic analytics snapshots for the debugging dashboard.
+    Stores aggregated metrics for trend analysis.
+    """
+    __tablename__ = "debugging_analytics_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    snapshot_date = Column(DateTime, default=datetime.datetime.utcnow)
+    total_errors = Column(Integer, default=0)
+    avg_resolution_time = Column(Integer, nullable=True)     # seconds
+    most_common_category = Column(String, nullable=True)
+    fix_success_rate = Column(Integer, nullable=True)        # percentage 0-100
+    learning_score = Column(Integer, default=0)

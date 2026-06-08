@@ -20,6 +20,17 @@ from app.core.debugger_prompts import (
     parse_enhanced_ai_response,
     parse_code_review_response,
 )
+from app.core.knowledge_base import (
+    get_kb_entry, search_kb_by_category, get_all_categories,
+    get_kb_stats, ALL_KB_ENTRIES,
+)
+from app.core.semantic_search import semantic_search, get_search_mode
+from app.core.confidence_engine import compute_confidence_scores, get_confidence_label
+from app.core.recurring_tracker import (
+    track_error_pattern, get_recurring_patterns, get_all_patterns,
+    generate_weak_area_report,
+)
+from app.core.teaching_engine import generate_teaching_card, get_teaching_summary
 
 router = APIRouter()
 
@@ -98,6 +109,27 @@ class DebuggerStatsResponse(BaseModel):
     severity_distribution: Dict[str, int] = {}
     category_distribution: Dict[str, int] = {}
     recent_errors: List[Dict[str, Any]] = []
+
+class SemanticSearchRequest(BaseModel):
+    query: str = Field(..., description="Natural language query to search errors")
+    top_k: int = Field(default=5, le=20, description="Number of results to return")
+
+class SemanticSearchResultItem(BaseModel):
+    error_name: str
+    error_category: str
+    similarity: float
+    root_cause: str
+    beginner_explanation: str
+    fix_recommendations: List[str] = []
+
+class ConfidenceScoresResponse(BaseModel):
+    root_cause_confidence: int = 0
+    fix_confidence: int = 0
+    explanation_confidence: int = 0
+    overall_confidence: int = 0
+    root_cause_label: str = ""
+    fix_label: str = ""
+    explanation_label: str = ""
 
 class LearningNoteResponse(BaseModel):
     id: int
@@ -287,6 +319,45 @@ def analyze_error_endpoint(
         if parsed_ai["prevention_tips"]:
             local_analysis["learning_mode"]["prevention_tips"] = parsed_ai["prevention_tips"]
 
+    # 4b. Semantic search for similar errors
+    top_similarity = 0.0
+    similar_errors = []
+    try:
+        search_results = semantic_search(error_text, top_k=3)
+        for sr in search_results:
+            similar_errors.append({
+                "error_name": sr.error_name,
+                "category": sr.error_category,
+                "similarity": sr.similarity,
+            })
+            if sr.similarity > top_similarity:
+                top_similarity = sr.similarity
+    except Exception as search_err:
+        print(f"Semantic search warning: {search_err}")
+
+    # 4c. Compute confidence scores
+    confidence = compute_confidence_scores(
+        error_type=local_analysis["error_type"],
+        categories=local_analysis["categories"],
+        ai_enhanced=ai_enhanced,
+        ai_response_sections=local_analysis,
+        semantic_similarity=top_similarity,
+    )
+    local_analysis["confidence_scores"] = confidence
+    local_analysis["similar_errors"] = similar_errors
+
+    # 4d. Generate teaching card
+    try:
+        teaching_card = generate_teaching_card(
+            error_type=local_analysis["error_type"],
+            root_cause=local_analysis.get("root_cause", ""),
+            ai_explanation=local_analysis.get("explanation", ""),
+        )
+        local_analysis["teaching_card"] = teaching_card
+    except Exception as teach_err:
+        print(f"Teaching card warning: {teach_err}")
+        local_analysis["teaching_card"] = {}
+
     # 5. Build search text
     search_text = _build_search_text(local_analysis)
 
@@ -303,13 +374,17 @@ def analyze_error_endpoint(
         root_cause=local_analysis["root_cause"],
         suggested_fixes=json.dumps(local_analysis["suggested_fixes"]),
         ai_enhanced=ai_enhanced,
-        # New enhanced fields
+        # Enhanced fields
         beginner_explanation=local_analysis.get("beginner_explanation", ""),
         chain_of_events=json.dumps(local_analysis.get("chain_of_events", [])),
         code_suggestions=json.dumps(local_analysis.get("code_suggestions", [])),
         learning_concepts=json.dumps(local_analysis.get("learning_mode", {})),
         recommended_fix=local_analysis.get("recommended_fix", ""),
         search_text=search_text,
+        # Week 15: Confidence scores
+        confidence_root_cause=confidence.get("root_cause_confidence"),
+        confidence_fix=confidence.get("fix_confidence"),
+        confidence_explanation=confidence.get("explanation_confidence"),
     )
 
     try:
@@ -319,6 +394,12 @@ def analyze_error_endpoint(
         profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
         if profile:
             profile.xp_points += 10
+
+        # 7b. Track recurring error pattern
+        try:
+            track_error_pattern(db, uid, local_analysis["error_type"], local_analysis["categories"])
+        except Exception as track_err:
+            print(f"Recurring tracker warning: {track_err}")
 
         db.commit()
         db.refresh(db_analysis)
@@ -344,7 +425,6 @@ def analyze_error_endpoint(
     except Exception as db_err:
         db.rollback()
         print(f"Database error saving analysis: {db_err}")
-        # Return local analysis directly without database ID if save fails
         return _build_response(local_analysis, ai_enhanced=ai_enhanced)
 
     return _build_response(local_analysis, ai_enhanced=ai_enhanced, db_analysis=db_analysis)
@@ -870,3 +950,334 @@ def delete_history_endpoint(
         )
 
     return {"status": "success", "message": "Record successfully deleted"}
+
+
+# =============================================================================
+# WEEK 15: SEMANTIC SEARCH ENDPOINT
+# =============================================================================
+
+@router.post("/error-search")
+def error_search_endpoint(
+    request: SemanticSearchRequest,
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Semantic search across the error knowledge base.
+    Returns ranked results based on meaning, not just keyword matching.
+    """
+    results = semantic_search(request.query, top_k=request.top_k)
+    return {
+        "query": request.query,
+        "search_mode": get_search_mode(),
+        "result_count": len(results),
+        "results": [
+            {
+                "error_name": r.error_name,
+                "error_category": r.error_category,
+                "similarity": r.similarity,
+                "similarity_pct": round(r.similarity * 100, 1),
+                "root_cause": r.root_cause,
+                "beginner_explanation": r.beginner_explanation,
+                "fix_recommendations": r.fix_recommendations,
+                "prevention_strategies": r.entry.get("prevention_strategies", []),
+                "best_practices": r.entry.get("best_practices", []),
+                "related_errors": r.entry.get("related_errors", []),
+                "frameworks": r.entry.get("frameworks", []),
+            }
+            for r in results
+        ],
+    }
+
+
+# =============================================================================
+# WEEK 15: DEBUGGING ANALYTICS DASHBOARD
+# =============================================================================
+
+@router.get("/debugging-analytics")
+def debugging_analytics_endpoint(
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Comprehensive debugging analytics dashboard data.
+    Returns aggregated metrics, trends, and framework-specific stats.
+    """
+    uid = token_data["uid"]
+
+    # Total errors analyzed
+    total = db.query(func.count(models.ErrorAnalysis.id)).filter(
+        models.ErrorAnalysis.user_id == uid
+    ).scalar() or 0
+
+    ai_count = db.query(func.count(models.ErrorAnalysis.id)).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.ai_enhanced == True
+    ).scalar() or 0
+
+    # Most common error categories
+    all_analyses = db.query(models.ErrorAnalysis.categories).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.categories.isnot(None)
+    ).all()
+
+    category_counts: Dict[str, int] = {}
+    for (cats_str,) in all_analyses:
+        if cats_str:
+            for cat in cats_str.split(","):
+                cat = cat.strip()
+                if cat:
+                    category_counts[cat] = category_counts.get(cat, 0) + 1
+
+    sorted_categories = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
+
+    # Severity distribution
+    severity_rows = db.query(
+        models.ErrorAnalysis.severity,
+        func.count(models.ErrorAnalysis.id)
+    ).filter(
+        models.ErrorAnalysis.user_id == uid
+    ).group_by(models.ErrorAnalysis.severity).all()
+    severity_dist = {row[0] or "unknown": row[1] for row in severity_rows}
+
+    # Error type distribution (top 10)
+    type_rows = db.query(
+        models.ErrorAnalysis.error_type,
+        func.count(models.ErrorAnalysis.id).label("cnt")
+    ).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.error_type.isnot(None)
+    ).group_by(models.ErrorAnalysis.error_type).order_by(
+        func.count(models.ErrorAnalysis.id).desc()
+    ).limit(10).all()
+    error_type_dist = {row[0]: row[1] for row in type_rows}
+
+    # Fix success rate (percentage of analyses where user said fix was helpful)
+    helpful_count = db.query(func.count(models.ErrorAnalysis.id)).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.was_fix_helpful == True
+    ).scalar() or 0
+    feedback_total = db.query(func.count(models.ErrorAnalysis.id)).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.was_fix_helpful.isnot(None)
+    ).scalar() or 0
+    fix_success_rate = round((helpful_count / feedback_total) * 100) if feedback_total > 0 else None
+
+    # Average confidence scores
+    avg_confidence = db.query(
+        func.avg(models.ErrorAnalysis.confidence_root_cause),
+        func.avg(models.ErrorAnalysis.confidence_fix),
+        func.avg(models.ErrorAnalysis.confidence_explanation),
+    ).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.confidence_root_cause.isnot(None)
+    ).first()
+
+    # Debugging frequency — errors per day for last 7 days
+    import datetime as dt
+    seven_days_ago = dt.datetime.utcnow() - dt.timedelta(days=7)
+    daily_counts = db.query(
+        func.date(models.ErrorAnalysis.created_at).label("day"),
+        func.count(models.ErrorAnalysis.id).label("count")
+    ).filter(
+        models.ErrorAnalysis.user_id == uid,
+        models.ErrorAnalysis.created_at >= seven_days_ago
+    ).group_by(func.date(models.ErrorAnalysis.created_at)).all()
+    daily_frequency = {str(row[0]): row[1] for row in daily_counts}
+
+    # Learning progress — number of learning notes
+    learning_note_count = db.query(func.count(models.LearningNote.id)).filter(
+        models.LearningNote.user_id == uid
+    ).scalar() or 0
+
+    # Recurring pattern count
+    recurring_count = 0
+    try:
+        recurring_count = len(get_recurring_patterns(db, uid))
+    except Exception:
+        pass
+
+    # Recent errors (last 5)
+    recent = db.query(models.ErrorAnalysis).filter(
+        models.ErrorAnalysis.user_id == uid
+    ).order_by(models.ErrorAnalysis.created_at.desc()).limit(5).all()
+    recent_errors = [
+        {
+            "id": r.id,
+            "error_type": r.error_type,
+            "severity": r.severity,
+            "ai_enhanced": r.ai_enhanced,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "confidence": getattr(r, 'confidence_root_cause', None),
+        }
+        for r in recent
+    ]
+
+    return {
+        "total_errors_analyzed": total,
+        "ai_enhanced_count": ai_count,
+        "rule_based_count": total - ai_count,
+        "category_distribution": sorted_categories,
+        "severity_distribution": severity_dist,
+        "error_type_distribution": error_type_dist,
+        "fix_success_rate": fix_success_rate,
+        "avg_confidence": {
+            "root_cause": round(avg_confidence[0]) if avg_confidence and avg_confidence[0] else None,
+            "fix": round(avg_confidence[1]) if avg_confidence and avg_confidence[1] else None,
+            "explanation": round(avg_confidence[2]) if avg_confidence and avg_confidence[2] else None,
+        },
+        "daily_frequency": daily_frequency,
+        "learning_notes_count": learning_note_count,
+        "recurring_pattern_count": recurring_count,
+        "recent_errors": recent_errors,
+    }
+
+
+# =============================================================================
+# WEEK 15: RECURRING ERROR PATTERNS
+# =============================================================================
+
+@router.get("/recurring-errors")
+def recurring_errors_endpoint(
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Returns the user's recurring error patterns with weak area analysis
+    and personalized learning recommendations.
+    """
+    uid = token_data["uid"]
+
+    recurring = get_recurring_patterns(db, uid)
+    all_patterns = get_all_patterns(db, uid)
+    weak_report = generate_weak_area_report(db, uid)
+
+    return {
+        "recurring_errors": recurring,
+        "all_patterns": all_patterns,
+        "weak_area_report": weak_report,
+    }
+
+
+# =============================================================================
+# WEEK 15: CONFIDENCE SCORES FOR SPECIFIC ANALYSIS
+# =============================================================================
+
+@router.get("/confidence-scores/{analysis_id}")
+def confidence_scores_endpoint(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Returns confidence scores for a specific error analysis.
+    """
+    uid = token_data["uid"]
+    analysis = db.query(models.ErrorAnalysis).filter(
+        models.ErrorAnalysis.id == analysis_id,
+        models.ErrorAnalysis.user_id == uid
+    ).first()
+
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    return {
+        "analysis_id": analysis_id,
+        "root_cause_confidence": getattr(analysis, 'confidence_root_cause', None) or 0,
+        "fix_confidence": getattr(analysis, 'confidence_fix', None) or 0,
+        "explanation_confidence": getattr(analysis, 'confidence_explanation', None) or 0,
+        "root_cause_label": get_confidence_label(getattr(analysis, 'confidence_root_cause', 0) or 0),
+        "fix_label": get_confidence_label(getattr(analysis, 'confidence_fix', 0) or 0),
+        "explanation_label": get_confidence_label(getattr(analysis, 'confidence_explanation', 0) or 0),
+        "was_fix_helpful": getattr(analysis, 'was_fix_helpful', None),
+    }
+
+
+# =============================================================================
+# WEEK 15: USER FEEDBACK ON FIX HELPFULNESS
+# =============================================================================
+
+@router.post("/feedback/{analysis_id}")
+def feedback_endpoint(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token),
+    helpful: bool = Query(..., description="Was the fix helpful?"),
+):
+    """
+    Allows users to mark whether the fix suggestion was helpful.
+    """
+    uid = token_data["uid"]
+    analysis = db.query(models.ErrorAnalysis).filter(
+        models.ErrorAnalysis.id == analysis_id,
+        models.ErrorAnalysis.user_id == uid
+    ).first()
+
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    analysis.was_fix_helpful = helpful
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save feedback: {e}")
+
+    return {"status": "success", "analysis_id": analysis_id, "was_fix_helpful": helpful}
+
+
+# =============================================================================
+# WEEK 15: KNOWLEDGE BASE BROWSER
+# =============================================================================
+
+@router.get("/knowledge-base")
+def knowledge_base_endpoint(
+    token_data: dict = Depends(verify_token),
+    category: Optional[str] = Query(None, description="Filter by category"),
+):
+    """
+    Browse the error knowledge base with optional category filtering.
+    """
+    if category:
+        entries = search_kb_by_category(category)
+    else:
+        entries = ALL_KB_ENTRIES
+
+    return {
+        "stats": get_kb_stats(),
+        "categories": get_all_categories(),
+        "entries": [
+            {
+                "error_name": e["error_name"],
+                "error_category": e["error_category"],
+                "root_cause": e["root_cause"],
+                "beginner_explanation": e["beginner_explanation"],
+                "fix_recommendations": e["fix_recommendations"],
+                "prevention_strategies": e["prevention_strategies"],
+                "best_practices": e["best_practices"],
+                "learning_resources": e.get("learning_resources", []),
+                "related_errors": e.get("related_errors", []),
+                "frameworks": e.get("frameworks", []),
+            }
+            for e in entries
+        ],
+        "total": len(entries),
+    }
+
+
+# =============================================================================
+# WEEK 15: TEACHING CARD ENDPOINT
+# =============================================================================
+
+@router.get("/teaching-card/{error_type}")
+def teaching_card_endpoint(
+    error_type: str,
+    token_data: dict = Depends(verify_token),
+):
+    """
+    Returns a comprehensive teaching card for a specific error type.
+    """
+    card = generate_teaching_card(error_type)
+    if not card or not card.get("concept_title"):
+        raise HTTPException(status_code=404, detail=f"No teaching content found for '{error_type}'")
+
+    return card
