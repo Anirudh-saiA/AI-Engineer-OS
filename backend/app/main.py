@@ -79,6 +79,9 @@ def migrate_db():
                 ("confidence_explanation", "INTEGER"),
                 ("resolution_time_seconds", "INTEGER"),
                 ("was_fix_helpful", "BOOLEAN"),
+                # Week 16: Community integrations (GitHub & Stack Overflow)
+                ("github_references", "TEXT"),
+                ("stackoverflow_references", "TEXT"),
             ]
             for col_name, col_type in mentor_columns:
                 if col_name not in existing_error_cols:

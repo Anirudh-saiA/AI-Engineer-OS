@@ -262,6 +262,11 @@ class ErrorAnalysis(Base):
     resolution_time_seconds = Column(Integer, nullable=True) # time to resolve
     was_fix_helpful = Column(Boolean, nullable=True)         # user feedback
 
+    # Week 16: Community integrations (GitHub & Stack Overflow)
+    github_references = Column(Text, nullable=True)          # JSON-encoded list of dicts
+    stackoverflow_references = Column(Text, nullable=True)   # JSON-encoded list of dicts
+
+
 
 class LearningNote(Base):
     """

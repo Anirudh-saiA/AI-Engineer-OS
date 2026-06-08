@@ -1071,3 +1071,69 @@ def get_kb_stats() -> Dict[str, Any]:
         "categories": categories,
         "category_count": len(categories),
     }
+
+
+def get_safer_coding_pattern(error_type: str) -> Dict[str, Any]:
+    """
+    Returns a structured coding pattern guide containing a 'before' unsafe pattern,
+    an 'after' safe pattern, and a detailed 'reason' for the change.
+    """
+    patterns = {
+        "keyerror": {
+            "error_type": "KeyError",
+            "before": "value = data['missing_key']",
+            "after": "value = data.get('missing_key', default_value)",
+            "reason": "Use .get() with a default value to query optional keys, preventing KeyError crashes when fields are missing."
+        },
+        "indexerror": {
+            "error_type": "IndexError",
+            "before": "item = my_list[idx]",
+            "after": "item = my_list[idx] if 0 <= idx < len(my_list) else default_val",
+            "reason": "Verify index limits against the sequence size before attempting direct element lookup."
+        },
+        "typeerror": {
+            "error_type": "TypeError",
+            "before": "result = 'total: ' + number_val",
+            "after": "result = f'total: {number_val}'  # Or: result = 'total: ' + str(number_val)",
+            "reason": "Perform explicit string interpolation or type-casting rather than relying on implicit type coercion."
+        },
+        "zerodivisionerror": {
+            "error_type": "ZeroDivisionError",
+            "before": "ratio = numerator / denominator",
+            "after": "ratio = numerator / denominator if denominator != 0 else 0",
+            "reason": "Pre-validate denominators for non-zero bounds to ensure mathematical division stability."
+        },
+        "filenotfounderror": {
+            "error_type": "FileNotFoundError",
+            "before": "with open('data.json') as f:\n    data = f.read()",
+            "after": "from pathlib import Path\nfile_path = Path('data.json')\nif file_path.is_file():\n    with file_path.open() as f:\n        data = f.read()",
+            "reason": "Use pathlib to verify file existence and state prior to attempting read/write operations."
+        },
+        "attributeerror": {
+            "error_type": "AttributeError",
+            "before": "user_name = user.profile.name",
+            "after": "user_name = user.profile.name if user and user.profile else 'Guest'",
+            "reason": "Check parent object nullability (e.g. NoneType checks) prior to resolving nested properties or attributes."
+        },
+        "referenceerror": {
+            "error_type": "ReferenceError",
+            "before": "console.log(myVar);\nlet myVar = 10;",
+            "after": "let myVar = 10;\nconsole.log(myVar);",
+            "reason": "Avoid Temporal Dead Zone (TDZ) access in JS by always declaring identifiers before referencing them in executing blocks."
+        },
+        "invalid hook call": {
+            "error_type": "Invalid Hook Call",
+            "before": "if (isLoading) {\n  useEffect(() => { ... }, []);\n}",
+            "after": "useEffect(() => {\n  if (isLoading) { ... }\n}, [isLoading]);",
+            "reason": "Call React hooks unconditionally at the top level of your functional component to preserve React's hook-linked-list order."
+        }
+    }
+    
+    key = str(error_type or "").lower().strip()
+    return patterns.get(key, {
+        "error_type": error_type or "General Exception",
+        "before": "# Unsafe pattern: missing try/except block\ndo_something_risky()",
+        "after": "# Safe pattern: fail-fast with logging\nimport logging\ntry:\n    do_something_risky()\nexcept Exception as e:\n    logging.error(f'Failed: {e}')\n    handle_gracefully()",
+        "reason": "Wrap risky I/O, API network, or dynamic type conversion code in structured try/except blocks, logging exceptions and failing fast."
+    })
+

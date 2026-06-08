@@ -9,28 +9,27 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
+
 from app.api.deps import get_db, verify_token
 from app.models import profile as models
 from app.core import error_analysis
 from app.core.debugger_prompts import (
-    DEBUGGER_SYSTEM_PROMPT,
     CODE_REVIEW_SYSTEM_PROMPT,
-    build_analysis_prompt,
     build_code_review_prompt,
-    parse_enhanced_ai_response,
     parse_code_review_response,
 )
 from app.core.knowledge_base import (
     get_kb_entry, search_kb_by_category, get_all_categories,
-    get_kb_stats, ALL_KB_ENTRIES,
+    get_kb_stats, ALL_KB_ENTRIES, get_safer_coding_pattern,
 )
 from app.core.semantic_search import semantic_search, get_search_mode
-from app.core.confidence_engine import compute_confidence_scores, get_confidence_label
+from app.core.confidence_engine import get_confidence_label
 from app.core.recurring_tracker import (
-    track_error_pattern, get_recurring_patterns, get_all_patterns,
+    get_recurring_patterns, get_all_patterns,
     generate_weak_area_report,
 )
-from app.core.teaching_engine import generate_teaching_card, get_teaching_summary
+from app.core.teaching_engine import generate_teaching_card
+from app.services.debugger_service import DebuggerService
 
 router = APIRouter()
 
@@ -65,6 +64,22 @@ class LearningModeResponse(BaseModel):
     prevention_tips: List[str] = []
     real_world_examples: List[str] = []
 
+class CommunityReferenceItem(BaseModel):
+    title: str
+    url: str
+    state: Optional[str] = None
+    comments_count: Optional[int] = None
+    score: Optional[int] = None
+    view_count: Optional[int] = None
+    answer_count: Optional[int] = None
+    is_answered: Optional[bool] = None
+
+class SaferPatternResponse(BaseModel):
+    error_type: str = ""
+    before: str = ""
+    after: str = ""
+    reason: str = ""
+
 class ErrorAnalysisResponse(BaseModel):
     id: Optional[int] = None
     error_type: str
@@ -79,13 +94,17 @@ class ErrorAnalysisResponse(BaseModel):
     learning_notes: str
     severity: str
     ai_enhanced: bool
-    created_at: Optional[datetime.datetime] = None
+    created_at: Optional[str] = None
     # Enhanced mentor fields
     beginner_explanation: str = ""
     chain_of_events: List[str] = []
     code_suggestions: List[CodeSuggestionItem] = []
     recommended_fix: str = ""
     learning_mode: LearningModeResponse = LearningModeResponse()
+    # Week 16: Community References & Safer Patterns
+    github_references: List[CommunityReferenceItem] = []
+    stackoverflow_references: List[CommunityReferenceItem] = []
+    safer_pattern: SaferPatternResponse = SaferPatternResponse()
 
     class Config:
         from_attributes = True
@@ -148,109 +167,13 @@ class LearningNoteResponse(BaseModel):
 # HELPER FUNCTIONS
 # =============================================================================
 
-def _call_ai_api(system_prompt: str, user_prompt: str) -> tuple[bool, str]:
-    """
-    Calls Gemini (primary) or OpenAI (fallback) API and returns (success, response_text).
-    """
-    gemini_key = os.environ.get("GEMINI_API_KEY")
-    api_key = os.environ.get("OPENAI_API_KEY")
-    ai_enhanced = False
-    ai_response = ""
-
-    # Try Gemini API first
-    if gemini_key:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [{"text": f"SYSTEM INSTRUCTION: {system_prompt}\n\nPlease acknowledge."}]
-                    },
-                    {
-                        "role": "model",
-                        "parts": [{"text": "Understood. I will follow the system instructions precisely, using all required section headers and formatting."}]
-                    },
-                    {
-                        "role": "user",
-                        "parts": [{"text": user_prompt}]
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 3000
-                }
-            }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=15) as response:
-                res_body = response.read().decode("utf-8")
-                res_data = json.loads(res_body)
-                ai_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
-                ai_enhanced = True
-        except Exception as e:
-            print(f"Gemini Debugger Completion failed: {e}")
-
-    # Try OpenAI API as fallback
-    if not ai_enhanced and api_key:
-        try:
-            url = "https://api.openai.com/v1/chat/completions"
-            payload = {
-                "model": "gpt-3.5-turbo",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.7,
-                "max_tokens": 3000
-            }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"
-                }
-            )
-            with urllib.request.urlopen(req, timeout=15) as response:
-                res_body = response.read().decode("utf-8")
-                res_data = json.loads(res_body)
-                ai_response = res_data["choices"][0]["message"]["content"]
-                ai_enhanced = True
-        except Exception as e:
-            print(f"OpenAI Debugger Completion failed: {e}")
-
-    return ai_enhanced, ai_response
-
-
-def _build_search_text(analysis: Dict[str, Any]) -> str:
-    """Concatenates all searchable fields into a single text for full-text filtering."""
-    parts = [
-        analysis.get("error_type", ""),
-        analysis.get("message", ""),
-        analysis.get("explanation", ""),
-        analysis.get("root_cause", ""),
-        analysis.get("beginner_explanation", ""),
-        analysis.get("recommended_fix", ""),
-        analysis.get("learning_notes", ""),
-        " ".join(analysis.get("categories", [])),
-        " ".join(analysis.get("suggested_fixes", [])),
-    ]
-    return " ".join(p for p in parts if p).lower()
-
-
 def _safe_json_loads(value: Optional[str], default=None):
-    """Safely loads a JSON string, returning default on failure."""
     if not value:
         return default if default is not None else []
     try:
         return json.loads(value)
     except Exception:
         return default if default is not None else []
-
 
 # =============================================================================
 # ENDPOINTS
@@ -263,220 +186,26 @@ def analyze_error_endpoint(
     token_data: dict = Depends(verify_token)
 ):
     """
-    Full AI Mentor analysis pipeline.
+    Full AI Mentor analysis pipeline. Delegated to DebuggerService.
     Parses, classifies, generates AI-enhanced analysis with root cause chain,
-    beginner explanations, code suggestions, and learning mode.
-    Stores result in DB, creates learning note, awards +10 XP.
+    retrieves community threads, scores confidence, and saves the history session.
     """
     error_text = submission.error_text
     uid = token_data["uid"]
-
-    # 1. Run local pure-Python rule-based analysis
-    local_analysis = error_analysis.analyze_error(error_text)
-
-    # 2. Build AI prompt with local context
-    user_prompt = build_analysis_prompt(
-        error_text=error_text,
-        error_type=local_analysis["error_type"],
-        categories=local_analysis["categories"],
-        severity=local_analysis["severity"],
-        file_name=local_analysis["file"],
-        line_number=local_analysis["line"],
-        frames=local_analysis.get("frames", [])
-    )
-
-    # 3. Call AI API
-    ai_enhanced, ai_response = _call_ai_api(DEBUGGER_SYSTEM_PROMPT, user_prompt)
-
-    # 4. Merge AI response into local analysis
-    if ai_enhanced and ai_response:
-        parsed_ai = parse_enhanced_ai_response(ai_response)
-
-        if parsed_ai["root_cause"]:
-            local_analysis["root_cause"] = parsed_ai["root_cause"]
-        if parsed_ai["explanation"]:
-            local_analysis["explanation"] = parsed_ai["explanation"]
-        if parsed_ai["beginner_explanation"]:
-            local_analysis["beginner_explanation"] = parsed_ai["beginner_explanation"]
-        if parsed_ai["suggested_fixes"]:
-            local_analysis["suggested_fixes"] = parsed_ai["suggested_fixes"]
-        if parsed_ai["best_practices"]:
-            local_analysis["best_practices"] = parsed_ai["best_practices"]
-        if parsed_ai["learning_notes"]:
-            local_analysis["learning_notes"] = parsed_ai["learning_notes"]
-        if parsed_ai["recommended_fix"]:
-            local_analysis["recommended_fix"] = parsed_ai["recommended_fix"]
-        if parsed_ai["root_cause_chain"]:
-            local_analysis["chain_of_events"] = parsed_ai["root_cause_chain"]
-        if parsed_ai["code_suggestions"]:
-            local_analysis["code_suggestions"] = parsed_ai["code_suggestions"]
-
-        # Merge learning mode
-        if parsed_ai["learning_concept"]:
-            local_analysis["learning_mode"]["concept"] = parsed_ai["learning_concept"]
-        if parsed_ai["common_mistakes"]:
-            local_analysis["learning_mode"]["common_mistakes"] = parsed_ai["common_mistakes"]
-        if parsed_ai["prevention_tips"]:
-            local_analysis["learning_mode"]["prevention_tips"] = parsed_ai["prevention_tips"]
-
-    # 4b. Semantic search for similar errors
-    top_similarity = 0.0
-    similar_errors = []
-    try:
-        search_results = semantic_search(error_text, top_k=3)
-        for sr in search_results:
-            similar_errors.append({
-                "error_name": sr.error_name,
-                "category": sr.error_category,
-                "similarity": sr.similarity,
-            })
-            if sr.similarity > top_similarity:
-                top_similarity = sr.similarity
-    except Exception as search_err:
-        print(f"Semantic search warning: {search_err}")
-
-    # 4c. Compute confidence scores
-    confidence = compute_confidence_scores(
-        error_type=local_analysis["error_type"],
-        categories=local_analysis["categories"],
-        ai_enhanced=ai_enhanced,
-        ai_response_sections=local_analysis,
-        semantic_similarity=top_similarity,
-    )
-    local_analysis["confidence_scores"] = confidence
-    local_analysis["similar_errors"] = similar_errors
-
-    # 4d. Generate teaching card
-    try:
-        teaching_card = generate_teaching_card(
-            error_type=local_analysis["error_type"],
-            root_cause=local_analysis.get("root_cause", ""),
-            ai_explanation=local_analysis.get("explanation", ""),
-        )
-        local_analysis["teaching_card"] = teaching_card
-    except Exception as teach_err:
-        print(f"Teaching card warning: {teach_err}")
-        local_analysis["teaching_card"] = {}
-
-    # 5. Build search text
-    search_text = _build_search_text(local_analysis)
-
-    # 6. Save the analysis record in database
-    db_analysis = models.ErrorAnalysis(
-        user_id=uid,
-        error_text=error_text[:4000],
-        error_type=local_analysis["error_type"],
-        categories=",".join(local_analysis["categories"]),
-        file_name=local_analysis["file"],
-        line_number=local_analysis["line"],
-        severity=local_analysis["severity"],
-        explanation=local_analysis["explanation"],
-        root_cause=local_analysis["root_cause"],
-        suggested_fixes=json.dumps(local_analysis["suggested_fixes"]),
-        ai_enhanced=ai_enhanced,
-        # Enhanced fields
-        beginner_explanation=local_analysis.get("beginner_explanation", ""),
-        chain_of_events=json.dumps(local_analysis.get("chain_of_events", [])),
-        code_suggestions=json.dumps(local_analysis.get("code_suggestions", [])),
-        learning_concepts=json.dumps(local_analysis.get("learning_mode", {})),
-        recommended_fix=local_analysis.get("recommended_fix", ""),
-        search_text=search_text,
-        # Week 15: Confidence scores
-        confidence_root_cause=confidence.get("root_cause_confidence"),
-        confidence_fix=confidence.get("fix_confidence"),
-        confidence_explanation=confidence.get("explanation_confidence"),
-    )
-
-    try:
-        db.add(db_analysis)
-
-        # 7. Award +10 XP to profile
-        profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
-        if profile:
-            profile.xp_points += 10
-
-        # 7b. Track recurring error pattern
-        try:
-            track_error_pattern(db, uid, local_analysis["error_type"], local_analysis["categories"])
-        except Exception as track_err:
-            print(f"Recurring tracker warning: {track_err}")
-
-        db.commit()
-        db.refresh(db_analysis)
-
-        # 8. Create learning note automatically
-        learning_mode = local_analysis.get("learning_mode", {})
-        try:
-            learning_note = models.LearningNote(
-                user_id=uid,
-                error_analysis_id=db_analysis.id,
-                concept_name=local_analysis["error_type"],
-                concept_explanation=learning_mode.get("concept", local_analysis.get("learning_notes", "")),
-                common_mistakes=json.dumps(learning_mode.get("common_mistakes", [])),
-                prevention_tips=json.dumps(learning_mode.get("prevention_tips", [])),
-                real_world_examples=json.dumps(learning_mode.get("real_world_examples", [])),
-            )
-            db.add(learning_note)
-            db.commit()
-        except Exception as note_err:
-            db.rollback()
-            print(f"Learning note save warning: {note_err}")
-
-    except Exception as db_err:
-        db.rollback()
-        print(f"Database error saving analysis: {db_err}")
-        return _build_response(local_analysis, ai_enhanced=ai_enhanced)
-
-    return _build_response(local_analysis, ai_enhanced=ai_enhanced, db_analysis=db_analysis)
-
-
-def _build_response(
-    analysis: Dict[str, Any],
-    ai_enhanced: bool = False,
-    db_analysis=None
-) -> ErrorAnalysisResponse:
-    """Helper to build a unified ErrorAnalysisResponse from analysis dict."""
-    code_suggestions_raw = analysis.get("code_suggestions", [])
-    code_suggestions = []
-    for cs in code_suggestions_raw:
-        if isinstance(cs, dict):
-            code_suggestions.append(CodeSuggestionItem(
-                name=cs.get("name", cs.get("title", "")),
-                title=cs.get("title", cs.get("name", "")),
-                before=cs.get("before", ""),
-                after=cs.get("after", ""),
-                reason=cs.get("reason", ""),
-            ))
-
-    learning_mode_raw = analysis.get("learning_mode", {})
-    learning_mode = LearningModeResponse(
-        concept=learning_mode_raw.get("concept", ""),
-        common_mistakes=learning_mode_raw.get("common_mistakes", []),
-        prevention_tips=learning_mode_raw.get("prevention_tips", []),
-        real_world_examples=learning_mode_raw.get("real_world_examples", []),
-    )
-
-    return ErrorAnalysisResponse(
-        id=db_analysis.id if db_analysis else None,
-        error_type=analysis.get("error_type", "UnknownError"),
-        file=analysis.get("file"),
-        line=analysis.get("line"),
-        message=analysis.get("message", ""),
-        categories=analysis.get("categories", []),
-        explanation=analysis.get("explanation", ""),
-        root_cause=analysis.get("root_cause", ""),
-        suggested_fixes=analysis.get("suggested_fixes", []),
-        best_practices=analysis.get("best_practices", []),
-        learning_notes=analysis.get("learning_notes", ""),
-        severity=analysis.get("severity", "medium"),
-        ai_enhanced=ai_enhanced,
-        created_at=db_analysis.created_at if db_analysis else datetime.datetime.utcnow(),
-        beginner_explanation=analysis.get("beginner_explanation", ""),
-        chain_of_events=analysis.get("chain_of_events", []),
-        code_suggestions=code_suggestions,
-        recommended_fix=analysis.get("recommended_fix", ""),
-        learning_mode=learning_mode,
-    )
+    
+    # Delegate completely to service layer
+    result_dict = DebuggerService.analyze_error(db, uid, error_text)
+    
+    # Add best practices safer pattern mapping dynamically
+    safer_pat_raw = get_safer_coding_pattern(result_dict.get("error_type", ""))
+    result_dict["safer_pattern"] = {
+        "error_type": safer_pat_raw.get("error_type", ""),
+        "before": safer_pat_raw.get("before", ""),
+        "after": safer_pat_raw.get("after", ""),
+        "reason": safer_pat_raw.get("reason", "")
+    }
+    
+    return result_dict
 
 
 @router.post("/classify-error")
@@ -513,7 +242,6 @@ def dependency_check_endpoint(
     parsed = error_analysis.parse_stack_trace(text)
     categories = error_analysis.classify_error(text, parsed)
 
-    # Force "Dependency Error" category if not auto-detected
     if "Dependency Error" not in categories:
         if categories == ["Unknown"]:
             categories = ["Dependency Error"]
@@ -543,12 +271,9 @@ def api_error_analysis_endpoint(
     Specialized HTTP status code error analyzer.
     """
     status_code = submission.status_code.strip()
-
-    # Try to extract 3-digit code
     code_match = re.search(r'\b(\d{3})\b', status_code)
     code = code_match.group(1) if code_match else "500"
 
-    # Mock some error text to trigger the HTTP parsing in error_analysis
     mock_error = f"HTTP {code} Error"
     if submission.error_details:
         mock_error += f"\nDetails: {submission.error_details}"
@@ -568,10 +293,6 @@ def api_error_analysis_endpoint(
     }
 
 
-# =============================================================================
-# CODE REVIEW ENDPOINT (Feature 5)
-# =============================================================================
-
 @router.post("/code-review", response_model=CodeReviewResponse)
 def code_review_endpoint(
     submission: CodeReviewSubmission,
@@ -579,15 +300,13 @@ def code_review_endpoint(
 ):
     """
     Standalone code improvement suggestions.
-    Accepts a code snippet, returns safer/cleaner alternatives using AI.
-    Falls back to local pattern matching if no AI is available.
     """
     code = submission.code_snippet
     lang = submission.language
 
     # Try AI-powered review
     user_prompt = build_code_review_prompt(code, lang)
-    ai_enhanced, ai_response = _call_ai_api(CODE_REVIEW_SYSTEM_PROMPT, user_prompt)
+    ai_enhanced, ai_response = DebuggerService._call_ai_api(CODE_REVIEW_SYSTEM_PROMPT, user_prompt)
 
     suggestions = []
 
@@ -601,7 +320,6 @@ def code_review_endpoint(
                 reason=s.get("reason", ""),
             ))
 
-    # Fallback: use local pattern matching
     if not suggestions:
         local_suggestions = error_analysis.generate_code_suggestions(code, "")
         for s in local_suggestions:
@@ -619,10 +337,6 @@ def code_review_endpoint(
     )
 
 
-# =============================================================================
-# ENHANCED HISTORY ENDPOINT (Feature 6)
-# =============================================================================
-
 @router.get("/history", response_model=List[ErrorAnalysisResponse])
 def get_history_endpoint(
     db: Session = Depends(get_db),
@@ -630,108 +344,26 @@ def get_history_endpoint(
     search: Optional[str] = Query(None, description="Search across all analysis fields"),
     category: Optional[str] = Query(None, description="Filter by error category"),
     severity: Optional[str] = Query(None, description="Filter by severity level"),
-    date_from: Optional[str] = Query(None, description="Filter from date (ISO format)"),
-    date_to: Optional[str] = Query(None, description="Filter to date (ISO format)"),
     limit: int = Query(50, le=200, description="Max records to return"),
 ):
     """
-    Returns the user's debugging analysis sessions with full search and filtering.
+    Returns the user's debugging analysis sessions. Delegated to DebuggerService.
     """
     uid = token_data["uid"]
-    query = db.query(models.ErrorAnalysis).filter(models.ErrorAnalysis.user_id == uid)
+    history_dicts = DebuggerService.get_history(db, uid, search, category, severity, limit)
+    
+    # Add safer coding pattern mapping
+    for h in history_dicts:
+        safer_pat_raw = get_safer_coding_pattern(h.get("error_type", ""))
+        h["safer_pattern"] = {
+            "error_type": safer_pat_raw.get("error_type", ""),
+            "before": safer_pat_raw.get("before", ""),
+            "after": safer_pat_raw.get("after", ""),
+            "reason": safer_pat_raw.get("reason", "")
+        }
+        
+    return history_dicts
 
-    # Full-text search across search_text column
-    if search:
-        search_lower = f"%{search.lower()}%"
-        query = query.filter(
-            or_(
-                models.ErrorAnalysis.search_text.ilike(search_lower),
-                models.ErrorAnalysis.error_type.ilike(search_lower),
-                models.ErrorAnalysis.error_text.ilike(search_lower),
-                models.ErrorAnalysis.explanation.ilike(search_lower),
-            )
-        )
-
-    # Category filter
-    if category:
-        query = query.filter(models.ErrorAnalysis.categories.ilike(f"%{category}%"))
-
-    # Severity filter
-    if severity:
-        query = query.filter(models.ErrorAnalysis.severity == severity.lower())
-
-    # Date range filters
-    if date_from:
-        try:
-            dt_from = datetime.datetime.fromisoformat(date_from)
-            query = query.filter(models.ErrorAnalysis.created_at >= dt_from)
-        except ValueError:
-            pass
-    if date_to:
-        try:
-            dt_to = datetime.datetime.fromisoformat(date_to)
-            query = query.filter(models.ErrorAnalysis.created_at <= dt_to)
-        except ValueError:
-            pass
-
-    analyses = query.order_by(models.ErrorAnalysis.created_at.desc()).limit(limit).all()
-
-    response_list = []
-    for a in analyses:
-        # Load local knowledge base to enrich history if missing
-        local_ref = error_analysis.analyze_error(a.error_text)
-
-        fixes = _safe_json_loads(a.suggested_fixes, [])
-        chain = _safe_json_loads(getattr(a, 'chain_of_events', None), local_ref.get("chain_of_events", []))
-        code_sugs_raw = _safe_json_loads(getattr(a, 'code_suggestions', None), local_ref.get("code_suggestions", []))
-        learning_raw = _safe_json_loads(getattr(a, 'learning_concepts', None), local_ref.get("learning_mode", {}))
-
-        code_suggestions = []
-        for cs in code_sugs_raw:
-            if isinstance(cs, dict):
-                code_suggestions.append(CodeSuggestionItem(
-                    name=cs.get("name", cs.get("title", "")),
-                    title=cs.get("title", cs.get("name", "")),
-                    before=cs.get("before", ""),
-                    after=cs.get("after", ""),
-                    reason=cs.get("reason", ""),
-                ))
-
-        learning_mode = LearningModeResponse(
-            concept=learning_raw.get("concept", "") if isinstance(learning_raw, dict) else "",
-            common_mistakes=learning_raw.get("common_mistakes", []) if isinstance(learning_raw, dict) else [],
-            prevention_tips=learning_raw.get("prevention_tips", []) if isinstance(learning_raw, dict) else [],
-            real_world_examples=learning_raw.get("real_world_examples", []) if isinstance(learning_raw, dict) else [],
-        )
-
-        response_list.append(ErrorAnalysisResponse(
-            id=a.id,
-            error_type=a.error_type or "UnknownError",
-            file=a.file_name,
-            line=a.line_number,
-            message=local_ref["message"],
-            categories=a.categories.split(",") if a.categories else ["Unknown"],
-            explanation=a.explanation or "",
-            root_cause=a.root_cause or "",
-            suggested_fixes=fixes,
-            best_practices=local_ref["best_practices"],
-            learning_notes=local_ref["learning_notes"],
-            severity=a.severity or "medium",
-            ai_enhanced=a.ai_enhanced or False,
-            created_at=a.created_at,
-            beginner_explanation=getattr(a, 'beginner_explanation', None) or local_ref.get("beginner_explanation", ""),
-            chain_of_events=chain,
-            code_suggestions=code_suggestions,
-            recommended_fix=getattr(a, 'recommended_fix', None) or local_ref.get("recommended_fix", ""),
-            learning_mode=learning_mode,
-        ))
-
-    return response_list
-
-
-# =============================================================================
-# DEBUGGING STATISTICS ENDPOINT (Feature 6)
-# =============================================================================
 
 @router.get("/stats", response_model=DebuggerStatsResponse)
 def get_stats_endpoint(
@@ -754,7 +386,6 @@ def get_stats_endpoint(
 
     rule_count = total - ai_count
 
-    # Most common error type
     most_common = db.query(
         models.ErrorAnalysis.error_type,
         func.count(models.ErrorAnalysis.error_type).label("cnt")
@@ -765,7 +396,6 @@ def get_stats_endpoint(
         func.count(models.ErrorAnalysis.error_type).desc()
     ).first()
 
-    # Severity distribution
     severity_rows = db.query(
         models.ErrorAnalysis.severity,
         func.count(models.ErrorAnalysis.id)
@@ -775,7 +405,6 @@ def get_stats_endpoint(
 
     severity_dist = {row[0] or "unknown": row[1] for row in severity_rows}
 
-    # Category distribution (parse comma-separated)
     all_analyses = db.query(models.ErrorAnalysis.categories).filter(
         models.ErrorAnalysis.user_id == uid,
         models.ErrorAnalysis.categories.isnot(None)
@@ -789,7 +418,6 @@ def get_stats_endpoint(
                 if cat:
                     category_dist[cat] = category_dist.get(cat, 0) + 1
 
-    # Recent errors (last 5)
     recent = db.query(models.ErrorAnalysis).filter(
         models.ErrorAnalysis.user_id == uid
     ).order_by(models.ErrorAnalysis.created_at.desc()).limit(5).all()
@@ -815,10 +443,6 @@ def get_stats_endpoint(
     )
 
 
-# =============================================================================
-# LEARNING NOTES ENDPOINT (Feature 4)
-# =============================================================================
-
 @router.get("/learning-notes", response_model=List[LearningNoteResponse])
 def get_learning_notes_endpoint(
     db: Session = Depends(get_db),
@@ -835,7 +459,6 @@ def get_learning_notes_endpoint(
 
     result = []
     for note in notes:
-        # Try to get the associated error_type
         error_type = None
         if note.error_analysis_id:
             analysis = db.query(models.ErrorAnalysis.error_type).filter(
@@ -858,22 +481,16 @@ def get_learning_notes_endpoint(
     return result
 
 
-# =============================================================================
-# COMMON MISTAKES ENDPOINT (Feature 6)
-# =============================================================================
-
 @router.get("/common-mistakes")
 def get_common_mistakes_endpoint(
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
     """
-    Returns the user's most frequently occurring error patterns,
-    helping them identify recurring mistakes.
+    Returns the user's most frequently occurring error patterns.
     """
     uid = token_data["uid"]
 
-    # Group by error_type with counts
     patterns = db.query(
         models.ErrorAnalysis.error_type,
         func.count(models.ErrorAnalysis.id).label("count"),
@@ -889,7 +506,6 @@ def get_common_mistakes_endpoint(
 
     result = []
     for error_type, count, last_seen in patterns:
-        # Get the latest analysis for this error type
         latest = db.query(models.ErrorAnalysis).filter(
             models.ErrorAnalysis.user_id == uid,
             models.ErrorAnalysis.error_type == error_type
@@ -908,10 +524,6 @@ def get_common_mistakes_endpoint(
     return {"common_mistakes": result, "total_patterns": len(result)}
 
 
-# =============================================================================
-# DELETE HISTORY ENDPOINT
-# =============================================================================
-
 @router.delete("/history/{id}")
 def delete_history_endpoint(
     id: int,
@@ -922,33 +534,12 @@ def delete_history_endpoint(
     Deletes a specific error analysis history record.
     """
     uid = token_data["uid"]
-    record = db.query(models.ErrorAnalysis).filter(
-        models.ErrorAnalysis.id == id,
-        models.ErrorAnalysis.user_id == uid
-    ).first()
-
-    if not record:
+    success = DebuggerService.delete_history(db, uid, id)
+    if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Error analysis record not found"
         )
-
-    try:
-        # Also delete associated learning notes
-        db.query(models.LearningNote).filter(
-            models.LearningNote.error_analysis_id == id,
-            models.LearningNote.user_id == uid
-        ).delete()
-
-        db.delete(record)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete record: {e}"
-        )
-
     return {"status": "success", "message": "Record successfully deleted"}
 
 
@@ -963,7 +554,6 @@ def error_search_endpoint(
 ):
     """
     Semantic search across the error knowledge base.
-    Returns ranked results based on meaning, not just keyword matching.
     """
     results = semantic_search(request.query, top_k=request.top_k)
     return {
@@ -1000,11 +590,9 @@ def debugging_analytics_endpoint(
 ):
     """
     Comprehensive debugging analytics dashboard data.
-    Returns aggregated metrics, trends, and framework-specific stats.
     """
     uid = token_data["uid"]
 
-    # Total errors analyzed
     total = db.query(func.count(models.ErrorAnalysis.id)).filter(
         models.ErrorAnalysis.user_id == uid
     ).scalar() or 0
@@ -1014,7 +602,6 @@ def debugging_analytics_endpoint(
         models.ErrorAnalysis.ai_enhanced == True
     ).scalar() or 0
 
-    # Most common error categories
     all_analyses = db.query(models.ErrorAnalysis.categories).filter(
         models.ErrorAnalysis.user_id == uid,
         models.ErrorAnalysis.categories.isnot(None)
@@ -1030,7 +617,6 @@ def debugging_analytics_endpoint(
 
     sorted_categories = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
 
-    # Severity distribution
     severity_rows = db.query(
         models.ErrorAnalysis.severity,
         func.count(models.ErrorAnalysis.id)
@@ -1039,7 +625,6 @@ def debugging_analytics_endpoint(
     ).group_by(models.ErrorAnalysis.severity).all()
     severity_dist = {row[0] or "unknown": row[1] for row in severity_rows}
 
-    # Error type distribution (top 10)
     type_rows = db.query(
         models.ErrorAnalysis.error_type,
         func.count(models.ErrorAnalysis.id).label("cnt")
@@ -1051,7 +636,6 @@ def debugging_analytics_endpoint(
     ).limit(10).all()
     error_type_dist = {row[0]: row[1] for row in type_rows}
 
-    # Fix success rate (percentage of analyses where user said fix was helpful)
     helpful_count = db.query(func.count(models.ErrorAnalysis.id)).filter(
         models.ErrorAnalysis.user_id == uid,
         models.ErrorAnalysis.was_fix_helpful == True
@@ -1062,7 +646,6 @@ def debugging_analytics_endpoint(
     ).scalar() or 0
     fix_success_rate = round((helpful_count / feedback_total) * 100) if feedback_total > 0 else None
 
-    # Average confidence scores
     avg_confidence = db.query(
         func.avg(models.ErrorAnalysis.confidence_root_cause),
         func.avg(models.ErrorAnalysis.confidence_fix),
@@ -1072,7 +655,6 @@ def debugging_analytics_endpoint(
         models.ErrorAnalysis.confidence_root_cause.isnot(None)
     ).first()
 
-    # Debugging frequency — errors per day for last 7 days
     import datetime as dt
     seven_days_ago = dt.datetime.utcnow() - dt.timedelta(days=7)
     daily_counts = db.query(
@@ -1084,19 +666,16 @@ def debugging_analytics_endpoint(
     ).group_by(func.date(models.ErrorAnalysis.created_at)).all()
     daily_frequency = {str(row[0]): row[1] for row in daily_counts}
 
-    # Learning progress — number of learning notes
     learning_note_count = db.query(func.count(models.LearningNote.id)).filter(
         models.LearningNote.user_id == uid
     ).scalar() or 0
 
-    # Recurring pattern count
     recurring_count = 0
     try:
         recurring_count = len(get_recurring_patterns(db, uid))
     except Exception:
         pass
 
-    # Recent errors (last 5)
     recent = db.query(models.ErrorAnalysis).filter(
         models.ErrorAnalysis.user_id == uid
     ).order_by(models.ErrorAnalysis.created_at.desc()).limit(5).all()
@@ -1142,8 +721,7 @@ def recurring_errors_endpoint(
     token_data: dict = Depends(verify_token)
 ):
     """
-    Returns the user's recurring error patterns with weak area analysis
-    and personalized learning recommendations.
+    Returns the user's recurring error patterns.
     """
     uid = token_data["uid"]
 
@@ -1235,7 +813,7 @@ def knowledge_base_endpoint(
     category: Optional[str] = Query(None, description="Filter by category"),
 ):
     """
-    Browse the error knowledge base with optional category filtering.
+    Browse the error knowledge base.
     """
     if category:
         entries = search_kb_by_category(category)

@@ -51,6 +51,14 @@ interface AnalysisResult {
   code_suggestions?: CodeSuggestion[];
   recommended_fix?: string;
   learning_mode?: LearningMode;
+  github_references?: any[];
+  stackoverflow_references?: any[];
+  safer_pattern?: {
+    error_type: string;
+    before: string;
+    after: string;
+    reason: string;
+  };
 }
 
 interface DebuggerStats {
@@ -1184,6 +1192,111 @@ export default function DebuggerTab({ user, parseMarkdownToReact, addLog }: Debu
                   </div>
                 )}
 
+                {/* Community Solutions Panel */}
+                {((result.github_references && result.github_references.length > 0) ||
+                  (result.stackoverflow_references && result.stackoverflow_references.length > 0)) && (
+                  <div className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-4 animate-fadeIn">
+                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 border-b border-[var(--border)] pb-2 flex items-center justify-between">
+                      <span>🌐 Community Solutions</span>
+                      <span className="text-[8px] bg-indigo-900/60 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Real-time Refs</span>
+                    </h4>
+
+                    {/* GitHub Issues */}
+                    {result.github_references && result.github_references.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-[10px] font-mono font-bold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                          <span>🐈</span> GitHub Issues
+                        </h5>
+                        <div className="space-y-2">
+                          {result.github_references.map((ref, idx) => (
+                            <a
+                              key={idx}
+                              href={ref.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-indigo-500/50 transition-colors space-y-1.5"
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <p className="text-[11px] font-bold text-slate-200 hover:text-indigo-400 transition-colors line-clamp-2">
+                                  {ref.title}
+                                </p>
+                                <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded shrink-0 ${ref.state === "closed" ? "bg-emerald-950/60 text-emerald-400 border border-emerald-900/40" : "bg-amber-950/60 text-amber-400 border border-amber-900/40"}`}>
+                                  {ref.state}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-[9px] font-mono text-slate-500">
+                                <span>💬 {ref.comments_count || 0} comments</span>
+                                <span>Created: {ref.created_at ? new Date(ref.created_at).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stack Overflow */}
+                    {result.stackoverflow_references && result.stackoverflow_references.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+                        <h5 className="text-[10px] font-mono font-bold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                          <span>🥞</span> Stack Overflow Threads
+                        </h5>
+                        <div className="space-y-2">
+                          {result.stackoverflow_references.map((ref, idx) => (
+                            <a
+                              key={idx}
+                              href={ref.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-indigo-500/50 transition-colors space-y-1.5"
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <p className="text-[11px] font-bold text-slate-200 hover:text-indigo-400 transition-colors line-clamp-2">
+                                  {ref.title}
+                                </p>
+                                <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded shrink-0 ${ref.is_answered ? "bg-emerald-950/60 text-emerald-400 border border-emerald-900/40" : "bg-slate-800 text-slate-400 border border-slate-700"}`}>
+                                  {ref.is_answered ? "Solved" : "Unsolved"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-[9px] font-mono text-slate-500">
+                                <span>🔥 Score: {ref.score || 0}</span>
+                                <span>👀 Views: {ref.view_count || 0}</span>
+                                <span>🗣️ Answers: {ref.answer_count || 0}</span>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Best Practices & Safe Coding Patterns */}
+                {result.safer_pattern && result.safer_pattern.before && (
+                  <div className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-4 animate-fadeIn">
+                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 border-b border-[var(--border)] pb-2 flex items-center justify-between">
+                      <span>🛡️ Best Practices & Safe Coding Patterns</span>
+                      <span className="text-[8px] bg-emerald-900/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Safer Alternative</span>
+                    </h4>
+                    <p className="text-[11px] font-mono text-slate-400">
+                      We detected a safer pattern implementation to prevent this crash type:
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-[9px] font-mono font-bold text-rose-400 uppercase">⚠️ Unsafe Pattern:</span>
+                        <pre className="mt-1 p-3 rounded-xl bg-[rgba(239,68,68,0.03)] border border-rose-900/20 text-[10px] font-mono text-slate-300 overflow-x-auto whitespace-pre-wrap">{result.safer_pattern.before}</pre>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-mono font-bold text-emerald-400 uppercase">🛡️ Safe Pattern:</span>
+                        <pre className="mt-1 p-3 rounded-xl bg-[rgba(34,197,94,0.03)] border border-emerald-900/20 text-[10px] font-mono text-slate-300 overflow-x-auto whitespace-pre-wrap">{result.safer_pattern.after}</pre>
+                      </div>
+                      <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+                        <p className="text-[11px] text-slate-300 leading-relaxed"><strong className="text-emerald-400 font-mono">Why:</strong> {result.safer_pattern.reason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Root Cause Chain */}
                 {result.chain_of_events && result.chain_of_events.length > 0 && (
                   <Section id="chain" icon="🔗" title="Root Cause Chain" color="rgb(249, 115, 22)">
@@ -1364,6 +1477,36 @@ export default function DebuggerTab({ user, parseMarkdownToReact, addLog }: Debu
                     </div>
                   </Section>
                 )}
+              </div>
+            ) : analyzing ? (
+              <div className="space-y-4 animate-pulse">
+                {/* Skeleton for Header metadata */}
+                <div className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 bg-slate-800 rounded w-1/2"></div>
+                    <div className="h-4 bg-slate-800 rounded w-1/4"></div>
+                  </div>
+                  <div className="h-8 bg-slate-900 rounded w-full"></div>
+                </div>
+
+                {/* Skeleton for Confidence score */}
+                <div className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-3">
+                  <div className="h-3 bg-slate-800 rounded w-1/3"></div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="h-16 bg-slate-900 rounded-xl"></div>
+                    <div className="h-16 bg-slate-900 rounded-xl"></div>
+                    <div className="h-16 bg-slate-900 rounded-xl"></div>
+                  </div>
+                </div>
+
+                {/* Skeleton for Community References */}
+                <div className="glass-card rounded-2xl p-5 border border-[var(--border)] space-y-3">
+                  <div className="h-4 bg-slate-800 rounded w-1/3"></div>
+                  <div className="space-y-2">
+                    <div className="h-12 bg-slate-900 rounded-xl"></div>
+                    <div className="h-12 bg-slate-900 rounded-xl"></div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="glass-card rounded-2xl p-8 border border-[var(--border)] text-center space-y-4">
