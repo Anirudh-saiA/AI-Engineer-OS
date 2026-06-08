@@ -6,7 +6,8 @@ from app.db.base_class import Base
 from app.db.session import engine
 import app.models.profile # Force map models to Base registry
 import app.models.document
-# Ensure all models (including LearningNote, RecurringErrorPattern, etc.)
+import app.models.agents
+# Ensure all models (including LearningNote, RecurringErrorPattern, agents models)
 # are registered with Base.metadata so create_all() can auto-generate tables
 
 # Auto-generate PostgreSQL schemas on startup
@@ -102,6 +103,61 @@ def initialize_search():
         print("[Startup] Semantic search index initialized.")
     except Exception as e:
         print(f"[Startup] Semantic search init skipped: {e}")
+
+
+@app.on_event("startup")
+def seed_agents():
+    """Seed specialized agents into the DB on startup."""
+    from app.db.session import SessionLocal
+    from app.models.agents import DBAgent
+    
+    db = SessionLocal()
+    try:
+        default_agents = [
+            {
+                "id": "planner",
+                "name": "Planner Agent",
+                "role": "Project Manager",
+                "system_prompt": "You are a specialized Planner Agent. Your job is to understand user goals, break down complex requirements into a structured, step-by-step execution checklist, and allocate responsibilities. Output a structured execution plan."
+            },
+            {
+                "id": "research",
+                "name": "Research Agent",
+                "role": "Technical Researcher",
+                "system_prompt": "You are a specialized Research Agent. Your job is to scan knowledge bases, search vector databases (Qdrant), retrieve relevant documentation, and summarize findings. Output key insights, best practices, references, and technical recommendations."
+            },
+            {
+                "id": "coder",
+                "name": "Coding Agent",
+                "role": "Software Engineer",
+                "system_prompt": "You are a specialized Coding Agent. Your job is to design database schemas, write FastAPI server routes, or write Next.js React components based on the plan and research notes. Output clean, correct, structured code."
+            },
+            {
+                "id": "reviewer",
+                "name": "Reviewer Agent",
+                "role": "Quality Assurance Engineer",
+                "system_prompt": "You are a specialized Reviewer Agent. Your job is to audit generated code for logic bugs, styling violations, or security risks, and provide clear recommended changes. Output an inspection report."
+            },
+            {
+                "id": "documentation",
+                "name": "Documentation Agent",
+                "role": "Technical Writer",
+                "system_prompt": "You are a specialized Documentation Agent. Your job is to compile professional README guides, usage instructions, or setup details. Output clear project documentation."
+            }
+        ]
+        
+        for agent_info in default_agents:
+            existing = db.query(DBAgent).filter(DBAgent.id == agent_info["id"]).first()
+            if not existing:
+                agent = DBAgent(**agent_info)
+                db.add(agent)
+        db.commit()
+        print("[Startup] Specialized agent prompts seeded successfully.")
+    except Exception as e:
+        db.rollback()
+        print(f"[Startup] Seeding agents failed: {e}")
+    finally:
+        db.close()
 
 
 @app.get("/", tags=["Root"])
