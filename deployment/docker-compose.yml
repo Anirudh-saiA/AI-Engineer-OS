@@ -83,7 +83,7 @@ services:
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_healthy
     networks:
@@ -113,6 +113,34 @@ services:
     networks:
       - aios-network
 
+  # ============================================================================
+  # n8n: Central Automation Engine
+  # ============================================================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: aios-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - WEBHOOK_URL=https://1c438515ce27e1.lhr.life
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-aios_n8n_secret_key}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aios-network
+
 volumes:
   postgres-data:
     name: aios-postgres-data
@@ -120,6 +148,9 @@ volumes:
     name: aios-qdrant-data
   redis-data:
     name: aios-redis-data
+  n8n-data:
+    name: aios-n8n-data
+
 
 networks:
   aios-network:
