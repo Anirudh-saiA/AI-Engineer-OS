@@ -6,15 +6,16 @@ import OnboardingWizard from "./onboarding/OnboardingWizard";
 import ProfileTab from "./components/ProfileTab";
 import SettingsTab from "./components/SettingsTab";
 import DashboardTab from "./components/DashboardTab";
-import AgentTab from "./components/AgentTab";
-import DatabaseTab from "./components/DatabaseTab";
+
+
 import VectorTab from "./components/VectorTab";
 import AnalyticsTab from "./components/AnalyticsTab";
-import DebuggerTab from "./components/DebuggerTab";
+
+
 import { API_BASE_URL } from "./config";
 import { isPlaceholder } from "./firebase";
 
-type Tab = "dashboard" | "agent" | "database" | "vector" | "analytics" | "settings" | "profile" | "debugger";
+type Tab = "dashboard" | "vector" | "analytics" | "settings" | "profile";
 
 interface Message {
   id: string;
@@ -266,13 +267,7 @@ function parseMarkdownToReact(text: string) {
   });
 }
 
-interface TelemetryRow {
-  id: string;
-  event: string;
-  status: "success" | "warning" | "error";
-  duration: number;
-  timestamp: string;
-}
+
 
 function BreathingSpace() {
   const [timer, setTimer] = React.useState(300); // 5 mins break
@@ -593,84 +588,9 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
     { text: "[CONFIG] Tailwind CSS v4 and TypeScript configured in /frontend.", type: "config" },
   ]);
 
-  // Tab 2: Cognitive Agent Chat States
-  interface ChatSession {
-    id: string;
-    title: string;
-    messages: Message[];
-    timestamp: string;
-  }
-
-  const [chatInput, setChatInput] = useState("");
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string>("");
-  const [agentThinking, setAgentThinking] = useState(false);
-  const [agentThinkingStep, setAgentThinkingStep] = useState(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   // Daily planner states
   const [dailyTasks, setDailyTasks] = useState<any[]>([]);
   const [plannerLoading, setPlannerLoading] = useState(false);
-
-  // Derive messages from active session
-  const activeSession = chatSessions.find((s) => s.id === activeSessionId);
-  const messages = activeSession ? activeSession.messages : [];
-
-  // Fetch existing chat sessions from the backend API gateway
-  const fetchChatSessions = async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
-        headers: {
-          "Authorization": `Bearer ${user.uid}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          setChatSessions(data);
-          setActiveSessionId(data[0].id);
-          addLog(`[SYSTEM] Retrieved ${data.length} dialogue threads from persistent databases.`, "success");
-          return;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load chat sessions from backend database:", e);
-    }
-
-    // Default welcome session fallback if no database sessions are found
-    const defaultSessionId = "session-1";
-    const defaultSession: ChatSession = {
-      id: defaultSessionId,
-      title: "AI Mentor Welcome",
-      messages: [
-        {
-          id: "msg-welcome",
-          sender: "assistant",
-          text: "👋 Hello Developer! I am your AI-Engineer-OS Cognitive Agent. I can help you orchestrate container sandboxes, manage your Postgres migrations, query vector stores, or write boilerplate APIs. What are we building today?",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ],
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setChatSessions([defaultSession]);
-    setActiveSessionId(defaultSessionId);
-    
-    // Auto-save the default welcome session to the backend database
-    try {
-      await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.uid}`
-        },
-        body: JSON.stringify({
-          id: defaultSessionId,
-          title: "AI Mentor Welcome"
-        })
-      });
-    } catch (err) {}
-  };
 
   // Fetch today's personalized plan from AI Coach
   const fetchDailyTasks = async () => {
@@ -751,155 +671,9 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
     }
   };
 
-  // Helper to update active session messages
-  const updateActiveSessionMessages = (newMessages: Message[] | ((prev: Message[]) => Message[])) => {
-    setChatSessions((prevSessions) => {
-      return prevSessions.map((session) => {
-        if (session.id === activeSessionId) {
-          const updatedMsgs = typeof newMessages === "function" ? newMessages(session.messages) : newMessages;
-          
-          // Dynamically compute conversational title based on first user message if it's currently default
-          let newTitle = session.title;
-          if (session.title === "AI Mentor Welcome" || session.title === "New Conversation" || session.title === "New Chat") {
-            const firstUserMsg = updatedMsgs.find(m => m.sender === "user");
-            if (firstUserMsg) {
-              newTitle = firstUserMsg.text.slice(0, 24) + (firstUserMsg.text.length > 24 ? "..." : "");
-            }
-          }
-          
-          return {
-            ...session,
-            title: newTitle,
-            messages: updatedMsgs
-          };
-        }
-        return session;
-      });
-    });
-  };
 
-  // Start new chat
-  const startNewChat = async () => {
-    if (!user) return;
-    const newSessionId = "session-" + Math.random().toString(36).substr(2, 9);
-    const defaultTitle = "New Chat";
-    
-    const newSession: ChatSession = {
-      id: newSessionId,
-      title: defaultTitle,
-      messages: [
-        {
-          id: "msg-" + Math.random().toString(36).substr(2, 9),
-          sender: "assistant",
-          text: "👋 A clean workspace context spawned! Ask me to audit docker ports, check database tables, query vector stores, or suggest project ideas.",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ],
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
 
-    try {
-      // Register session in backend database
-      await fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.uid}`
-        },
-        body: JSON.stringify({
-          id: newSessionId,
-          title: defaultTitle
-        })
-      });
-    } catch (e) {
-      console.error("Failed to register chat session in backend:", e);
-    }
-    
-    setChatSessions((prev) => [newSession, ...prev]);
-    setActiveSessionId(newSessionId);
-    addLog(`[SYSTEM] Spawned new cognitive dialogue context: "${defaultTitle}"`, "system");
-  };
 
-  // Delete chat session
-  const deleteChatSession = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) return;
-
-    try {
-      // Wipes session and cascade deleted message children
-      await fetch(`${API_BASE_URL}/api/v1/agent/sessions/${sessionId}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${user.uid}`
-        }
-      });
-    } catch (err) {
-      console.error("Failed to delete chat session on backend database:", err);
-    }
-
-    setChatSessions((prev) => {
-      const filtered = prev.filter(s => s.id !== sessionId);
-      if (sessionId === activeSessionId && filtered.length > 0) {
-        setActiveSessionId(filtered[0].id);
-      } else if (filtered.length === 0) {
-        const defaultSession: ChatSession = {
-          id: "session-1",
-          title: "AI Mentor Welcome",
-          messages: [
-            {
-              id: "msg-welcome",
-              sender: "assistant",
-              text: "👋 Hello Developer! I am your AI-Engineer-OS Cognitive Agent. I can help you orchestrate container sandboxes, manage your Postgres migrations, query vector stores, or write boilerplate APIs. What are we building today?",
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }
-          ],
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        // Re-post default welcome session
-        fetch(`${API_BASE_URL}/api/v1/agent/sessions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${user.uid}`
-          },
-          body: JSON.stringify({
-            id: "session-1",
-            title: "AI Mentor Welcome"
-          })
-        }).catch(() => {});
-
-        setTimeout(() => {
-          setChatSessions([defaultSession]);
-          setActiveSessionId(defaultSession.id);
-        }, 10);
-        return [defaultSession];
-      }
-      return filtered;
-    });
-    addLog(`[SYSTEM] Closed and wiped session context database registry.`, "config");
-  };
-
-  // Rotate thinking steps when thinking is active
-  useEffect(() => {
-    let interval: any;
-    if (agentThinking) {
-      setAgentThinkingStep(0);
-      interval = setInterval(() => {
-        setAgentThinkingStep((prev) => (prev + 1) % 3);
-      }, 1500);
-    }
-    return () => clearInterval(interval);
-  }, [agentThinking]);
-
-  // Tab 3: Database Explorer States
-  const [telemetryTable, setTelemetryTable] = useState<TelemetryRow[]>([
-    { id: "TX-901", event: "auth/session-authorized", status: "success", duration: 12, timestamp: "21:11:05" },
-    { id: "TX-902", event: "postgres/pool-connected", status: "success", duration: 8, timestamp: "21:11:06" },
-    { id: "TX-903", event: "gateway/health-query", status: "success", duration: 15, timestamp: "21:11:15" },
-    { id: "TX-904", event: "vector/qdrant-ping-failure", status: "warning", duration: 120, timestamp: "21:11:22" },
-  ]);
-  const [dbChecking, setDbChecking] = useState(false);
 
   // Tab 4: Vector Embeddings States
   const [vectorQuery, setVectorQuery] = useState("");
@@ -935,34 +709,15 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
 
   // Tab 5: Settings States
   const [activeModel, setActiveModel] = useState("gemini-3.5-flash");
-  const [theme, setTheme] = useState("dark");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(2048);
   const [debugMode, setDebugMode] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("You are Antigravity, a professional agentic developer working inside the AI-Engineer-OS platform.");
 
-  // Apply theme to document
+  // Force Light Theme
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  // Initialize theme from system preference
-  useEffect(() => {
-    const saved = localStorage.getItem("aios-theme");
-    if (saved === "light" || saved === "dark") {
-      setTheme(saved);
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-    }
+    document.documentElement.setAttribute("data-theme", "light");
   }, []);
-
-  // Persist theme choice
-  useEffect(() => {
-    localStorage.setItem("aios-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   // Helper log function
   const addLog = (text: string, type: "system" | "success" | "config" | "info" | "error") => {
@@ -1034,7 +789,6 @@ const fetchProfile = async () => {
         fetchStatus();
         fetchProfile();
         fetchMotivation();
-        fetchChatSessions();
         fetchDailyTasks();
         fetchUploadedDocuments();
       } else {
@@ -1053,174 +807,9 @@ const fetchProfile = async () => {
     }
   }, [activeTab, user]);
 
-  // Scroll Chat to bottom
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, agentThinking]);
 
-  // Handle Real AI Agent Chat sends (Connected to OpenAI Backend API)
-  const handleSendMessage = async (textToSend?: string) => {
-    const text = textToSend || chatInput;
-    if (!text.trim() || !user) return;
 
-    const userMsg: Message = {
-      id: Math.random().toString(),
-      sender: "user",
-      text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
 
-    updateActiveSessionMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setChatInput("");
-    setAgentThinking(true);
-    addLog(`[AGENT] Dispatching prompt context to secure backend API...`, "info");
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/agent/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.uid}`
-        },
-        body: JSON.stringify({
-          message: text,
-          session_id: activeSessionId
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data.text;
-        const msgId = Math.random().toString();
-        const timestampVal = data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        // 1. Insert empty message placeholder
-        const assistantMsg: Message = {
-          id: msgId,
-          sender: "assistant",
-          text: "",
-          timestamp: timestampVal
-        };
-        
-        updateActiveSessionMessages((prev) => [...prev, assistantMsg]);
-        addLog("[SUCCESS] Agent response compiled dynamically from backend OpenAI gateway.", "success");
-
-        // 2. Word-by-word typewriter streaming
-        const words = rawText.split(" ");
-        let currentWordIndex = 0;
-        let currentText = "";
-        
-        const timer = setInterval(() => {
-          if (currentWordIndex < words.length) {
-            currentText += (currentWordIndex === 0 ? "" : " ") + words[currentWordIndex];
-            updateActiveSessionMessages((prev) => 
-              prev.map((msg) => msg.id === msgId ? { ...msg, text: currentText } : msg)
-            );
-            currentWordIndex++;
-          } else {
-            clearInterval(timer);
-          }
-        }, 12); // Very fast, fluid 12ms token typewriter streaming
-      } else {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    } catch (err) {
-      console.error(err);
-      addLog("[ERROR] Failed to query AI Agent. Ensure backend uvicorn is running.", "error");
-      
-      const rawErrorText = "⚠️ [SYSTEM OFFLINE] I failed to establish a secure connection to the OpenAI Backend API. Please verify that your `uvicorn` dev server is active on port 8000 and the PostgreSQL database pool is running.";
-      const msgId = Math.random().toString();
-      
-      const errorMsg: Message = {
-        id: msgId,
-        sender: "assistant",
-        text: "",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      updateActiveSessionMessages((prev) => [...prev, errorMsg]);
-      
-      const words = rawErrorText.split(" ");
-      let currentWordIndex = 0;
-      let currentText = "";
-      
-      const timer = setInterval(() => {
-        if (currentWordIndex < words.length) {
-          currentText += (currentWordIndex === 0 ? "" : " ") + words[currentWordIndex];
-          updateActiveSessionMessages((prev) => 
-            prev.map((msg) => msg.id === msgId ? { ...msg, text: currentText } : msg)
-          );
-          currentWordIndex++;
-        } else {
-          clearInterval(timer);
-        }
-      }, 12);
-    } finally {
-      setAgentThinking(false);
-    }
-  };
-
-  // Database Tab: Trigger a live DB ping check
-  const triggerDbCheck = async () => {
-    if (!user) return;
-    setDbChecking(true);
-    addLog("[API] Sending db-check query to backend...", "system");
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/system/db-check`, {
-        headers: {
-          "Authorization": `Bearer ${user.uid}`
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        addLog(`[SUCCESS] Database response: ${JSON.stringify(data)}`, "success");
-        // Add new success row
-        const newRow: TelemetryRow = {
-          id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-          event: "postgres/live-health-check",
-          status: "success",
-          duration: data.query_duration_ms || 18,
-          timestamp: new Date().toLocaleTimeString()
-        };
-        setTelemetryTable((prev) => [newRow, ...prev]);
-      } else {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    } catch (err: any) {
-      addLog(`[ERROR] Database check failed. Postgres may not be ready.`, "error");
-      const newRow: TelemetryRow = {
-        id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-        event: "postgres/health-check-failed",
-        status: "error",
-        duration: 0,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setTelemetryTable((prev) => [newRow, ...prev]);
-    } finally {
-      setDbChecking(false);
-    }
-  };
-
-  // Database Tab: Inject simulated telemetry event
-  const insertMockTelemetry = () => {
-    const mockEvents = [
-      { event: "auth/user-token-refreshed", status: "success", duration: 8 },
-      { event: "vector/index-upsert-batch", status: "success", duration: 84 },
-      { event: "redis/cache-hit", status: "success", duration: 2 },
-      { event: "sandbox/container-build", status: "success", duration: 920 },
-      { event: "ai-agent/model-inference-timeout", status: "error", duration: 4200 },
-    ];
-    const picked = mockEvents[Math.floor(Math.random() * mockEvents.length)];
-    const newRow: TelemetryRow = {
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      event: picked.event,
-      status: picked.status as any,
-      duration: picked.duration,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setTelemetryTable((prev) => [newRow, ...prev]);
-    addLog(`[DATABASE] Injected mock transaction log: ${picked.event} (duration: ${picked.duration}ms)`, "success");
-  };
 
   // Vector Tab: Live Search
   const handleVectorSearch = async (e: React.FormEvent) => {
@@ -1949,9 +1538,6 @@ const fetchProfile = async () => {
                     <h1 className="text-sm font-black tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
                       AI-ENGINEER-OS
                     </h1>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color: "var(--accent-text)" }}>
-                      Agent Console
-                    </span>
                   </div>
                 )}
               </div>
@@ -1978,11 +1564,11 @@ const fetchProfile = async () => {
               
               {([
                 { id: "dashboard" as Tab, label: "Dashboard", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg> },
-                { id: "agent" as Tab, label: "Agent Terminal", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
-                { id: "database" as Tab, label: "Database Explorer", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg> },
+
+
                 { id: "vector" as Tab, label: "Vector Search", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> },
                 { id: "analytics" as Tab, label: "Analytics", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg> },
-                { id: "debugger" as Tab, label: "AI Debugger", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> },
+
                 { id: "settings" as Tab, label: "Settings", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
                 { id: "profile" as Tab, label: "Profile", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg> },
               ]).map((tab) => (
@@ -2007,25 +1593,6 @@ const fetchProfile = async () => {
 
             {/* Theme Toggle + User Card */}
             <div className="p-3" style={{ borderTop: "1px solid var(--border)" }}>
-
-              {/* Theme toggle */}
-              {(!sidebarCollapsed || mobileSidebarOpen) && (
-                <button
-                  onClick={toggleTheme}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl mb-3 text-xs font-semibold cursor-pointer transition-all"
-                  style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}
-                >
-                  <span>{theme === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode"}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                    {theme === "dark" ? "Dark" : "Light"}
-                  </span>
-                </button>
-              )}
-              {sidebarCollapsed && !mobileSidebarOpen && (
-                <button onClick={toggleTheme} className="w-full flex justify-center py-2 mb-3 rounded-xl cursor-pointer text-lg transition-all" style={{ background: "var(--accent-soft)" }}>
-                  {theme === "dark" ? "🌙" : "☀️"}
-                </button>
-              )}
 
               {/* User avatar */}
               <div className="flex items-center gap-3 overflow-hidden">
@@ -2084,11 +1651,11 @@ const fetchProfile = async () => {
                 <div className="min-w-0">
                   <h2 className="text-sm md:text-lg font-bold flex items-center gap-2 truncate" style={{ color: "var(--text-primary)" }}>
                     {activeTab === "dashboard" && "Dashboard"}
-                    {activeTab === "agent" && "Agent Terminal"}
-                    {activeTab === "database" && "Database Explorer"}
+
+
                     {activeTab === "vector" && "Vector Search"}
                     {activeTab === "analytics" && "Project Analytics"}
-                    {activeTab === "debugger" && "AI Debugger"}
+
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "profile" && "Developer Profile"}
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono flex-shrink-0 hidden sm:inline-block"
@@ -2116,14 +1683,6 @@ const fetchProfile = async () => {
                     {activeModel.replace(/-/g, " ")}
                   </span>
                 </div>
-                {/* Header theme toggle */}
-                <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all text-sm"
-                  style={{ border: "1px solid var(--border)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                >
-                  {theme === "dark" ? "🌙" : "☀️"}
-                </button>
               </div>
             </header>
 
@@ -2159,36 +1718,9 @@ const fetchProfile = async () => {
                 />
               )}
 
-              {/* ═══════ TAB 2: COGNITIVE AGENT TERMINAL ═══════ */}
-              {activeTab === "agent" && (
-                <AgentTab
-                  chatSessions={chatSessions}
-                  activeSessionId={activeSessionId}
-                  setActiveSessionId={setActiveSessionId}
-                  startNewChat={startNewChat}
-                  deleteChatSession={deleteChatSession}
-                  messages={messages}
-                  chatInput={chatInput}
-                  setChatInput={setChatInput}
-                  handleSendMessage={handleSendMessage}
-                  agentThinking={agentThinking}
-                  agentThinkingStep={agentThinkingStep}
-                  chatEndRef={chatEndRef}
-                  parseMarkdownToReact={parseMarkdownToReact}
-                  user={user}
-                  addLog={addLog}
-                />
-              )}
 
-              {/* ═══════ TAB 3: DATABASE EXPLORER ═══════ */}
-              {activeTab === "database" && (
-                <DatabaseTab
-                  telemetryTable={telemetryTable}
-                  dbChecking={dbChecking}
-                  triggerDbCheck={triggerDbCheck}
-                  insertMockTelemetry={insertMockTelemetry}
-                />
-              )}
+
+
 
               {/* ═══════ TAB 4: VECTOR RAG EXPLORER ═══════ */}
               {activeTab === "vector" && (
@@ -2244,17 +1776,16 @@ const fetchProfile = async () => {
               )}
 
               {/* ═══════ TAB 5: SETTINGS ═══════ */}
-              {activeTab === "settings" && (<SettingsTab theme={theme} setTheme={setTheme} activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} />)}
+              {activeTab === "settings" && (<SettingsTab activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} />)}
 
               {/* ═══════ TAB 6: PROFILE ═══════ */}
               {activeTab === "profile" && (
                 <ProfileTab user={user} />
               )}
 
-              {/* ═══════ TAB 8: AI DEBUGGER ═══════ */}
-              {activeTab === "debugger" && (
-                <DebuggerTab user={user} parseMarkdownToReact={parseMarkdownToReact} addLog={addLog} />
-              )}
+
+
+
 
             </main>
 

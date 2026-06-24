@@ -148,7 +148,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # Or `.venv\Scripts\activate` on Windows
 pip install -r requirements.txt
-uvicorn main:app --reload
+python -m uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
 ### 🛠️ Step 4: Run Frontend Workspace

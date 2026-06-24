@@ -1,0 +1,381 @@
+{
+  "id": "Fdz21eQ15agLrFfn",
+  "name": "GitHub PR AI Review",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-review",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "GitHub Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "webhookId": "github-pr-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract PR event data from GitHub webhook payload\nconst body = $input.first().json.body || $input.first().json;\n\n// Only process 'opened' or 'synchronize' PR events\nconst action = body.action;\nconst pr = body.pull_request;\n\nif (!pr || !['opened', 'synchronize', 'reopened'].includes(action)) {\n  // Skip non-PR or non-relevant events\n  return [{ json: { skip: true, reason: `Skipping event: action=${action}` } }];\n}\n\nreturn [{\n  json: {\n    skip: false,\n    action: action,\n    pr_number: pr.number,\n    pr_title: pr.title,\n    pr_body: pr.body || '',\n    pr_url: pr.html_url,\n    pr_diff_url: pr.diff_url,\n    head_sha: pr.head.sha,\n    head_branch: pr.head.ref,\n    base_branch: pr.base.ref,\n    repo_full_name: body.repository.full_name,\n    repo_name: body.repository.name,\n    author: pr.user.login,\n    author_avatar: pr.user.avatar_url,\n    additions: pr.additions,\n    deletions: pr.deletions,\n    changed_files: pr.changed_files,\n    commits_url: pr.commits_url,\n    files_url: pr.url + '/files'\n  }\n}];"
+      },
+      "id": "parse-pr-event",
+      "name": "Parse PR Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "skip-check",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-skip",
+      "name": "Should Process?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $json.repo_full_name }}/pulls/{{ $json.pr_number }}/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-pr-files",
+      "name": "Get PR Changed Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [920, 220],
+      "credentials": {
+        "githubApi": {
+          "id": "DoMJa28QkxBXe2b6",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect changed files from GitHub API response\nconst prData = $('Parse PR Event').first().json;\nconst files = $input.all();\n\n// Build a summary of changed files with patches\nconst changedFiles = files.map(f => ({\n  filename: f.json.filename,\n  status: f.json.status,\n  additions: f.json.additions,\n  deletions: f.json.deletions,\n  patch: f.json.patch ? f.json.patch.slice(0, 2000) : '(binary or no diff)'\n}));\n\n// Build the user_request string for the AI agent\nconst filesSummary = changedFiles.map(f => \n  `File: ${f.filename} [${f.status}] (+${f.additions}/-${f.deletions})\\n${f.patch}`\n).join('\\n\\n---\\n\\n').slice(0, 8000);\n\nconst userRequest = `Review this GitHub Pull Request:\\n\\n` +\n  `PR #${prData.pr_number}: ${prData.pr_title}\\n` +\n  `Author: ${prData.author}\\n` +\n  `Branch: ${prData.head_branch} -> ${prData.base_branch}\\n` +\n  `Description: ${prData.pr_body}\\n\\n` +\n  `Changed Files (${prData.changed_files} files, +${prData.additions}/-${prData.deletions} lines):\\n\\n` +\n  filesSummary;\n\nreturn [{\n  json: {\n    ...prData,\n    changed_files_detail: changedFiles,\n    user_request: userRequest,\n    task_type: 'code_review'\n  }\n}];"
+      },
+      "id": "prepare-review-request",
+      "name": "Prepare Review Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/v1/agents/workflow",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"user_request\": $json.user_request,\n  \"task_type\": $json.task_type\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "trigger-ai-review",
+      "name": "Trigger AI Review Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1360, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LzEBW4nQemcpbWwx",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "id": "wait-for-agent",
+      "name": "Wait 15s for Agent",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1580, 220]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://backend:8000/api/v1/agents/workflow/{{ $('Trigger AI Review Agent').first().json.workflow_id }}/status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "check-review-status",
+      "name": "Check Review Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1800, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LzEBW4nQemcpbWwx",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the GitHub PR comment from AI review results\nconst prData = $('Prepare Review Request').first().json;\nconst reviewStatus = $('Check Review Status').first().json;\nconst agentData = $('Trigger AI Review Agent').first().json;\n\nconst agents = reviewStatus.routing_decision || ['planner', 'research', 'coder'];\nconst skipped = reviewStatus.skipped_agents || [];\nconst progress = reviewStatus.progress_percent || 100;\nconst status = reviewStatus.status || 'completed';\n\n// Format review comment in markdown\nconst comment = `## 🤖 AI Engineer OS — Code Review\\n\\n` +\n  `**Status**: ${status === 'completed' ? '✅ Review Complete' : '⏳ In Progress'} (${progress}%)\\n` +\n  `**Workflow ID**: \\`${agentData.workflow_id}\\`\\n` +\n  `**Agents Involved**: ${agents.map(a => `\\`${a}\\``).join(', ')}\\n` +\n  (skipped.length ? `**Skipped Agents**: ${skipped.map(a => `\\`${a}\\``).join(', ')}\\n` : '') +\n  `\\n---\\n\\n` +\n  `### 📋 Review Summary\\n\\n` +\n  `The AI review pipeline processed **${prData.changed_files} changed files** ` +\n  `(+${prData.additions} additions / -${prData.deletions} deletions).\\n\\n` +\n  `The following agents participated in the review:\\n` +\n  agents.map(a => `- **${a.charAt(0).toUpperCase() + a.slice(1)} Agent**: Analyzed code changes`).join('\\n') +\n  `\\n\\n---\\n\\n` +\n  `*Powered by [AI Engineer OS](https://github.com/your-org/aios) · n8n Automation · LangGraph Multi-Agent Pipeline*`;\n\nreturn [{\n  json: {\n    pr_number: prData.pr_number,\n    repo_full_name: prData.repo_full_name,\n    pr_url: prData.pr_url,\n    comment_body: comment\n  }\n}];"
+      },
+      "id": "build-pr-comment",
+      "name": "Build PR Comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo_full_name }}/issues/{{ $json.pr_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"body\": $json.comment_body\n}) }}",
+        "options": {}
+      },
+      "id": "post-pr-comment",
+      "name": "Post PR Comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2240, 220],
+      "credentials": {
+        "githubApi": {
+          "id": "DoMJa28QkxBXe2b6",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"review_triggered\",\n  \"pr\": $('Parse PR Event').first().json.pr_number,\n  \"workflow_id\": $('Trigger AI Review Agent').first().json.workflow_id\n}) }}",
+        "options": {}
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to GitHub",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1580, 100]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  \"status\": \"skipped\",\n  \"reason\": $json.reason\n}) }}",
+        "options": {}
+      },
+      "id": "respond-skip",
+      "name": "Respond Skip",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [920, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "ai-os-orchestrator@yourdomain.com",
+        "toEmail": "developer@yourdomain.com",
+        "subject": "=✅ PR Review Completed for #{{ $json.pr_number }}",
+        "html": "={{ $json.comment_body }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "send-review-email",
+      "name": "Send Review Notification Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2460, 420],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "GitHub Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse PR Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse PR Event": {
+      "main": [
+        [
+          {
+            "node": "Should Process?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Process?": {
+      "main": [
+        [
+          {
+            "node": "Get PR Changed Files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Skip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PR Changed Files": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Review Request": {
+      "main": [
+        [
+          {
+            "node": "Trigger AI Review Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger AI Review Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait 15s for Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 15s for Agent": {
+      "main": [
+        [
+          {
+            "node": "Check Review Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Review Status": {
+      "main": [
+        [
+          {
+            "node": "Build PR Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build PR Comment": {
+      "main": [
+        [
+          {
+            "node": "Post PR Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post PR Comment": {
+      "main": [
+        [
+          {
+            "node": "Send Review Notification Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "ErrNotifyFlow123"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "github" },
+    { "name": "ai-review" },
+    { "name": "aios" }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2026-06-09T16:00:00.000Z",
+  "versionId": "1"
+}

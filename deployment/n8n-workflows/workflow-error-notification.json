@@ -1,0 +1,82 @@
+{
+  "id": "ErrNotifyFlow123",
+  "name": "Workflow Error Notification",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst execution = data.execution || {};\nconst error = execution.error || {};\nconst workflow = data.workflow || {};\n\nconst failedNode = error.node ? error.node.name : 'Unknown Node';\nconst errorMessage = error.message || 'No error message';\nconst errorStack = error.stack || 'No traceback logs available';\nconst executionUrl = execution.url || '#';\nconst workflowName = workflow.name || 'Unknown Workflow';\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body {\n      font-family: 'Inter', -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n      background-color: #0f0f15;\n      color: #e4e4e9;\n      margin: 0;\n      padding: 40px 20px;\n    }\n    .container {\n      max-width: 650px;\n      margin: 0 auto;\n      background-color: #161622;\n      border-radius: 12px;\n      border: 1px solid #2e2e3f;\n      overflow: hidden;\n      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);\n    }\n    .header {\n      background: linear-gradient(135deg, #ff416c, #ff4b2b);\n      padding: 30px 40px;\n      text-align: center;\n    }\n    .header h1 {\n      margin: 0;\n      font-size: 24px;\n      font-weight: 700;\n      color: #ffffff;\n      letter-spacing: -0.5px;\n    }\n    .content {\n      padding: 40px;\n    }\n    .summary-table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-bottom: 30px;\n    }\n    .summary-table td {\n      padding: 12px 0;\n      border-bottom: 1px solid #2e2e3f;\n      font-size: 15px;\n    }\n    .summary-table td.label {\n      font-weight: 600;\n      color: #8f8fa3;\n      width: 35%;\n    }\n    .summary-table td.value {\n      color: #e4e4e9;\n      font-weight: 500;\n    }\n    .summary-table tr:last-child td {\n      border-bottom: none;\n    }\n    .btn-wrapper {\n      text-align: center;\n      margin: 30px 0 10px 0;\n    }\n    .btn {\n      background-color: #3b82f6;\n      color: #ffffff !important;\n      padding: 12px 28px;\n      text-decoration: none;\n      border-radius: 6px;\n      font-weight: 600;\n      font-size: 15px;\n      display: inline-block;\n      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);\n      transition: background-color 0.2s;\n    }\n    .btn:hover {\n      background-color: #2563eb;\n      color: #ffffff !important;\n    }\n    .trace-header {\n      font-size: 16px;\n      font-weight: 600;\n      color: #ff8e8e;\n      margin-top: 30px;\n      margin-bottom: 10px;\n    }\n    .traceback {\n      background-color: #0d0d12;\n      border: 1px solid #2e2e3f;\n      border-radius: 6px;\n      padding: 20px;\n      font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", Menlo, monospace;\n      font-size: 13px;\n      color: #ff6565;\n      line-height: 1.6;\n      overflow-x: auto;\n      white-space: pre-wrap;\n      word-break: break-all;\n      max-height: 300px;\n      overflow-y: auto;\n    }\n    .footer {\n      text-align: center;\n      padding: 20px 40px;\n      background-color: #0f0f15;\n      border-top: 1px solid #2e2e3f;\n      font-size: 12px;\n      color: #64748b;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🚨 Multi-Agent Workflow Failure</h1>\n    </div>\n    <div class=\"content\">\n      <table class=\"summary-table\">\n        <tr>\n          <td class=\"label\">Workflow Name</td>\n          <td class=\"value\">${workflowName}</td>\n        </tr>\n        <tr>\n          <td class=\"label\">Workflow ID</td>\n          <td class=\"value\"><code>${workflow.id || 'N/A'}</code></td>\n        </tr>\n        <tr>\n          <td class=\"label\">Execution ID</td>\n          <td class=\"value\"><code>${execution.id || 'N/A'}</code></td>\n        </tr>\n        <tr>\n          <td class=\"label\">Failed Node</td>\n          <td class=\"value\"><strong>${failedNode}</strong></td>\n        </tr>\n        <tr>\n          <td class=\"label\">Error Message</td>\n          <td class=\"value\" style=\"color: #ff6565;\">${errorMessage}</td>\n        </tr>\n      </table>\n      \n      <div class=\"btn-wrapper\">\n        <a href=\"${executionUrl}\" class=\"btn\" target=\"_blank\">Inspect Execution in n8n</a>\n      </div>\n      \n      <div class=\"trace-header\">Traceback / Stack Logs:</div>\n      <pre class=\"traceback\">${errorStack}</pre>\n    </div>\n    <div class=\"footer\">\n      Powered by <strong>AI Engineer OS</strong> · Automation Engine &copy; 2026\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { html_body: html, developer_email: \"developer@yourdomain.com\", workflow_id: workflow.id } }];"
+      },
+      "id": "html-formatter",
+      "name": "HTML Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "ai-os-orchestrator@yourdomain.com",
+        "toEmail": "={{ $json.developer_email }}",
+        "subject": "=🚨 Multi-Agent Workflow Failed: {{ $json.workflow_id }}",
+        "html": "={{ $json.html_body }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [690, 300],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTML Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Formatter": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "pinData": {},
+  "tags": [
+    { "name": "system" },
+    { "name": "monitoring" }
+  ],
+  "active": true
+}

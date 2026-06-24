@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../config";
 
 interface SettingsTabProps {
-  theme: string;
-  setTheme: (theme: string) => void;
   activeModel: string;
   setActiveModel: (model: string) => void;
   addLog: (text: string, type: "system" | "success" | "config" | "info" | "error") => void;
@@ -11,8 +9,6 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({
-  theme,
-  setTheme,
   activeModel,
   setActiveModel,
   addLog,
@@ -31,7 +27,7 @@ export default function SettingsTab({
       try {
         const parsed = JSON.parse(stored);
         setSettings(parsed);
-        if (parsed.theme && setTheme) setTheme(parsed.theme);
+        setSettings(parsed);
       } catch (e) {
         console.error('Failed to parse stored settings', e);
       }
@@ -43,7 +39,7 @@ export default function SettingsTab({
         .then((res) => res.json())
         .then((data) => {
           setSettings(data);
-          if (data.theme && setTheme) setTheme(data.theme);
+          setSettings(data);
           localStorage.setItem('userSettings', JSON.stringify(data));
         })
         .catch((err) => {
@@ -57,7 +53,6 @@ export default function SettingsTab({
     if (!user) return;
     const payload = {
       ...settings,
-      theme,
     };
     const res = await fetch(`${API_BASE_URL}/api/v1/profile/settings`, {
       method: 'PUT',
@@ -75,10 +70,7 @@ export default function SettingsTab({
     }
   };
 
-  const selectTheme = (newTheme: string) => {
-    setTheme(newTheme);
-    addLog(`[CONFIG] UI theme switched to ${newTheme.toUpperCase()}`, "config");
-  };
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-up">
@@ -87,65 +79,8 @@ export default function SettingsTab({
         <div>
           <h2 className="text-xl font-extrabold tracking-tight">Appearance & Theme</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Customize the look and feel of your AI-Engineer-OS developer environment.
+            The application is permanently locked to the Light Beige theme.
           </p>
-        </div>
-
-        {/* Dual Mode Large Visual Selectors */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Dark Mode Card (Nexus Inspired) */}
-          <button
-            onClick={() => selectTheme("dark")}
-            className={`p-6 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-44 cursor-pointer group ${
-              theme === "dark"
-                ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
-            }`}
-          >
-            <div className="flex justify-between items-center w-full">
-              <span className="text-3xl p-2.5 rounded-xl bg-[var(--bg-primary)] group-hover:scale-110 transition-transform">
-                🌙
-              </span>
-              {theme === "dark" && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)] border border-[var(--accent)] font-mono uppercase tracking-wider">
-                  Active
-                </span>
-              )}
-            </div>
-            <div className="mt-4">
-              <h4 className="text-sm font-bold tracking-wide">Nexus Dark Mode</h4>
-              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                Warm charcoal canvas with vibrant coral-orange accents. Ideal for late-night programming sessions.
-              </p>
-            </div>
-          </button>
-
-          {/* Light Mode Card (ailingo Inspired) */}
-          <button
-            onClick={() => selectTheme("light")}
-            className={`p-6 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-44 cursor-pointer group ${
-              theme === "light"
-                ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[0_0_20px_rgba(34,197,94,0.15)]"
-                : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
-            }`}
-          >
-            <div className="flex justify-between items-center w-full">
-              <span className="text-3xl p-2.5 rounded-xl bg-[var(--bg-primary)] group-hover:scale-110 transition-transform">
-                ☀️
-              </span>
-              {theme === "light" && (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)] border border-[var(--accent)] font-mono uppercase tracking-wider">
-                  Active
-                </span>
-              )}
-            </div>
-            <div className="mt-4">
-              <h4 className="text-sm font-bold tracking-wide">ailingo Light Mode</h4>
-              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                Clean white and pastel gray canvas with dynamic emerald-green highlights. Beautiful and crisp.
-              </p>
-            </div>
-          </button>
         </div>
 
         <hr className="border-[var(--border)]" />

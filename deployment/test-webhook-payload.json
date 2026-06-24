@@ -1,0 +1,31 @@
+{
+  "action": "opened",
+  "pull_request": {
+    "number": 4,
+    "title": "Test/email notification fix",
+    "body": "Test PR to verify n8n email notification workflow",
+    "html_url": "https://github.com/Anirudh-saiA/AI-Engineer-OS/pull/4",
+    "diff_url": "https://github.com/Anirudh-saiA/AI-Engineer-OS/pull/4.diff",
+    "url": "https://api.github.com/repos/Anirudh-saiA/AI-Engineer-OS/pulls/4",
+    "head": {
+      "sha": "576f0e1",
+      "ref": "test/email-notification-fix"
+    },
+    "base": {
+      "ref": "main"
+    },
+    "user": {
+      "login": "Anirudh-saiA",
+      "avatar_url": "https://github.com/Anirudh-saiA.png"
+    },
+    "additions": 1,
+    "deletions": 0,
+    "changed_files": 1,
+    "commits_url": "https://api.github.com/repos/Anirudh-saiA/AI-Engineer-OS/pulls/4/commits",
+    "files_url": "https://api.github.com/repos/Anirudh-saiA/AI-Engineer-OS/pulls/4/files"
+  },
+  "repository": {
+    "full_name": "Anirudh-saiA/AI-Engineer-OS",
+    "name": "AI-Engineer-OS"
+  }
+}

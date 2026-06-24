@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import datetime
+import time
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,16 @@ from app.db.session import SessionLocal
 from app.models.agents import DBAgentTask, DBAgentOutput, DBWorkflowLog
 from app.core.knowledge_base import ALL_KB_ENTRIES
 from app.core.semantic_search import semantic_search
+
+from app.core.agents.memory import SharedMemory
+from app.models.workflow_state import DBWorkflowState, DBSharedMemory
+from app.core.agents.coordination_prompts import (
+    PLANNER_PROMPT,
+    RESEARCH_PROMPT,
+    CODER_PROMPT,
+    REVIEWER_PROMPT,
+    DOCUMENTATION_PROMPT
+)
 
 def _call_llm(system_prompt: str, user_prompt: str) -> str:
     """Helper function to call Gemini (primary) or OpenAI (fallback) API."""
@@ -179,8 +190,48 @@ def log_to_db(db: Session, workflow_id: str, agent_id: str, message: str, level:
         print(f"Log save failure: {e}")
 
 
+def save_intermediate_state(db: Session, workflow_id: str, agent_id: str, state: dict, shared_memory_dict: dict):
+    """Saves a state snapshot and commits all shared memory key/values to the DB."""
+    try:
+        # 1. Save state snapshot
+        snapshot = DBWorkflowState(
+            workflow_id=workflow_id,
+            agent_id=agent_id,
+            state_snapshot=state
+        )
+        db.add(snapshot)
+        
+        # 2. Save/Update shared memory entries in DB
+        for category, items in shared_memory_dict.items():
+            if not isinstance(items, dict):
+                continue
+            for key, val in items.items():
+                val_str = json.dumps(val) if not isinstance(val, (str, int, float, bool)) else str(val)
+                # Check if exists
+                existing = db.query(DBSharedMemory).filter(
+                    DBSharedMemory.workflow_id == workflow_id,
+                    DBSharedMemory.category == category,
+                    DBSharedMemory.memory_key == key
+                ).first()
+                if existing:
+                    existing.memory_value = val_str
+                else:
+                    db_mem = DBSharedMemory(
+                        workflow_id=workflow_id,
+                        category=category,
+                        memory_key=key,
+                        memory_value=val_str
+                    )
+                    db.add(db_mem)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[Nodes Persistence] Failed to save intermediate state: {e}")
+
+
 def planner_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Node representing the Project Manager agent (Planner)."""
+    start_time = time.time()
     workflow_id = state["workflow_id"]
     user_request = state["user_request"]
     
@@ -188,8 +239,20 @@ def planner_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         log_to_db(db, workflow_id, "planner", "Planner Agent started analyzing the requirements.", "info")
         
-        system_prompt = "You are a specialized Planner Agent. Break user goals down into step-by-step tasks."
-        plan = _call_llm(system_prompt, f"User Request: {user_request}\n\nFormulate the step-by-step checklist.")
+        # Load and update Shared Memory
+        memory_mgr = SharedMemory(state.get("shared_memory", {}))
+        memory_mgr.write("goals", "user_request", user_request)
+        memory_mgr.write("requirements", "initial_request", user_request)
+        
+        # Add memory context to system prompt
+        memory_context = memory_mgr.get_context_for_agent("planner")
+        full_system_prompt = f"{PLANNER_PROMPT}\n\n{memory_context}"
+        
+        plan = _call_llm(full_system_prompt, f"User Request: {user_request}\n\nFormulate the step-by-step checklist.")
+        
+        # Write back to Shared Memory
+        memory_mgr.write("outputs", "plan", plan)
+        memory_mgr.write("decisions", "selected_architecture", "Determined in step-by-step checklist.")
         
         task = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == workflow_id, DBAgentTask.agent_id == "planner").first()
         if task:
@@ -200,9 +263,44 @@ def planner_node(state: Dict[str, Any]) -> Dict[str, Any]:
             db.commit()
             
         log_to_db(db, workflow_id, "planner", "Planner Agent successfully drafted the execution checklist.", "info")
-        return {"plan": plan, "current_agent": "planner"}
+        
+        # Update timeline
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "planner",
+            "start": start_time,
+            "end": time.time(),
+            "status": "completed"
+        })
+        
+        # Save state snapshot and shared memory in database
+        updated_memory = memory_mgr.get_all()
+        updated_state = {
+            **state,
+            "plan": plan,
+            "current_agent": "planner",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
+        
+        save_intermediate_state(db, workflow_id, "planner", updated_state, updated_memory)
+        
+        return {
+            "plan": plan,
+            "current_agent": "planner",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
     except Exception as e:
         log_to_db(db, workflow_id, "planner", f"Planner Agent failed: {e}", "error")
+        # Update timeline with failure
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "planner",
+            "start": start_time,
+            "end": time.time(),
+            "status": "failed"
+        })
         raise e
     finally:
         db.close()
@@ -210,6 +308,7 @@ def planner_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def research_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Node representing the Researcher agent."""
+    start_time = time.time()
     workflow_id = state["workflow_id"]
     user_request = state["user_request"]
     plan = state["plan"]
@@ -218,6 +317,9 @@ def research_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         log_to_db(db, workflow_id, "research", "Research Agent searching knowledge resources...", "info")
         
+        # Load Shared Memory
+        memory_mgr = SharedMemory(state.get("shared_memory", {}))
+        
         local_kb_insights = ""
         try:
             search_hits = semantic_search(user_request, top_k=2)
@@ -225,13 +327,24 @@ def research_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 local_kb_insights = "\n\nRelevant past troubleshooting contexts found locally:\n"
                 for hit in search_hits:
                     local_kb_insights += f"- [{hit.error_name}]: {hit.root_cause}. Recommended fix: {hit.fix_recommendations[0] if hit.fix_recommendations else ''}\n"
+                    # Save to memory
+                    memory_mgr.write("knowledge", f"kb_{hit.error_name}", {
+                        "root_cause": hit.root_cause,
+                        "fix": hit.fix_recommendations
+                    })
         except Exception as e:
             print(f"Research semantic search bypassed: {e}")
             
         user_prompt = f"User Request: {user_request}\n\nExecution Plan:\n{plan}{local_kb_insights}\n\nSearch and compile technical recommendations, best practices, and code templates."
-        system_prompt = "You are a specialized Research Agent. Output key insights, best practices, references, and recommendations."
         
-        research_notes = _call_llm(system_prompt, user_prompt)
+        # Add memory context to system prompt
+        memory_context = memory_mgr.get_context_for_agent("research")
+        full_system_prompt = f"{RESEARCH_PROMPT}\n\n{memory_context}"
+        
+        research_notes = _call_llm(full_system_prompt, user_prompt)
+        
+        # Write back to memory
+        memory_mgr.write("outputs", "research_notes", research_notes)
         
         task = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == workflow_id, DBAgentTask.agent_id == "research").first()
         if task:
@@ -242,9 +355,42 @@ def research_node(state: Dict[str, Any]) -> Dict[str, Any]:
             db.commit()
             
         log_to_db(db, workflow_id, "research", "Research Agent compiled insights and technical references.", "info")
-        return {"research_notes": research_notes, "current_agent": "research"}
+        
+        # Update timeline
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "research",
+            "start": start_time,
+            "end": time.time(),
+            "status": "completed"
+        })
+        
+        updated_memory = memory_mgr.get_all()
+        updated_state = {
+            **state,
+            "research_notes": research_notes,
+            "current_agent": "research",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
+        
+        save_intermediate_state(db, workflow_id, "research", updated_state, updated_memory)
+        
+        return {
+            "research_notes": research_notes,
+            "current_agent": "research",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
     except Exception as e:
         log_to_db(db, workflow_id, "research", f"Research Agent failed: {e}", "error")
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "research",
+            "start": start_time,
+            "end": time.time(),
+            "status": "failed"
+        })
         raise e
     finally:
         db.close()
@@ -252,6 +398,7 @@ def research_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def coding_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Node representing the Software Engineer agent (Coder)."""
+    start_time = time.time()
     workflow_id = state["workflow_id"]
     user_request = state["user_request"]
     plan = state["plan"]
@@ -266,6 +413,9 @@ def coding_node(state: Dict[str, Any]) -> Dict[str, Any]:
             
         log_to_db(db, workflow_id, "coder", msg, "info")
         
+        # Load memory
+        memory_mgr = SharedMemory(state.get("shared_memory", {}))
+        
         user_prompt = (
             f"User Request: {user_request}\n\n"
             f"Plan:\n{plan}\n\n"
@@ -274,8 +424,14 @@ def coding_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if review_feedback:
             user_prompt += f"Reviewer Feedback:\n{review_feedback}\n\nPlease fix the identified issues."
             
-        system_prompt = "You are a specialized Coding Agent. Write high-quality code. Put code blocks inside markdown blocks."
-        generated_code = _call_llm(system_prompt, user_prompt)
+        # Add memory context
+        memory_context = memory_mgr.get_context_for_agent("coder")
+        full_system_prompt = f"{CODER_PROMPT}\n\n{memory_context}"
+        
+        generated_code = _call_llm(full_system_prompt, user_prompt)
+        
+        # Write output to memory
+        memory_mgr.write("outputs", "generated_code", generated_code)
         
         task = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == workflow_id, DBAgentTask.agent_id == "coder").first()
         if task:
@@ -286,9 +442,42 @@ def coding_node(state: Dict[str, Any]) -> Dict[str, Any]:
             db.commit()
             
         log_to_db(db, workflow_id, "coder", "Coding Agent successfully completed code generation.", "info")
-        return {"generated_code": generated_code, "current_agent": "coder"}
+        
+        # Update timeline
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "coder",
+            "start": start_time,
+            "end": time.time(),
+            "status": "completed"
+        })
+        
+        updated_memory = memory_mgr.get_all()
+        updated_state = {
+            **state,
+            "generated_code": generated_code,
+            "current_agent": "coder",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
+        
+        save_intermediate_state(db, workflow_id, "coder", updated_state, updated_memory)
+        
+        return {
+            "generated_code": generated_code,
+            "current_agent": "coder",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
     except Exception as e:
         log_to_db(db, workflow_id, "coder", f"Coding Agent failed: {e}", "error")
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "coder",
+            "start": start_time,
+            "end": time.time(),
+            "status": "failed"
+        })
         raise e
     finally:
         db.close()
@@ -296,6 +485,7 @@ def coding_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def reviewer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Node representing the QA Reviewer agent."""
+    start_time = time.time()
     workflow_id = state["workflow_id"]
     generated_code = state["generated_code"]
     
@@ -303,10 +493,22 @@ def reviewer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         log_to_db(db, workflow_id, "reviewer", "Reviewer Agent auditing code quality...", "info")
         
-        user_prompt = f"Code to review:\n{generated_code}\n\nCheck for logic bugs, styling violations, and security flaws."
-        system_prompt = "You are a specialized Reviewer Agent. Output a review report. Include '### APPROVED: True' or '### APPROVED: False' clearly in your report."
+        # Load memory
+        memory_mgr = SharedMemory(state.get("shared_memory", {}))
         
-        review_feedback = _call_llm(system_prompt, user_prompt)
+        user_prompt = f"Code to review:\n{generated_code}\n\nCheck for logic bugs, styling violations, and security flaws."
+        
+        # Add memory context
+        memory_context = memory_mgr.get_context_for_agent("reviewer")
+        full_system_prompt = f"{REVIEWER_PROMPT}\n\n{memory_context}"
+        
+        review_feedback = _call_llm(full_system_prompt, user_prompt)
+        
+        # Write to memory
+        memory_mgr.write("outputs", "review_report", review_feedback)
+        
+        approved = "APPROVED: True" in review_feedback
+        memory_mgr.write("decisions", "code_review_approved", approved)
         
         task = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == workflow_id, DBAgentTask.agent_id == "reviewer").first()
         if task:
@@ -316,7 +518,6 @@ def reviewer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             db.add(output)
             db.commit()
             
-        approved = "APPROVED: True" in review_feedback
         log_msg = f"Reviewer Agent inspection complete. Approved: {approved}."
         log_to_db(db, workflow_id, "reviewer", log_msg, "info")
         
@@ -325,9 +526,43 @@ def reviewer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if not approved:
             retry += 1
             
-        return {"review_feedback": review_feedback, "current_agent": "reviewer", "retry_count": retry}
+        # Update timeline
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "reviewer",
+            "start": start_time,
+            "end": time.time(),
+            "status": "completed"
+        })
+        
+        updated_memory = memory_mgr.get_all()
+        updated_state = {
+            **state,
+            "review_feedback": review_feedback,
+            "current_agent": "reviewer",
+            "retry_count": retry,
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
+        
+        save_intermediate_state(db, workflow_id, "reviewer", updated_state, updated_memory)
+        
+        return {
+            "review_feedback": review_feedback,
+            "current_agent": "reviewer",
+            "retry_count": retry,
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
     except Exception as e:
         log_to_db(db, workflow_id, "reviewer", f"Reviewer Agent failed: {e}", "error")
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "reviewer",
+            "start": start_time,
+            "end": time.time(),
+            "status": "failed"
+        })
         raise e
     finally:
         db.close()
@@ -335,6 +570,7 @@ def reviewer_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def documentation_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Node representing the Technical Writer agent (Documentation)."""
+    start_time = time.time()
     workflow_id = state["workflow_id"]
     user_request = state["user_request"]
     generated_code = state["generated_code"]
@@ -343,10 +579,19 @@ def documentation_node(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         log_to_db(db, workflow_id, "documentation", "Documentation Agent starting documentation generation...", "info")
         
-        user_prompt = f"User Request: {user_request}\n\nGenerated Code:\n{generated_code}\n\nDraft a detailed README.md manual containing Overview, Installation instructions, and usage details."
-        system_prompt = "You are a specialized Documentation Agent. Create README, setup instructions, and deployment guides."
+        # Load memory
+        memory_mgr = SharedMemory(state.get("shared_memory", {}))
         
-        documentation = _call_llm(system_prompt, user_prompt)
+        user_prompt = f"User Request: {user_request}\n\nGenerated Code:\n{generated_code}\n\nDraft a detailed README.md manual containing Overview, Installation instructions, and usage details."
+        
+        # Add memory context
+        memory_context = memory_mgr.get_context_for_agent("documentation")
+        full_system_prompt = f"{DOCUMENTATION_PROMPT}\n\n{memory_context}"
+        
+        documentation = _call_llm(full_system_prompt, user_prompt)
+        
+        # Write to memory
+        memory_mgr.write("outputs", "documentation", documentation)
         
         task = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == workflow_id, DBAgentTask.agent_id == "documentation").first()
         if task:
@@ -357,9 +602,43 @@ def documentation_node(state: Dict[str, Any]) -> Dict[str, Any]:
             db.commit()
             
         log_to_db(db, workflow_id, "documentation", "Documentation Agent successfully generated manual files.", "info")
-        return {"documentation": documentation, "current_agent": "documentation"}
+        
+        # Update timeline
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "documentation",
+            "start": start_time,
+            "end": time.time(),
+            "status": "completed"
+        })
+        
+        updated_memory = memory_mgr.get_all()
+        updated_state = {
+            **state,
+            "documentation": documentation,
+            "current_agent": "documentation",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
+        
+        save_intermediate_state(db, workflow_id, "documentation", updated_state, updated_memory)
+        
+        return {
+            "documentation": documentation,
+            "current_agent": "documentation",
+            "shared_memory": updated_memory,
+            "execution_timeline": timeline
+        }
     except Exception as e:
         log_to_db(db, workflow_id, "documentation", f"Documentation Agent failed: {e}", "error")
+        timeline = list(state.get("execution_timeline", []))
+        timeline.append({
+            "agent": "documentation",
+            "start": start_time,
+            "end": time.time(),
+            "status": "failed"
+        })
         raise e
     finally:
         db.close()
+

@@ -1,6 +1,7 @@
 import uuid
 import datetime
 import time
+import json
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -17,11 +18,13 @@ from app.models.agents import (
     DBWorkflowLog,
     DBWorkflowHistory
 )
+from app.models.workflow_state import DBWorkflowState, DBSharedMemory
 from app.core.agents.graph import agent_app
 from app.core.agents.nodes import (
     _call_llm,
     log_to_db
 )
+from app.core.agents.router import route_task
 
 router = APIRouter()
 
@@ -31,6 +34,7 @@ router = APIRouter()
 
 class WorkflowSubmission(BaseModel):
     user_request: str = Field(..., description="The target requirement or engineering task to accomplish")
+    task_type: Optional[str] = Field(None, description="Optional pre-classified task type: documentation, code, review, architecture, full")
 
 class TaskSubmission(BaseModel):
     agent_id: str = Field(..., description="The agent role id: planner, research, coder, reviewer, documentation")
@@ -53,23 +57,37 @@ class DocSubmission(BaseModel):
 # BACKGROUND RUNNER
 # =============================================================================
 
-def run_workflow_background(workflow_id: str, user_request: str):
+def run_workflow_background(workflow_id: str, user_request: str, task_type: Optional[str] = None, state_to_resume: Optional[dict] = None):
     """Executes compiled LangGraph state workflow in a background worker."""
     start_time = time.time()
     db = SessionLocal()
     try:
-        # Initial workflow state
-        initial_state = {
-            "user_request": user_request,
-            "current_agent": "",
-            "plan": "",
-            "research_notes": "",
-            "generated_code": "",
-            "review_feedback": "",
-            "documentation": "",
-            "workflow_id": workflow_id,
-            "retry_count": 0
-        }
+        if state_to_resume:
+            initial_state = state_to_resume
+            log_to_db(db, workflow_id, "system", f"Workflow execution resumed from agent state: {initial_state.get('current_agent')}.", "info")
+            # Update workflow status to running if it was failed/paused
+            workflow = db.query(DBWorkflow).filter(DBWorkflow.id == workflow_id).first()
+            if workflow:
+                workflow.status = "running"
+                db.commit()
+        else:
+            # Initial workflow state
+            initial_state = {
+                "user_request": user_request,
+                "current_agent": "",
+                "plan": "",
+                "research_notes": "",
+                "generated_code": "",
+                "review_feedback": "",
+                "documentation": "",
+                "workflow_id": workflow_id,
+                "retry_count": 0,
+                "task_type": task_type,
+                "routing_decision": [],
+                "skipped_agents": [],
+                "shared_memory": {},
+                "execution_timeline": []
+            }
         
         # Invoke LangGraph
         result = agent_app.invoke(initial_state)
@@ -84,13 +102,18 @@ def run_workflow_background(workflow_id: str, user_request: str):
             workflow.status = "completed"
             
             # Write History
-            history = DBWorkflowHistory(
-                workflow_id=workflow_id,
-                summary=f"Successfully completed multi-agent task: {user_request[:100]}...",
-                result_status="completed",
-                duration_seconds=duration
-            )
-            db.add(history)
+            history = db.query(DBWorkflowHistory).filter(DBWorkflowHistory.workflow_id == workflow_id).first()
+            if not history:
+                history = DBWorkflowHistory(
+                    workflow_id=workflow_id,
+                    summary=f"Successfully completed multi-agent task: {user_request[:100]}...",
+                    result_status="completed",
+                    duration_seconds=duration
+                )
+                db.add(history)
+            else:
+                history.result_status = "completed"
+                history.duration_seconds = (history.duration_seconds or 0) + duration
             
             # Award +20 XP for running agent workflow
             profile = db.query(profile_models.LearningProfile).filter(profile_models.LearningProfile.user_id == workflow.user_id).first()
@@ -98,6 +121,17 @@ def run_workflow_background(workflow_id: str, user_request: str):
                 profile.xp_points += 20
                 
             db.commit()
+            
+        # Update skipped agents to 'skipped' in DB
+        skipped_agents = result.get("skipped_agents", [])
+        for agent_id in skipped_agents:
+            db_task = db.query(DBAgentTask).filter(
+                DBAgentTask.workflow_id == workflow_id,
+                DBAgentTask.agent_id == agent_id
+            ).first()
+            if db_task:
+                db_task.status = "skipped"
+        db.commit()
             
     except Exception as e:
         db.rollback()
@@ -107,13 +141,18 @@ def run_workflow_background(workflow_id: str, user_request: str):
         workflow = db.query(DBWorkflow).filter(DBWorkflow.id == workflow_id).first()
         if workflow:
             workflow.status = "failed"
-            history = DBWorkflowHistory(
-                workflow_id=workflow_id,
-                summary=f"Failed task: {user_request[:100]}. Error: {str(e)}",
-                result_status="failed",
-                duration_seconds=duration
-            )
-            db.add(history)
+            history = db.query(DBWorkflowHistory).filter(DBWorkflowHistory.workflow_id == workflow_id).first()
+            if not history:
+                history = DBWorkflowHistory(
+                    workflow_id=workflow_id,
+                    summary=f"Failed task: {user_request[:100]}. Error: {str(e)}",
+                    result_status="failed",
+                    duration_seconds=duration
+                )
+                db.add(history)
+            else:
+                history.result_status = "failed"
+                history.duration_seconds = (history.duration_seconds or 0) + duration
             db.commit()
     finally:
         db.close()
@@ -164,12 +203,202 @@ def trigger_agent_workflow(
     log_to_db(db, workflow_id, "system", f"Multi-Agent System initiated. User request: '{submission.user_request}'", "info")
     
     # 4. Enqueue background runner
-    background_tasks.add_task(run_workflow_background, workflow_id, submission.user_request)
+    background_tasks.add_task(run_workflow_background, workflow_id, submission.user_request, submission.task_type)
     
     return {
         "workflow_id": workflow_id,
         "status": "running",
         "message": "Multi-agent LangGraph workflow running in background."
+    }
+
+
+@router.post("/workflow/route")
+def get_routing_preview(
+    submission: WorkflowSubmission,
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Classifies the user request and previews the agent routing path
+    without initiating execution.
+    """
+    try:
+        routing_res = route_task(submission.user_request, submission.task_type)
+        return routing_res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workflow/{id}/status")
+def get_workflow_execution_status(
+    id: str,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Returns the dynamic execution status, active routing decision,
+    and progress estimation of a running workflow.
+    """
+    user_id = token_data["uid"]
+    wf = db.query(DBWorkflow).filter(DBWorkflow.id == id, DBWorkflow.user_id == user_id).first()
+    if not wf:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    # Fetch latest intermediate state snapshot to get routing
+    latest_state = db.query(DBWorkflowState).filter(DBWorkflowState.workflow_id == id).order_by(DBWorkflowState.created_at.desc()).first()
+    
+    routing_decision = []
+    skipped_agents = []
+    current_agent = "orchestrator"
+    
+    if latest_state:
+        snap = latest_state.state_snapshot
+        routing_decision = snap.get("routing_decision", [])
+        skipped_agents = snap.get("skipped_agents", [])
+        current_agent = snap.get("current_agent", "orchestrator")
+    else:
+        # Default or fallback before orchestrator runs
+        routing_decision = ["planner", "research", "coder", "reviewer", "documentation"]
+        
+    # Calculate progress percent based on tasks completed
+    tasks = db.query(DBAgentTask).filter(DBAgentTask.workflow_id == id).all()
+    active_tasks = [t for t in tasks if t.agent_id in routing_decision]
+    
+    completed_count = sum(1 for t in active_tasks if t.status == "completed")
+    total_active = len(active_tasks)
+    
+    progress_percent = int((completed_count / total_active) * 100) if total_active > 0 else 0
+    if wf.status == "completed":
+        progress_percent = 100
+        current_agent = "completed"
+
+    return {
+        "workflow_id": id,
+        "status": wf.status,
+        "current_agent": current_agent,
+        "routing_decision": routing_decision,
+        "skipped_agents": skipped_agents,
+        "progress_percent": progress_percent,
+        "created_at": wf.created_at.isoformat(),
+        "updated_at": wf.updated_at.isoformat()
+    }
+
+
+@router.get("/workflow/{id}/state")
+def get_workflow_state(
+    id: str,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Retrieves the complete state snapshot history and shared memory
+    key-values for a given workflow execution.
+    """
+    user_id = token_data["uid"]
+    wf = db.query(DBWorkflow).filter(DBWorkflow.id == id, DBWorkflow.user_id == user_id).first()
+    if not wf:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    # Fetch latest state snapshot
+    latest_state = db.query(DBWorkflowState).filter(DBWorkflowState.workflow_id == id).order_by(DBWorkflowState.created_at.desc()).first()
+    state_snap = latest_state.state_snapshot if latest_state else {}
+
+    # Fetch shared memory database records
+    mem_records = db.query(DBSharedMemory).filter(DBSharedMemory.workflow_id == id).all()
+    
+    shared_memory = {}
+    for r in mem_records:
+        if r.category not in shared_memory:
+            shared_memory[r.category] = {}
+        try:
+            val = json.loads(r.memory_value)
+        except Exception:
+            val = r.memory_value
+        shared_memory[r.category][r.memory_key] = val
+
+    return {
+        "workflow_id": id,
+        "status": wf.status,
+        "state_snapshot": state_snap,
+        "shared_memory": shared_memory
+    }
+
+
+@router.get("/workflow/{id}/timeline")
+def get_workflow_timeline(
+    id: str,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Retrieves the execution duration logs and status timing
+    for each agent node in the pipeline.
+    """
+    user_id = token_data["uid"]
+    wf = db.query(DBWorkflow).filter(DBWorkflow.id == id, DBWorkflow.user_id == user_id).first()
+    if not wf:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    # Retrieve timeline from the latest state snapshot
+    latest_state = db.query(DBWorkflowState).filter(DBWorkflowState.workflow_id == id).order_by(DBWorkflowState.created_at.desc()).first()
+    timeline = []
+    if latest_state:
+        timeline = latest_state.state_snapshot.get("execution_timeline", [])
+        
+    return {
+        "workflow_id": id,
+        "timeline": timeline
+    }
+
+
+@router.post("/workflow/{id}/resume")
+def resume_workflow(
+    id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    """
+    Resumes an interrupted or failed workflow from the last recorded
+    intermediate state checkpoint.
+    """
+    user_id = token_data["uid"]
+    wf = db.query(DBWorkflow).filter(DBWorkflow.id == id, DBWorkflow.user_id == user_id).first()
+    if not wf:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+        
+    if wf.status == "completed":
+        raise HTTPException(status_code=400, detail="Cannot resume a completed workflow")
+
+    # Fetch latest intermediate state checkpoint
+    latest_state = db.query(DBWorkflowState).filter(DBWorkflowState.workflow_id == id).order_by(DBWorkflowState.created_at.desc()).first()
+    if not latest_state:
+        # Fallback: start new execution
+        log_to_db(db, id, "system", "No intermediate state checkpoint found. Starting workflow from scratch.", "warning")
+        background_tasks.add_task(run_workflow_background, id, wf.name)
+        return {"status": "started", "message": "Workflow started from scratch (no checkpoints found)."}
+
+    state_snap = latest_state.state_snapshot
+    
+    # Enqueue background execution starting from checkpoint state
+    background_tasks.add_task(run_workflow_background, id, wf.name, None, state_snap)
+    
+    # Reset corresponding agent task statuses in the DB back to pending or running
+    # if they were failed/cancelled
+    failed_tasks = db.query(DBAgentTask).filter(
+        DBAgentTask.workflow_id == id,
+        DBAgentTask.status == "failed"
+    ).all()
+    for task in failed_tasks:
+        task.status = "pending"
+    
+    wf.status = "running"
+    db.commit()
+    
+    log_to_db(db, id, "system", f"Workflow execution resume request received.", "info")
+    
+    return {
+        "status": "running",
+        "message": "Workflow resume enqueued in background."
     }
 
 
@@ -329,3 +558,4 @@ def get_workflow_logs(
         }
         for log in logs
     ]
+

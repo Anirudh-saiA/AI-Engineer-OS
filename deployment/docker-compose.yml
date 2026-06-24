@@ -141,6 +141,19 @@ services:
     networks:
       - aios-network
 
+  # ============================================================================
+  # Cloudflared: Tunnel to expose n8n webhooks to the internet
+  # ============================================================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: aios-cloudflared
+    restart: always
+    command: tunnel --no-autoupdate --url http://n8n:5678
+    depends_on:
+      - n8n
+    networks:
+      - aios-network
+
 volumes:
   postgres-data:
     name: aios-postgres-data

@@ -75,58 +75,6 @@ export default function DashboardTab({
 }: DashboardTabProps) {
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        {/* Stat Card 1 */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between shadow-sm border border-[var(--border)] hover:border-[var(--accent)] transition-all">
-          <div>
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">FastAPI Gateway</p>
-            <h3 className="text-xl font-black mt-1">Uvicorn</h3>
-            <p className="text-[9px] font-mono mt-1 font-bold" style={{ color: fastapiOnline ? "var(--success)" : "var(--error)" }}>
-              {fastapiOnline ? "● Healthy" : "○ Locked"}
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-[var(--accent-soft)] text-[var(--accent-text)]">
-            ⚡
-          </div>
-        </div>
-
-        {/* Stat Card 2 */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between shadow-sm border border-[var(--border)] transition-all">
-          <div>
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Postgres DB</p>
-            <h3 className="text-xl font-black mt-1">Port 5434</h3>
-            <p className="text-[9px] font-mono mt-1 font-bold text-[var(--success)]">● Pool Active</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-[var(--accent-soft)] text-[var(--accent-text)]">
-            🐘
-          </div>
-        </div>
-
-        {/* Stat Card 3 */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between shadow-sm border border-[var(--border)] transition-all">
-          <div>
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Qdrant Vector</p>
-            <h3 className="text-xl font-black mt-1">Port 6333</h3>
-            <p className="text-[9px] font-mono mt-1 font-bold text-[var(--accent-text)]">● Cosine online</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-[var(--accent-soft)] text-[var(--accent-text)]">
-            🎯
-          </div>
-        </div>
-
-        {/* Stat Card 4 */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between shadow-sm border border-[var(--border)] transition-all">
-          <div>
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Workspace</p>
-            <h3 className="text-xl font-black mt-1">AI-OS</h3>
-            <p className="text-[9px] font-mono mt-1 font-bold text-[var(--accent-text)]">Branch: main</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-[var(--accent-soft)] text-[var(--accent-text)]">
-            📂
-          </div>
-        </div>
-      </div>
 
       {/* ═══════ TODAY'S PLAN (PERSONAL AI COACH) CHECKLIST ═══════ */}
       <div className="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-md border border-[var(--border)]">
@@ -823,103 +771,47 @@ export default function DashboardTab({
         </div>
       </div>
 
-      {/* Console + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Console Terminal */}
-        <div className="lg:col-span-8 glass-card rounded-2xl p-6 flex flex-col min-h-[400px] border border-[var(--border)]">
-          <div className="flex items-center justify-between pb-3 mb-4" style={{ borderBottom: "1px solid var(--border)" }}>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full flex items-center justify-center bg-[var(--accent-soft)]">
-                <span className="w-1.5 h-1.5 rounded-full animate-ping bg-[var(--accent)]"></span>
-              </span>
-              <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400">Cognitive OS Console</h3>
-            </div>
-            <button 
-              onClick={() => setLogs([])}
-              className="text-[10px] font-mono cursor-pointer transition-colors text-slate-400 hover:text-white"
-            >
-              Clear
-            </button>
-          </div>
-
-          <div className="flex-1 rounded-xl p-4 font-mono text-[12px] leading-7 overflow-y-auto space-y-1 max-h-[300px] bg-[var(--bg-code)] text-[var(--text-code)] border border-white/5">
-            {logs.map((log, idx) => {
-              let color = "#a1a1aa";
-              if (log.type === "system") color = "#818cf8";
-              else if (log.type === "success") color = "#4ade80";
-              else if (log.type === "config") color = "#22d3ee";
-              else if (log.type === "error") color = "#f87171";
-              else if (log.type === "info") color = "#fbbf24";
-              return (
-                <div key={idx} style={{ color }} className="font-semibold">
-                  {log.text}
-                </div>
-              );
-            })}
-            <div className="pt-2 flex items-center gap-1 border-t border-white/5 text-slate-200">
-              <span className="font-bold text-[var(--accent)]">$</span>
-              <span className="animate-cursor-blink">
-                aios-agent --active
-              </span>
+      {/* ═══════ UPCOMING COURSES ═══════ */}
+      <div className="rounded-[24px] p-6 md:p-8 relative overflow-hidden shadow-sm border border-gray-100 bg-[#fbfbfb]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 mb-6 border-b border-gray-200 relative z-10">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl animate-float">🚀</span>
+            <div>
+              <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-[#111827]">
+                Upcoming Career Paths
+              </h3>
+              <p className="text-xs font-semibold mt-0.5 text-[#94a3b8]">
+                Register interest for specialized bootcamps
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Developer Tools + Module Maps */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="glass-card rounded-2xl p-6 border border-[var(--border)]">
-            <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2 border-b border-[var(--border)] text-[var(--accent-text)]">
-              Developer Tools
-            </h3>
-            <div className="space-y-3">
-              <button 
-                onClick={fetchStatus}
-                className="btn-accent w-full py-2.5 px-4 rounded-xl text-xs cursor-pointer"
-              >
-                Sync API Gateway Status
-              </button>
-              <button 
-                onClick={() => {
-                  addLog("[SYSTEM] Instantiating Sandboxed Docker Container...", "system");
-                  setTimeout(() => addLog("[SUCCESS] Sandbox online at localhost:9001 (Ubuntu 22.04)", "success"), 1000);
-                }}
-                className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs cursor-pointer"
-              >
-                Launch Sandbox Container
-              </button>
-              <button 
-                onClick={() => {
-                  addLog("[SYSTEM] Running standard test execution suite...", "system");
-                  setTimeout(() => addLog("[SUCCESS] Complete check passed. 0 errors, 12 warnings.", "success"), 800);
-                }}
-                className="btn-outline w-full py-2.5 px-4 rounded-xl text-xs cursor-pointer"
-              >
-                Run Test Suites
-              </button>
+        <div className="flex flex-wrap gap-4 relative z-10">
+          {[
+            "AI Engineer",
+            "AI and Data Scientist",
+            "Data Engineer",
+            "Data Analyst",
+            "MLOps"
+          ].map((course, i) => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-[#111827] shadow-sm overflow-hidden relative cursor-not-allowed group min-w-[240px] flex-1 max-w-[32%]">
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#1e293b]"></div>
+              <span className="font-bold text-sm text-white z-10 pl-6">{course}</span>
+              <svg className="w-5 h-5 text-slate-500 z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="glass-card rounded-2xl p-6 border border-[var(--border)]">
-            <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider mb-4 pb-2 border-b border-[var(--border)] text-slate-400">
-              Module Maps
-            </h3>
-            <ul className="space-y-3 font-mono text-[11px]">
-              <li className="flex items-center justify-between pb-1.5 border-b border-[var(--border)]">
-                <span className="font-bold text-[var(--accent-text)]">/frontend</span>
-                <span className="font-semibold text-[var(--text-secondary)]">Next.js v16</span>
-              </li>
-              <li className="flex items-center justify-between pb-1.5 border-b border-[var(--border)]">
-                <span className="font-bold text-[var(--accent-text)]">/backend</span>
-                <span className="font-semibold text-[var(--text-secondary)]">FastAPI v0.110</span>
-              </li>
-              <li className="flex items-center justify-between pb-1.5 border-b border-[var(--border)]">
-                <span className="font-bold text-[var(--accent-text)]">/rag-system</span>
-                <span className="font-semibold text-[var(--text-secondary)]">LlamaIndex/Qdrant</span>
-              </li>
-            </ul>
-          </div>
+        <div className="mt-8 text-center relative z-10">
+          <span className="inline-block px-4 py-2 rounded-full border border-dotted border-slate-300 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            COMING SOON
+          </span>
         </div>
       </div>
+
     </div>
   );
 }
