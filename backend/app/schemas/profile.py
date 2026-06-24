@@ -94,6 +94,7 @@ class UserProfileResponse(BaseModel):
     country: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
+    email: Optional[str] = None
 
     # Skill indicators
     skills: dict = {}
@@ -140,6 +141,7 @@ class ProfileUpdateRequest(BaseModel):
     country: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
+    email: Optional[str] = None
 
 class DailyTaskSchema(BaseModel):
     id: int

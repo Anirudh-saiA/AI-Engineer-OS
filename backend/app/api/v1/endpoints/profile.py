@@ -177,7 +177,8 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         phone_number=profile.phone_number,
         country=profile.country,
         city=profile.city,
-        postal_code=profile.postal_code
+        postal_code=profile.postal_code,
+        email=user_record.email if user_record else current_user.get("email")
     )
 
 @router.put("/me", response_model=schemas.UserProfileResponse)
@@ -209,6 +210,10 @@ def update_user_profile(
         profile.city = data.city
     if data.postal_code is not None:
         profile.postal_code = data.postal_code
+        
+    user_record = db.query(models.User).filter(models.User.id == uid).first()
+    if data.email is not None and user_record:
+        user_record.email = data.email
         
     db.commit()
     return get_user_profile(db=db, current_user=current_user)

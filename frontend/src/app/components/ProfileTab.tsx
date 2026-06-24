@@ -21,6 +21,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
     last_name: "",
     date_of_birth: "",
     phone_number: "",
+    email: "",
     country: "",
     city: "",
     postal_code: ""
@@ -45,6 +46,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
           last_name: data.last_name || "",
           date_of_birth: data.date_of_birth || "",
           phone_number: data.phone_number || "",
+          email: data.email || "",
           country: data.country || "",
           city: data.city || "",
           postal_code: data.postal_code || ""
@@ -114,6 +116,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
     formData.last_name,
     formData.date_of_birth,
     formData.phone_number,
+    formData.email,
     formData.country,
     formData.city,
     formData.postal_code
@@ -210,7 +213,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
               <button 
                 onClick={() => {
                   setIsEditingPersonal(false);
-                  setFormData(prev => ({...prev, first_name: profile.first_name || "", last_name: profile.last_name || "", date_of_birth: profile.date_of_birth || "", phone_number: profile.phone_number || ""}));
+                  setFormData(prev => ({...prev, first_name: profile.first_name || "", last_name: profile.last_name || "", date_of_birth: profile.date_of_birth || "", phone_number: profile.phone_number || "", email: profile.email || ""}));
                 }}
                 className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold transition-all cursor-pointer"
               >
@@ -276,7 +279,16 @@ export default function ProfileTab({ user }: ProfileTabProps) {
           {/* Email Address */}
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-400">Email Address</p>
-            <p className="font-semibold text-teal-900">{user?.email || "—"}</p>
+            {!isEditingPersonal ? (
+              <p className="font-semibold text-teal-900">{profile.email || "—"}</p>
+            ) : (
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
 
           {/* Phone Number */}
