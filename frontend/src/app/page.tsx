@@ -10,12 +10,13 @@ import DashboardTab from "./components/DashboardTab";
 
 import VectorTab from "./components/VectorTab";
 import AnalyticsTab from "./components/AnalyticsTab";
+import RoadmapTab from "./components/RoadmapTab";
 
 
 import { API_BASE_URL } from "./config";
 import { isPlaceholder } from "./firebase";
 
-type Tab = "dashboard" | "vector" | "analytics" | "settings" | "profile";
+type Tab = "dashboard" | "roadmaps" | "vector" | "analytics" | "settings" | "profile";
 
 interface Message {
   id: string;
@@ -1564,8 +1565,7 @@ const fetchProfile = async () => {
               
               {([
                 { id: "dashboard" as Tab, label: "Dashboard", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg> },
-
-
+                { id: "roadmaps" as Tab, label: "Roadmaps", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> },
                 { id: "vector" as Tab, label: "Vector Search", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> },
                 { id: "analytics" as Tab, label: "Analytics", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg> },
 
@@ -1651,8 +1651,7 @@ const fetchProfile = async () => {
                 <div className="min-w-0">
                   <h2 className="text-sm md:text-lg font-bold flex items-center gap-2 truncate" style={{ color: "var(--text-primary)" }}>
                     {activeTab === "dashboard" && "Dashboard"}
-
-
+                    {activeTab === "roadmaps" && "Roadmaps"}
                     {activeTab === "vector" && "Vector Search"}
                     {activeTab === "analytics" && "Project Analytics"}
 
@@ -1721,6 +1720,25 @@ const fetchProfile = async () => {
 
 
 
+
+              {/* ═══════ TAB: ROADMAPS ═══════ */}
+              {activeTab === "roadmaps" && (
+                <RoadmapTab
+                  profileData={profileData}
+                  roadmap={roadmap}
+                  selectedRoadmapTrack={selectedRoadmapTrack}
+                  setSelectedRoadmapTrack={setSelectedRoadmapTrack}
+                  staticRoadmaps={staticRoadmaps}
+                  activeDetailSubNode={activeDetailSubNode}
+                  setActiveDetailSubNode={setActiveDetailSubNode}
+                  checkedTasks={checkedTasks}
+                  toggleChecklistTask={toggleChecklistTask}
+                  addLog={addLog}
+                  user={user}
+                  API_BASE_URL={API_BASE_URL}
+                  fetchProfile={fetchProfile}
+                />
+              )}
 
               {/* ═══════ TAB 4: VECTOR RAG EXPLORER ═══════ */}
               {activeTab === "vector" && (
