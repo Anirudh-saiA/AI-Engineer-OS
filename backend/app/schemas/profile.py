@@ -87,6 +87,13 @@ class UserProfileResponse(BaseModel):
     bio: Optional[str] = None
     github_link: Optional[str] = None
     linkedin_link: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    phone_number: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
 
     # Skill indicators
     skills: dict = {}
@@ -124,6 +131,15 @@ class UserSettingsSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProfileUpdateRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    phone_number: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
 
 class DailyTaskSchema(BaseModel):
     id: int

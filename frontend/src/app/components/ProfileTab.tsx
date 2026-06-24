@@ -7,29 +7,26 @@ interface ProfileTabProps {
   user: any;
 }
 
-interface ProjectData {
-  title: string;
-  description: string;
-  repository_link: string;
-  status: "in_progress" | "completed";
-}
-
 export default function ProfileTab({ user }: ProfileTabProps) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [addingProject, setAddingProject] = useState(false);
-  const [projTitle, setProjTitle] = useState("");
-  const [projDesc, setProjDesc] = useState("");
-  const [projRepo, setProjRepo] = useState("");
-  const [projStatus, setProjStatus] = useState<"in_progress" | "completed">("completed");
-  const [projCategory, setProjCategory] = useState("RAG Systems");
-  const [projHours, setProjHours] = useState<number>(0);
-  const [projSkills, setProjSkills] = useState("");
-  const [submittingProject, setSubmittingProject] = useState(false);
+  
+  // Edit mode states
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  
+  // Form states
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
+    phone_number: "",
+    country: "",
+    city: "",
+    postal_code: ""
+  });
 
-  // Heatmap hover states
-  const [tooltipText, setTooltipText] = useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const fetchProfileData = async () => {
     if (!user) return;
@@ -43,6 +40,15 @@ export default function ProfileTab({ user }: ProfileTabProps) {
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
+        setFormData({
+          first_name: data.first_name || "",
+          last_name: data.last_name || "",
+          date_of_birth: data.date_of_birth || "",
+          phone_number: data.phone_number || "",
+          country: data.country || "",
+          city: data.city || "",
+          postal_code: data.postal_code || ""
+        });
       }
     } catch (err) {
       console.error("Failed to load developer profile data:", err);
@@ -55,626 +61,329 @@ export default function ProfileTab({ user }: ProfileTabProps) {
     fetchProfileData();
   }, [user]);
 
-  const handleAddProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!projTitle.trim() || !user) return;
-    setSubmittingProject(true);
-
+  const handleSave = async (section: "personal" | "address") => {
+    setSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/profile/project`, {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/me`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.uid}`,
         },
-        body: JSON.stringify({
-          title: projTitle,
-          description: projDesc,
-          repository_link: projRepo || null,
-          status: projStatus,
-          category: projCategory,
-          hours_spent: Number(projHours) || 0,
-          skills: projSkills || null,
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (res.ok) {
-        setProjTitle("");
-        setProjDesc("");
-        setProjRepo("");
-        setProjStatus("completed");
-        setProjCategory("RAG Systems");
-        setProjHours(0);
-        setProjSkills("");
-        setAddingProject(false);
-        await fetchProfileData();
+        const updated = await res.json();
+        setProfile(updated);
+        if (section === "personal") setIsEditingPersonal(false);
+        if (section === "address") setIsEditingAddress(false);
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to submit project schema.");
+      alert("Failed to update profile.");
     } finally {
-      setSubmittingProject(false);
+      setSaving(false);
     }
   };
-
-  // Generate contribution heatmap (365 days)
-  const generateHeatmap = () => {
-    const cells = [];
-    
-    for (let i = 0; i < 371; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (371 - i));
-      
-      // Calculate local YYYY-MM-DD date string
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const dayVal = String(date.getDate()).padStart(2, '0');
-      const isoStr = `${year}-${month}-${dayVal}`;
-
-      const isCompleted = profile?.active_days?.includes(isoStr) || false;
-      const val = isCompleted ? 4 : 0;
-      const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      const commitCount = isCompleted ? "Active Study Day 🔥" : "No study activity 💤";
-
-      cells.push({
-        id: i,
-        level: val,
-        dateStr,
-        commitCount,
-      });
-    }
-    return cells;
-  };
-
-  const heatmapCells = generateHeatmap();
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 animate-scale-in">
         <div className="w-12 h-12 border-4 border-[var(--accent-soft)] border-t-[var(--accent)] rounded-full animate-spin"></div>
-        <p className="font-mono text-xs text-slate-400 tracking-wider">Retrieving Developer Credentials...</p>
+        <p className="font-mono text-xs text-slate-400 tracking-wider">Retrieving Profile...</p>
       </div>
     );
   }
 
-  if (!profile || !profile.onboarded) {
+  if (!profile) {
     return (
       <div className="glass-card rounded-3xl p-8 text-center shadow-md max-w-lg mx-auto mt-10 animate-fade-up">
         <span className="text-5xl mb-4 block">🤖</span>
-        <h3 className="text-xl font-black">Developer Profile Uncalibrated</h3>
+        <h3 className="text-xl font-black">Profile Uncalibrated</h3>
         <p className="text-xs text-slate-400 leading-relaxed mt-2">
-          Your learning roadmap, skill indexes, and achievement logs have not been generated yet. Please complete the quick setup wizard first.
+          Your profile could not be loaded.
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-8 animate-fade-up">
-      
-      {/* HEADER SECTION: Premium Profile Card */}
-      <div className="glass-card rounded-3xl p-8 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start gap-8 shadow-md">
-        
-        {/* Soft Background Highlight */}
-        <div className="absolute top-[-30%] right-[-10%] w-[350px] h-[350px] rounded-full bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
+  // Calculate Completion Percentage
+  const fieldsToCheck = [
+    formData.first_name,
+    formData.last_name,
+    formData.date_of_birth,
+    formData.phone_number,
+    formData.country,
+    formData.city,
+    formData.postal_code
+  ];
+  
+  const filledFields = fieldsToCheck.filter(f => f && f.trim().length > 0).length;
+  const totalFields = fieldsToCheck.length;
+  const completionPercent = Math.round((filledFields / totalFields) * 100);
 
+  return (
+    <div className="space-y-6 animate-fade-up max-w-6xl mx-auto">
+      
+      {/* HEADER SECTION: Profile Completion + User Card */}
+      <div className="glass-card rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center md:items-start gap-8 shadow-sm border border-[var(--border)] bg-[var(--bg-card)]">
+        
         {/* Profile Avatar */}
-        <div className="w-24 h-24 rounded-2xl border-2 border-[var(--accent)] p-1 bg-[var(--bg-card)] flex-shrink-0 overflow-hidden shadow-lg relative">
+        <div className="w-24 h-24 rounded-full border-2 p-1 border-gray-200 bg-white flex-shrink-0 overflow-hidden relative">
           {user?.photoURL ? (
-            <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-xl object-cover" />
+            <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
           ) : (
-            <div className="w-full h-full rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-2xl font-bold text-[var(--accent)] uppercase">
-              {profile.full_name?.[0]}
+            <div className="w-full h-full rounded-full bg-orange-100 flex items-center justify-center text-3xl font-bold text-orange-500 uppercase">
+              {profile.first_name?.[0] || profile.full_name?.[0] || "U"}
             </div>
           )}
-          <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[var(--accent)] border-2 border-[var(--bg-card)] animate-pulse"></span>
+          <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-teal-600 border-2 border-white flex items-center justify-center text-white text-[10px]">
+            📷
+          </div>
         </div>
 
         {/* Bio Details */}
-        <div className="flex-1 min-w-0 text-center md:text-left space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-2xl font-extrabold tracking-tight">{profile.full_name}</h3>
-              <p className="text-[10px] font-mono text-[var(--accent)] font-bold uppercase tracking-wider mt-1">
-                {profile.branch_degree || "AI Systems Engineer"} • {profile.college_name || "Self-Taught"}
-              </p>
-            </div>
-            
-            {/* Social Links */}
-            <div className="flex gap-2 justify-center sm:justify-start">
-              {profile.github_link && (
-                <a
-                  href={profile.github_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="py-1.5 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] text-xs font-mono font-bold tracking-wide transition-all shadow-sm"
-                >
-                  GitHub 🐙
-                </a>
-              )}
-              {profile.linkedin_link && (
-                <a
-                  href={profile.linkedin_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold tracking-wide transition-all shadow-sm"
-                >
-                  LinkedIn 💼
-                </a>
-              )}
-            </div>
-          </div>
-
-          <p className="text-slate-400 text-xs leading-relaxed max-w-3xl">
-            {profile.bio || "Building high-performance agent architectures and vector stores inside the AI-Engineer-OS sandbox."}
+        <div className="flex-1 min-w-0 text-center md:text-left space-y-1">
+          <h3 className="text-xl font-bold text-teal-900 tracking-tight">
+            {profile.first_name || profile.last_name 
+              ? `${profile.first_name} ${profile.last_name}`.trim() 
+              : profile.full_name || "New User"}
+          </h3>
+          <p className="text-sm text-slate-500">Admin</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {profile.city && profile.country 
+              ? `${profile.city}, ${profile.country}` 
+              : profile.country || profile.city || "Location not set"}
           </p>
-
-          <div className="flex flex-wrap gap-5 pt-2 justify-center md:justify-start text-[10px] font-mono text-slate-500">
-            <span className="flex items-center gap-1.5">📅 Class of {profile.graduation_year || "2027"}</span>
-            <span className="flex items-center gap-1.5">💡 Style: {profile.learning_style || "project-based"}</span>
-            <span className="flex items-center gap-1.5">⏱️ Focus: {profile.time_availability_mins}m/day</span>
-          </div>
         </div>
 
-      </div>
-
-      {/* MID SECTION: GAMIFIED TELEMETRY */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-        {/* DUOLINGO PANEL: Streaks & XP (4 Cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-8">
-          
-          {/* Flame streak stats */}
-          <div className="glass-card rounded-3xl p-6 text-center space-y-4">
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2 text-left flex items-center gap-1.5">
-              <span>🔥</span> Learning Telemetry (Daily Streak)
-            </h4>
-            
-            <div className="flex justify-center items-center gap-8 py-3">
-              <div>
-                <span className="text-4xl animate-pulse block">🔥</span>
-                <span className="text-2xl font-black block mt-1">{profile.streak_count}</span>
-                <span className="text-[9px] font-mono text-slate-400 uppercase">Day Streak</span>
-              </div>
-              <div className="h-10 w-[1px] bg-[var(--border)]"></div>
-              <div>
-                <span className="text-4xl block">👑</span>
-                <span className="text-2xl font-black block mt-1">{profile.longest_streak}</span>
-                <span className="text-[9px] font-mono text-slate-400 uppercase">Longest Streak</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--accent-soft)] border border-[var(--accent)] rounded-2xl p-3 text-[10px] font-mono text-[var(--accent)] font-semibold">
-              🏆 Earned {profile.xp_points} XP Points Total!
+        {/* Profile Completion Pie Chart */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            {/* SVG Pie Chart */}
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              {/* Background circle */}
+              <path
+                className="text-gray-200"
+                strokeWidth="3.8"
+                stroke="currentColor"
+                fill="none"
+                d="M18 2.0845
+                  a 15.9155 15.9155 0 0 1 0 31.831
+                  a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+              {/* Foreground circle */}
+              <path
+                className="text-orange-500 drop-shadow-md"
+                strokeDasharray={`${completionPercent}, 100`}
+                strokeWidth="3.8"
+                strokeLinecap="round"
+                stroke="currentColor"
+                fill="none"
+                d="M18 2.0845
+                  a 15.9155 15.9155 0 0 1 0 31.831
+                  a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-lg font-black text-teal-900">{completionPercent}%</span>
             </div>
           </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profile Complete</span>
+        </div>
+      </div>
 
-          {/* Achievements Checklist */}
-          <div className="glass-card rounded-3xl p-6 space-y-4">
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2">
-              Unlocked Achievements
-            </h4>
-            
-            {profile.achievements.length === 0 ? (
-              <p className="text-[10px] text-slate-400 font-mono py-2">No achievements unlocked yet.</p>
+      {/* PERSONAL INFORMATION */}
+      <div className="glass-card rounded-3xl p-8 relative shadow-sm border border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="flex justify-between items-center mb-6">
+          <h4 className="text-lg font-bold text-teal-900">Personal Information</h4>
+          {!isEditingPersonal ? (
+            <button 
+              onClick={() => setIsEditingPersonal(true)}
+              className="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            >
+              Edit ✎
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  setIsEditingPersonal(false);
+                  setFormData(prev => ({...prev, first_name: profile.first_name || "", last_name: profile.last_name || "", date_of_birth: profile.date_of_birth || "", phone_number: profile.phone_number || ""}));
+                }}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleSave("personal")}
+                disabled={saving}
+                className="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-8 gap-x-6">
+          {/* First Name */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">First Name</p>
+            {!isEditingPersonal ? (
+              <p className="font-semibold text-teal-900">{profile.first_name || "—"}</p>
             ) : (
-              <div className="space-y-3">
-                {profile.achievements.map((ach: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-3.5 p-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl hover:border-[var(--accent)] transition-all">
-                    <span className="text-2xl p-2 bg-[var(--bg-card)] rounded-xl border border-[var(--border)] shadow-sm">{ach.badge_icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <h5 className="text-[11px] font-bold leading-tight">{ach.title}</h5>
-                      <p className="text-[9px] text-slate-400 leading-normal mt-0.5 truncate">{ach.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
             )}
           </div>
 
-        </div>
-
-        {/* SKILLS PANEL: Neon Skill meters & Projects (8 Cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-8">
-
-          {/* Skill assessment meters */}
-          <div className="glass-card rounded-3xl p-8 space-y-6">
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2">
-              Skill Proficiency Matrix
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-              {Object.entries(profile.skills || {}).map(([skill, val]: any) => (
-                <div key={skill} className="space-y-1.5">
-                  <div className="flex justify-between items-center text-[10px] font-mono">
-                    <span className="font-bold text-slate-300">{skill}</span>
-                    <span className="text-[var(--accent)] font-bold">{val}%</span>
-                  </div>
-                  <div className="w-full bg-[var(--bg-secondary)] h-2 rounded-full overflow-hidden relative border border-[var(--border)]">
-                    <div
-                      className="bg-[var(--accent)] h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(255,107,53,0.3)]"
-                      style={{ width: `${val}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Last Name */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Last Name</p>
+            {!isEditingPersonal ? (
+              <p className="font-semibold text-teal-900">{profile.last_name || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
 
-          {/* Active Focus: Weak Topics & Goals */}
-          <div className="glass-card rounded-3xl p-8 space-y-6">
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2 flex items-center justify-between">
-              <span>🎯 Cognitive Focus & Review Areas</span>
-              <span className="text-[9px] font-semibold text-[var(--accent)] font-mono">Live Sync</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {/* Target Goals */}
-              <div className="space-y-3.5">
-                <h5 className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold">Target Career Goals</h5>
-                {(!profile.career_goals || profile.career_goals.length === 0) ? (
-                  <p className="text-[10px] font-mono text-slate-500">No active goals registered.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2.5">
-                    {profile.career_goals.map((goal: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="py-1.5 px-3 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)] text-[10px] font-extrabold shadow-sm select-none"
-                      >
-                        🚀 {goal}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Weak Topics / Areas for Review */}
-              <div className="space-y-3.5">
-                <h5 className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold text-red-400">Concept Review Needed (Weak Topics)</h5>
-                {(!profile.weak_topics || profile.weak_topics.length === 0) ? (
-                  <p className="text-[10px] font-mono text-[var(--success)] font-semibold flex items-center gap-1">
-                    <span>✨</span> No weak topics identified yet! Keep it up!
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2.5">
-                    {profile.weak_topics.map((topic: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="py-1.5 px-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/25 hover:border-red-400 transition-colors text-[10px] font-extrabold shadow-sm flex items-center gap-1.5"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                        {topic}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Date of Birth */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Date of Birth</p>
+            {!isEditingPersonal ? (
+              <p className="font-semibold text-teal-900">{profile.date_of_birth || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                placeholder="DD-MM-YYYY"
+                value={formData.date_of_birth}
+                onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
 
-        </div>
-
-      </div>
-
-      {/* GIT CONTRIBUTION HEATMAP GRID */}
-      <div className="glass-card rounded-3xl p-8 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-3 mb-6">
-          <div>
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-              Autonomous Contribution Matrix (365 Days Telemetry)
-            </h4>
-            <p className="text-[9px] text-slate-400 font-mono mt-0.5">
-              Tracks active file commits, code updates, and database transaction queries in real-time.
-            </p>
+          {/* Email Address */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Email Address</p>
+            <p className="font-semibold text-teal-900">{user?.email || "—"}</p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[8px] font-mono text-slate-400">
-            <span>Less</span>
-            <span className="w-2 h-2 rounded bg-[var(--bg-secondary)] border border-[var(--border)]"></span>
-            <span className="w-2 h-2 rounded bg-[var(--accent)] opacity-20"></span>
-            <span className="w-2 h-2 rounded bg-[var(--accent)] opacity-50"></span>
-            <span className="w-2 h-2 rounded bg-[var(--accent)] opacity-80"></span>
-            <span className="w-2 h-2 rounded bg-[var(--accent)]"></span>
-            <span>More</span>
+          {/* Phone Number */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Phone Number</p>
+            {!isEditingPersonal ? (
+              <p className="font-semibold text-teal-900">{profile.phone_number || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                value={formData.phone_number}
+                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
-        </div>
 
-        {/* Heatmap Tooltip Container */}
-        {tooltipText && tooltipPos && (
-          <div
-            className="absolute z-40 bg-[var(--bg-card)] border border-[var(--accent)] text-[9px] font-mono text-[var(--text-primary)] py-1.5 px-3 rounded-lg pointer-events-none shadow-md transform -translate-x-1/2 -translate-y-full mt-[-6px]"
-            style={{ left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` }}
-          >
-            <p className="font-bold">{tooltipText}</p>
+          {/* User Role */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">User Role</p>
+            <p className="font-semibold text-teal-900">Admin</p>
           </div>
-        )}
-
-        {/* Mobile Swipe helper */}
-        <div className="sm:hidden flex items-center justify-center gap-1.5 text-[9px] font-mono text-[var(--accent)] bg-[var(--accent-soft)] border border-[var(--accent)] rounded-full px-3 py-1 mb-4 animate-pulse w-fit">
-          <span>👈 Swipe horizontally to view matrix 👉</span>
-        </div>
-
-        {/* Heatmap grid */}
-        <div className="overflow-x-auto py-1">
-          <div className="min-w-[620px] flex gap-[3.5px]">
-            {Array.from({ length: 53 }).map((_, weekIdx) => (
-              <div key={weekIdx} className="flex flex-col gap-[3.5px]">
-                {Array.from({ length: 7 }).map((_, dayIdx) => {
-                  const cellIdx = weekIdx * 7 + dayIdx;
-                  const cell = heatmapCells[cellIdx];
-                  if (!cell) return null;
-
-                  // Dynamic color styles
-                  let cellClass = "bg-[var(--bg-secondary)] border-[var(--border)]";
-                  if (cell.level === 1) cellClass = "bg-[var(--accent)] opacity-25";
-                  if (cell.level === 2) cellClass = "bg-[var(--accent)] opacity-50";
-                  if (cell.level === 3) cellClass = "bg-[var(--accent)] opacity-75";
-                  if (cell.level === 4) cellClass = "bg-[var(--accent)] shadow-[0_0_6px_var(--accent-glow)]";
-
-                  return (
-                    <div
-                      key={dayIdx}
-                      onMouseEnter={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const parentRect = e.currentTarget.offsetParent?.getBoundingClientRect();
-                        if (parentRect) {
-                          setTooltipText(`${cell.commitCount} on ${cell.dateStr}`);
-                          setTooltipPos({
-                            x: rect.left - parentRect.left + rect.width / 2,
-                            y: rect.top - parentRect.top,
-                          });
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        setTooltipText(null);
-                        setTooltipPos(null);
-                      }}
-                      className={`w-[9px] h-[9px] rounded-[1.5px] border border-transparent transition-all cursor-pointer hover:scale-125 ${cellClass}`}
-                    ></div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-between text-[8px] font-mono text-slate-500 mt-3 px-1">
-          <span>June 2025</span>
-          <span>September 2025</span>
-          <span>December 2025</span>
-          <span>March 2026</span>
-          <span>May 2026 (Active)</span>
         </div>
       </div>
 
-      {/* PROJECTS AND SUBMISSIONS ROW */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-        {/* PROJECTS SECTION: List (8 Cols) */}
-        <div className="lg:col-span-8 glass-card rounded-3xl p-8 space-y-6">
-          <div className="flex justify-between items-center border-b border-[var(--border)] pb-3">
-            <h4 className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-              Assigned & Completed Projects
-            </h4>
-            <button
-              onClick={() => setAddingProject(!addingProject)}
-              className="py-1.5 px-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--accent-soft)] border border-[var(--border)] hover:border-[var(--accent)] text-[10px] font-bold transition-all shadow-sm cursor-pointer"
+      {/* ADDRESS SECTION */}
+      <div className="glass-card rounded-3xl p-8 relative shadow-sm border border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="flex justify-between items-center mb-6">
+          <h4 className="text-lg font-bold text-teal-900">Address</h4>
+          {!isEditingAddress ? (
+            <button 
+              onClick={() => setIsEditingAddress(true)}
+              className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold transition-all flex items-center gap-2 cursor-pointer"
             >
-              {addingProject ? "Cancel" : "+ Add Completed Project"}
+              Edit ✎
             </button>
-          </div>
-
-          {/* New project form */}
-          {addingProject && (
-            <form onSubmit={handleAddProject} className="bg-[var(--bg-secondary)] border border-[var(--accent)] rounded-2xl p-6 space-y-5 animate-fade-up">
-              <h5 className="text-xs font-bold text-[var(--accent)] font-mono uppercase tracking-wide">Submit Repository (+150 XP Milestone)</h5>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Project Title</label>
-                  <input
-                    type="text"
-                    value={projTitle}
-                    onChange={(e) => setProjTitle(e.target.value)}
-                    required
-                    placeholder="e.g. Multi-Agent state router"
-                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Repository Link</label>
-                  <input
-                    type="text"
-                    value={projRepo}
-                    onChange={(e) => setProjRepo(e.target.value)}
-                    placeholder="e.g. https://github.com/..."
-                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-mono text-slate-400 uppercase">Short Description</label>
-                <textarea
-                  value={projDesc}
-                  onChange={(e) => setProjDesc(e.target.value)}
-                  rows={2}
-                  placeholder="Outline what features this project implements..."
-                  className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 text-xs focus:outline-none focus:border-[var(--accent)]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Category Track</label>
-                  <select
-                    value={projCategory}
-                    onChange={(e) => setProjCategory(e.target.value)}
-                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-                  >
-                    <option value="RAG Systems">RAG Systems</option>
-                    <option value="AI Agents">AI Agents</option>
-                    <option value="Web Development">Web Development</option>
-                    <option value="Backend Development">Backend Development</option>
-                    <option value="Machine Learning">Machine Learning</option>
-                    <option value="Deep Learning">Deep Learning</option>
-                    <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
-                    <option value="DevOps / MLOps">DevOps / MLOps</option>
-                    <option value="General">General</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Hours Spent</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={projHours || ""}
-                    onChange={(e) => setProjHours(Number(e.target.value))}
-                    placeholder="e.g. 15"
-                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Skills Gained (Tags)</label>
-                  <input
-                    type="text"
-                    value={projSkills}
-                    onChange={(e) => setProjSkills(e.target.value)}
-                    placeholder="e.g. Python, Docker, Qdrant"
-                    className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <label className="text-[9px] font-mono text-slate-400 uppercase">Status:</label>
-                  <select
-                    value={projStatus}
-                    onChange={(e: any) => setProjStatus(e.target.value)}
-                    className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-1.5 text-xs cursor-pointer focus:outline-none focus:border-[var(--accent)]"
-                  >
-                    <option value="completed">Completed</option>
-                    <option value="in_progress">In Progress</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingProject}
-                  className="btn-accent py-2 px-5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  {submittingProject ? "Submitting..." : "Submit Project"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Projects lists */}
-          {profile.projects.length === 0 ? (
-            <div className="text-center py-10">
-              <span className="text-3xl mb-1 block">📂</span>
-              <p className="text-[10px] text-slate-400 font-mono">No projects registered. Link a GitHub repo to begin earning milestones.</p>
-            </div>
           ) : (
-            <div className="space-y-4">
-              {profile.projects.map((proj: any, idx: number) => (
-                <div key={idx} className="p-5 bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] rounded-2xl transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="space-y-2 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h5 className="text-xs font-bold font-sans">{proj.title}</h5>
-                      <span className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] text-[9px] font-mono font-semibold text-slate-400">
-                        📁 {proj.category || "General"}
-                      </span>
-                      <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold font-mono border ${
-                        proj.status === "completed" 
-                          ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]" 
-                          : "bg-amber-500/10 text-amber-500 border-amber-500/25"
-                      }`}>
-                        {proj.status.replace("_", " ").toUpperCase()}
-                      </span>
-                      {proj.hours_spent !== undefined && proj.hours_spent > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[9px] font-mono font-semibold">
-                          ⏱️ {proj.hours_spent} hours
-                        </span>
-                      )}
-                    </div>
-                    
-                    {proj.description && (
-                      <p className="text-[10px] text-slate-400 font-sans leading-relaxed">{proj.description}</p>
-                    )}
-
-                    {proj.skills && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {proj.skills.split(",").map((s: string) => {
-                          const clean = s.trim();
-                          if (!clean) return null;
-                          return (
-                            <span key={clean} className="text-[8px] font-bold font-mono px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] text-slate-400">
-                              #{clean}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {proj.completed_at && (
-                      <p className="text-[9px] font-mono text-slate-500 mt-1">Completed: {new Date(proj.completed_at).toLocaleDateString()}</p>
-                    )}
-                  </div>
-
-                  {proj.repository_link && (
-                    <a
-                      href={proj.repository_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="py-1.5 px-3.5 bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)] text-[10px] font-mono rounded-xl shadow-sm text-center self-start sm:self-center transition-all whitespace-nowrap"
-                    >
-                      View Code 📁
-                    </a>
-                  )}
-                </div>
-              ))}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  setIsEditingAddress(false);
+                  setFormData(prev => ({...prev, country: profile.country || "", city: profile.city || "", postal_code: profile.postal_code || ""}));
+                }}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleSave("address")}
+                disabled={saving}
+                className="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
             </div>
           )}
         </div>
 
-        {/* SYSTEM STATS CARD */}
-        <div className="lg:col-span-4 glass-card rounded-3xl p-8 flex flex-col justify-between space-y-6">
-          <div className="space-y-4">
-            <h4 className="font-mono text-[9px] text-[var(--accent)] font-bold uppercase tracking-wider border-b border-[var(--border)] pb-2">
-              Sandbox Core Systems
-            </h4>
-            <div className="space-y-3 font-mono text-[10px] text-slate-400">
-              <div className="flex justify-between border-b border-[var(--border)] pb-2">
-                <span>Database:</span>
-                <span className="text-[var(--text-primary)] font-bold">PostgreSQL v15</span>
-              </div>
-              <div className="flex justify-between border-b border-[var(--border)] pb-2">
-                <span>Vector Hub:</span>
-                <span className="text-[var(--text-primary)] font-bold">Qdrant Client</span>
-              </div>
-              <div className="flex justify-between border-b border-[var(--border)] pb-2">
-                <span>Max Context:</span>
-                <span className="text-[var(--text-primary)] font-bold">8,192 tokens</span>
-              </div>
-              <div className="flex justify-between">
-                <span>User Role:</span>
-                <span className="text-[var(--accent)] font-bold uppercase">Developer</span>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-8 gap-x-6">
+          {/* Country */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Country</p>
+            {!isEditingAddress ? (
+              <p className="font-semibold text-teal-900">{profile.country || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                value={formData.country}
+                onChange={(e) => setFormData({...formData, country: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
-          
-          <div className="pt-4 border-t border-[var(--border)] text-[9px] font-mono text-slate-500 leading-relaxed">
-            ⚙️ Connect your local container pipelines to register live terminal session logs directly to this heatmap grid.
+
+          {/* City */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">City</p>
+            {!isEditingAddress ? (
+              <p className="font-semibold text-teal-900">{profile.city || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
+          </div>
+
+          {/* Postal Code */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Postal Code</p>
+            {!isEditingAddress ? (
+              <p className="font-semibold text-teal-900">{profile.postal_code || "—"}</p>
+            ) : (
+              <input
+                type="text"
+                value={formData.postal_code}
+                onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
+              />
+            )}
           </div>
         </div>
-
       </div>
-
+      
     </div>
   );
 }

@@ -28,6 +28,14 @@ class LearningProfile(Base):
     graduation_year = Column(Integer, nullable=True)
     bio = Column(Text, nullable=True)
     github_link = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    date_of_birth = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
+    
     linkedin_link = Column(String, nullable=True)
     
     # Skill level variables (1 to 100 range)

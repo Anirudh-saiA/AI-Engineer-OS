@@ -170,8 +170,48 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         experience_deployed=profile.experience_deployed,
         experience_apis=profile.experience_apis,
         experience_worked_ai=profile.experience_worked_ai,
-        interest_areas=interests
+        interest_areas=interests,
+        first_name=profile.first_name,
+        last_name=profile.last_name,
+        date_of_birth=profile.date_of_birth,
+        phone_number=profile.phone_number,
+        country=profile.country,
+        city=profile.city,
+        postal_code=profile.postal_code
     )
+
+@router.put("/me", response_model=schemas.UserProfileResponse)
+def update_user_profile(
+    data: schemas.ProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Update CRM-style developer profile fields.
+    """
+    uid = current_user["uid"]
+    
+    profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not onboarded yet.")
+        
+    if data.first_name is not None:
+        profile.first_name = data.first_name
+    if data.last_name is not None:
+        profile.last_name = data.last_name
+    if data.date_of_birth is not None:
+        profile.date_of_birth = data.date_of_birth
+    if data.phone_number is not None:
+        profile.phone_number = data.phone_number
+    if data.country is not None:
+        profile.country = data.country
+    if data.city is not None:
+        profile.city = data.city
+    if data.postal_code is not None:
+        profile.postal_code = data.postal_code
+        
+    db.commit()
+    return get_user_profile(db=db, current_user=current_user)
 
 @router.post("/onboard")
 def onboard_user(data: schemas.OnboardingSubmit, db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
