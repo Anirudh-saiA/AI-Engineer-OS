@@ -73,9 +73,9 @@ export default function SettingsTab({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-up">
+    <div className="flex justify-center animate-fade-up">
       {/* Main Settings Panel */}
-      <div className="lg:col-span-8 glass-card rounded-3xl p-8 space-y-8">
+      <div className="w-full max-w-3xl glass-card rounded-3xl p-8 space-y-8">
         <div>
           <h2 className="text-xl font-extrabold tracking-tight">Appearance & Theme</h2>
           <p className="text-xs text-slate-400 mt-1">
@@ -181,32 +181,7 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* Info Panel / Side Card */}
-      <div className="lg:col-span-4 space-y-6">
-        <div className="glass-card rounded-3xl p-6 space-y-4">
-          <h4 className="text-xs font-mono font-bold text-[var(--accent)] uppercase tracking-wider">
-            System Topology Details
-          </h4>
-          <div className="space-y-3 font-mono text-[10px] text-slate-400">
-            <div className="flex justify-between border-b border-[var(--border)] pb-2">
-              <span>Database Engine:</span>
-              <span className="text-[var(--text-primary)] font-bold">SQLite / PostgreSQL fallback</span>
-            </div>
-            <div className="flex justify-between border-b border-[var(--border)] pb-2">
-              <span>Vector Client:</span>
-              <span className="text-[var(--text-primary)] font-bold">Qdrant Node v1.7</span>
-            </div>
-            <div className="flex justify-between border-b border-[var(--border)] pb-2">
-              <span>FastAPI Gateway:</span>
-              <span className="text-[var(--text-primary)] font-bold">Port 8000</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Active Auth:</span>
-              <span className="text-[var(--text-primary)] font-bold">Developer Sandbox</span>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 }
