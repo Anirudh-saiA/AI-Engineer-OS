@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
+import { sendEmailVerification } from "firebase/auth";
 
 interface ProfileTabProps {
   user: any;
@@ -125,6 +126,17 @@ export default function ProfileTab({ user }: ProfileTabProps) {
   const filledFields = fieldsToCheck.filter(f => f && f.trim().length > 0).length;
   const totalFields = fieldsToCheck.length;
   const completionPercent = Math.round((filledFields / totalFields) * 100);
+
+  const handleVerifyEmail = async () => {
+    if (!user) return;
+    try {
+      await sendEmailVerification(user);
+      alert("Verification email sent! Please check your inbox.");
+    } catch (error) {
+      console.error("Error sending verification email", error);
+      alert("Failed to send verification email. Try again later.");
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-up max-w-6xl mx-auto">
@@ -283,7 +295,10 @@ export default function ProfileTab({ user }: ProfileTabProps) {
               {user?.emailVerified ? (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">Verified</span>
               ) : (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">Unverified</span>
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">Unverified</span>
+                  <button onClick={handleVerifyEmail} className="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors">Verify Email</button>
+                </div>
               )}
             </div>
             {!isEditingPersonal ? (
@@ -362,12 +377,23 @@ export default function ProfileTab({ user }: ProfileTabProps) {
             {!isEditingAddress ? (
               <p className="font-semibold text-teal-900">{profile.country || "—"}</p>
             ) : (
-              <input
-                type="text"
+              <select
                 value={formData.country}
                 onChange={(e) => setFormData({...formData, country: e.target.value})}
                 className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
-              />
+              >
+                <option value="">Select Country</option>
+                <option value="United States">United States</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Canada">Canada</option>
+                <option value="Australia">Australia</option>
+                <option value="India">India</option>
+                <option value="Germany">Germany</option>
+                <option value="France">France</option>
+                <option value="Japan">Japan</option>
+                <option value="Brazil">Brazil</option>
+                <option value="Other">Other</option>
+              </select>
             )}
           </div>
 
