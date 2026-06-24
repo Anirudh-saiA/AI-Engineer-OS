@@ -265,8 +265,7 @@ export default function ProfileTab({ user }: ProfileTabProps) {
               <p className="font-semibold text-teal-900">{profile.date_of_birth || "—"}</p>
             ) : (
               <input
-                type="text"
-                placeholder="DD-MM-YYYY"
+                type="date"
                 value={formData.date_of_birth}
                 onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
                 className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
