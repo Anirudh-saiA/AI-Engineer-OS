@@ -278,12 +278,20 @@ export default function ProfileTab({ user }: ProfileTabProps) {
 
           {/* Email Address */}
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-400">Email Address</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-semibold text-slate-400">Email Address</p>
+              {user?.emailVerified ? (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">Verified</span>
+              ) : (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">Unverified</span>
+              )}
+            </div>
             {!isEditingPersonal ? (
               <p className="font-semibold text-teal-900">{profile.email || "—"}</p>
             ) : (
               <input
                 type="email"
+                placeholder="your.email@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-teal-900"
