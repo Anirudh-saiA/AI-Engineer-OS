@@ -349,6 +349,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
 // Onboarding flow state
 const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 const [onboardingStep, setOnboardingStep] = useState<number>(1);
@@ -1117,28 +1118,18 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
   const [debugMode, setDebugMode] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("You are Antigravity, a professional agentic developer working inside the AI-Engineer-OS platform.");
 
-  // Apply theme to document
+  // Apply theme to document (Enforced Light/Beige Theme)
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+    document.documentElement.setAttribute("data-theme", "light");
+  }, [theme]); // Kept dependency to avoid hooks warning
 
-  // Initialize theme from system preference
-  useEffect(() => {
-    const saved = localStorage.getItem("aios-theme");
-    if (saved === "light" || saved === "dark") {
-      setTheme(saved);
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-    }
-  }, []);
+  // Theme is locked to light/beige
+  useEffect(() => {}, []);
+  useEffect(() => {}, [theme]);
 
-  // Persist theme choice
-  useEffect(() => {
-    localStorage.setItem("aios-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const toggleTheme = () => {
+    addLog("Dark mode has been removed. Theme is locked to beige.", "info");
+  };
 
   // Helper log function
   const addLog = (text: string, type: "system" | "success" | "config" | "info" | "error") => {
@@ -1729,193 +1720,200 @@ const fetchProfile = async () => {
       )}
 
       {!user ? (
-        /* ═══════════════════════════════════════════════════════════
-           LANDING / LOGIN SCREEN — Nexus (dark) / ailingo (light)
-           ═══════════════════════════════════════════════════════════ */
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between px-4 py-6 md:py-10 overflow-y-auto" style={{ background: "var(--bg-primary)" }}>
+        <div className="fixed inset-0 z-50 flex grid grid-cols-1 md:grid-cols-2" style={{ background: "linear-gradient(90deg, #0b0c10 0%, #1a1543 40%, #f7f5ed 60%, #f7f5ed 100%)" }}>
+          
+          {/* Left Column - Brand & Illustration */}
+          <div className="relative hidden md:flex flex-col justify-between p-8 lg:p-12 overflow-hidden bg-transparent">
+            {/* Animated Background Gradients */}
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-indigo-600 to-fuchsia-600 rounded-full blur-[120px] opacity-40 animate-pulse pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full blur-[120px] opacity-30 animate-pulse pointer-events-none" style={{ animationDelay: "2s" }}></div>
+            
+            {/* Logo */}
+            <div className="relative z-10 flex items-center gap-3 w-fit px-4 py-3 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 shadow-2xl mx-auto">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-black text-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-inner">
+                AI
+              </div>
+              <span className="text-white font-black text-2xl tracking-widest uppercase drop-shadow-md">AIOS</span>
+            </div>
 
-          {/* Background effects */}
-          <div className="blob-1" style={{ top: "-15%", left: "-10%" }}></div>
-          <div className="blob-2" style={{ bottom: "-20%", right: "-15%" }}></div>
+            {/* Illustration */}
+            <div className="relative z-10 flex-1 flex items-center justify-center min-h-[300px]">
+              <div className="relative group w-full h-full flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-blue-600 rounded-full blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
+                <img 
+                  src="/login_illustration.png" 
+                  alt="AIOS Illustration" 
+                  className="relative max-w-full max-h-[90%] object-contain mix-blend-lighten opacity-80 drop-shadow-2xl hover:scale-105 transition-transform duration-700 ease-out z-10" 
+                />
+              </div>
+            </div>
 
-          {/* Subtle grid overlay for light mode texture */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-20 pointer-events-none"></div>
-
-          {/* Floating decorative elements */}
-          <div className="absolute top-6 left-6 md:top-10 md:left-12 w-20 h-20 md:w-28 md:h-28 rounded-2xl flex items-center justify-center text-3xl md:text-4xl select-none pointer-events-none z-10 animate-float rotate-[-6deg]"
-            style={{ background: "var(--accent-soft)", border: "2px solid var(--accent)", boxShadow: "var(--shadow-glow)" }}>
-            🚀
-          </div>
-          <div className="absolute top-16 right-8 md:top-24 md:right-20 w-14 h-14 md:w-18 md:h-18 rounded-xl flex items-center justify-center text-2xl select-none pointer-events-none z-10 animate-float-reverse"
-            style={{ background: "var(--secondary-soft)", border: "2px solid var(--secondary)" }}>
-            ⚡
-          </div>
-          <div className="absolute bottom-8 left-14 md:bottom-20 md:left-28 w-16 h-16 md:w-22 md:h-22 rounded-xl flex items-center justify-center text-2xl select-none pointer-events-none z-10 animate-float"
-            style={{ background: "var(--accent-soft)", border: "2px solid var(--accent)" }}>
-            🤖
-          </div>
-          <div className="absolute bottom-20 right-10 md:bottom-32 md:right-16 w-24 h-24 md:w-32 md:h-32 rounded-2xl flex flex-col items-center justify-center select-none pointer-events-none z-10 animate-float-reverse"
-            style={{ background: "var(--secondary-soft)", border: "2px solid var(--secondary)" }}>
-            <span className="text-3xl">🔥</span>
-            <span className="text-[10px] font-black uppercase tracking-wider mt-1" style={{ color: "var(--accent-text)" }}>AI-OS</span>
-          </div>
-
-          {/* Small floating dots */}
-          <div className="absolute top-1/4 left-20 w-5 h-5 rounded-full animate-float-reverse" style={{ background: "var(--accent)", opacity: 0.3 }}></div>
-          <div className="absolute top-2/3 right-20 w-7 h-7 rounded-full animate-float" style={{ background: "var(--secondary)", opacity: 0.25 }}></div>
-          <div className="absolute bottom-1/3 left-1/4 w-4 h-4 rounded-full animate-float" style={{ background: "var(--accent)", opacity: 0.2 }}></div>
-
-          {/* Header Badge */}
-          <div className="z-10 mt-1 md:mt-2 animate-fade-down">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-sm"
-              style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
-              <span className="animate-pulse">✨</span>
-              <span>AI-Powered Developer Platform</span>
-              <span className="h-3.5 w-[1.5px]" style={{ background: "var(--accent)" }}></span>
-              <span>Open Source</span>
+            {/* Footer Text */}
+            <div className="relative z-10 space-y-6 p-6 md:p-8 rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl flex flex-col items-center text-center mx-auto w-full">
+              <h1 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-[#a5b4fc] leading-tight tracking-tight drop-shadow-sm" style={{ fontFamily: "Georgia, serif" }}>
+                One step at a time<br />
+                — that's how every<br />
+                AI expert began.
+              </h1>
+              <div className="flex flex-wrap justify-center items-center gap-3 opacity-90">
+                <span className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 text-indigo-200 text-[11px] font-bold border border-indigo-500/30 uppercase tracking-wider backdrop-blur-md shadow-sm">Roadmaps</span>
+                <span className="px-3.5 py-1.5 rounded-full bg-fuchsia-500/20 text-fuchsia-200 text-[11px] font-bold border border-fuchsia-500/30 uppercase tracking-wider backdrop-blur-md shadow-sm">Video Transcripts</span>
+                <span className="px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-200 text-[11px] font-bold border border-cyan-500/30 uppercase tracking-wider backdrop-blur-md shadow-sm">Structured Learning</span>
+              </div>
             </div>
           </div>
 
-          {/* Hero Content */}
-          <div className="z-10 max-w-5xl w-full text-center space-y-7 md:space-y-9 my-auto px-4 py-8 relative">
-            
-            {/* Massive Bold Hero Title */}
-            <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] font-black tracking-tight leading-[1.05] select-none animate-fade-up" style={{ color: "var(--text-primary)" }}>
-              Build AI agents<br className="hidden sm:inline" />
-              <span className="hero-gradient-text"> at warp speed</span>
-              <span className="accent-dot text-6xl sm:text-8xl">.</span>
-            </h1>
-            
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto font-semibold animate-fade-up delay-2" style={{ color: "var(--text-secondary)" }}>
-              AI-Engineer-OS is an autonomous developer workspace. Code, deploy, and manage intelligent agents with a single platform — powered by FastAPI, PostgreSQL, and vector search.
-            </p>
-
-            {/* Premium Interactive Warning Alert Card */}
-            {isPlaceholder && (
-              <div className="z-10 w-full max-w-xl mx-auto p-5 rounded-2xl border bg-amber-500/10 border-amber-500/20 text-amber-500/90 text-xs font-semibold text-center leading-relaxed animate-fade-up delay-2.5 flex flex-col items-center gap-2 shadow-lg backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⚠️</span>
-                  <span className="font-black uppercase tracking-wider">Restricted Demo Mode Active</span>
-                </div>
-                <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                  Live authentication popups are currently locked because Firebase project credentials are not configured in Vercel's environment variables. 
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
-                  <button 
-                    onClick={signInMockDeveloper}
-                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black font-extrabold text-[10px] tracking-wide hover:scale-105 transition-all shadow-md cursor-pointer select-none"
-                  >
-                    ⚡ Bypass to Mock Sandbox
+          {/* Right Column - Auth Form */}
+          <div className="flex flex-col items-center justify-center p-8 bg-transparent overflow-y-auto">
+            <div className="w-full max-w-md space-y-6 relative z-10">
+              
+              <div className="text-center md:text-left space-y-1.5">
+                <h2 className="text-3xl font-bold text-slate-900">{isRegistering ? "Create an account" : "Welcome back"}</h2>
+                <p className="text-sm text-slate-500">
+                  {isRegistering ? "Already have an account? " : "New to AIOS? "}
+                  <button onClick={() => setIsRegistering(!isRegistering)} className="text-blue-600 font-semibold hover:underline">
+                    {isRegistering ? "Login instead" : "Register here"}
                   </button>
-                  <span className="text-slate-500 text-[10px] font-mono">or add .env.local keys to your Vercel project Settings.</span>
-                </div>
+                </p>
               </div>
-            )}
 
-            {/* Auth Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-lg sm:max-w-2xl mx-auto pt-2 animate-fade-up delay-3">
+              {/* Social Buttons */}
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={signInWithGoogle}
+                  disabled={isPlaceholder}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700 disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Google
+                </button>
+                <button 
+                  onClick={signInWithGithub}
+                  disabled={isPlaceholder}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700 disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" clipRule="evenodd"/></svg>
+                  GitHub
+                </button>
+              </div>
+
+              {/* Phone Button */}
               <button 
-                onClick={signInWithGoogle}
+                onClick={() => alert("Phone login coming soon")}
                 disabled={isPlaceholder}
-                className="btn-accent w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ fontSize: "14px" }}
-                title={isPlaceholder ? "Auth keys missing. Please use Bypass Mock Sandbox instead." : "Sign In with Google"}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 transition-colors text-sm font-semibold text-slate-700 disabled:opacity-50"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.51 0-6.386-2.87-6.386-6.39 0-3.51 2.87-6.386 6.386-6.386 1.629 0 3.12.607 4.269 1.706l3.12-3.12C19.29 2.217 15.93 1 12.24 1 5.617 1 0 6.617 0 13.24c0 6.618 5.617 12.24 12.24 12.24 6.887 0 12.24-5.358 12.24-12.24 0-.847-.075-1.666-.225-2.455H12.24z"/>
+                  <path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57a1.02 1.02 0 00-1.02.24l-2.2 2.2a15.045 15.045 0 01-6.59-6.59l2.2-2.21a.96.96 0 00.25-1A11.36 11.36 0 018.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/>
                 </svg>
-                Sign In with Google {isPlaceholder && "🔒"}
+                Continue with Phone
               </button>
 
-              <button 
-                onClick={signInWithGithub}
-                disabled={isPlaceholder}
-                className="btn-outline w-full sm:w-auto py-4 px-8 rounded-2xl text-sm flex items-center justify-center gap-3 select-none disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ fontSize: "14px" }}
-                title={isPlaceholder ? "Auth keys missing. Please use Bypass Mock Sandbox instead." : "Sign In with GitHub"}
-              >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
-                </svg>
-                Sign In with GitHub {isPlaceholder && "🔒"}
-              </button>
-            </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-slate-200"></div>
+                <span className="text-xs text-slate-400 font-medium">{isRegistering ? "or register with email" : "or sign in with email"}</span>
+                <div className="flex-1 h-px bg-slate-200"></div>
+              </div>
 
-            {/* Mock Sandbox Bypass */}
-            <div className="pt-1 text-center max-w-md mx-auto animate-fade-up delay-4">
-              <button
-                onClick={signInMockDeveloper}
-                className="w-full sm:w-auto py-3.5 px-8 rounded-2xl font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer select-none border-2"
-                style={{ 
-                  background: "transparent", 
-                  color: "var(--text-muted)", 
-                  borderColor: "var(--border)" 
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent-text)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
-              >
-                <span>🚀</span> Bypass to Mock Sandbox
-              </button>
-            </div>
+              {!isRegistering ? (
+                /* ---------------- LOGIN FORM ---------------- */
+                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Email login is UI only right now. Use bypass or social."); }}>
+                  <div className="space-y-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
+                    <input type="email" placeholder="you@email.com" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] transition-all text-slate-900" />
+                  </div>
+                  
+                  <div className="space-y-1.5 text-left">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                      <a href="#" className="text-xs font-semibold text-blue-600 hover:underline">Forgot password?</a>
+                    </div>
+                    <div className="relative">
+                      <input type="password" placeholder="••••••••" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] transition-all text-slate-900" />
+                      <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                    </div>
+                  </div>
 
-            {/* Feature Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6 text-left animate-fade-up delay-5">
-              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
-                style={{ borderLeft: "4px solid var(--accent)" }}>
-                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "var(--accent-soft)" }}>🤖</span>
-                <div>
-                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Cognitive AI Workflows</h4>
-                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>Autonomous code sandboxing, docker checking & lint fixes.</p>
+                  <div className="flex items-center gap-2 text-left">
+                    <input type="checkbox" id="keep-signed-in" className="w-4 h-4 rounded border-slate-300 text-[#1a1543] focus:ring-[#1a1543]" />
+                    <label htmlFor="keep-signed-in" className="text-sm font-medium text-slate-600">Keep me signed in</label>
+                  </div>
+
+                  <button type="submit" className="w-full py-3.5 bg-[#1a1543] hover:bg-[#282161] text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                    Sign In to AIOS <span>&rarr;</span>
+                  </button>
+                </form>
+              ) : (
+                /* ---------------- REGISTRATION FORM ---------------- */
+                <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert("Registration is UI only right now."); }}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
+                      <input type="text" placeholder="John Doe" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Username</label>
+                      <input type="text" placeholder="@johndoe" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
+                      <input type="tel" placeholder="+1 234 567 890" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email ID</label>
+                      <input type="email" placeholder="you@email.com" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date of Birth</label>
+                      <input type="date" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gender</label>
+                      <select className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required defaultValue="">
+                        <option value="" disabled>Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not_to_say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                      <input type="password" placeholder="••••••••" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Confirm Password</label>
+                      <input type="password" placeholder="••••••••" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1543] text-slate-900" required />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full py-3.5 bg-[#1a1543] hover:bg-[#282161] text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 mt-4">
+                    Save and continue <span>&rarr;</span>
+                  </button>
+                </form>
+              )}
+
+              {isPlaceholder && (
+                <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs text-center flex flex-col gap-3 shadow-sm">
+                  <p><strong>Demo Mode:</strong> Live auth is disabled. Use the bypass button below.</p>
+                  <button onClick={signInMockDeveloper} className="mx-auto px-5 py-2 bg-amber-500 text-black hover:bg-amber-400 transition-colors rounded-lg font-bold">Bypass to Mock Sandbox</button>
                 </div>
-              </div>
-              
-              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
-                style={{ borderLeft: "4px solid var(--secondary)" }}>
-                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "var(--secondary-soft)" }}>🔥</span>
-                <div>
-                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Gamified Heatmaps</h4>
-                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>365-day commit calendar, milestones and XP awards.</p>
-                </div>
-              </div>
-              
-              <div className="card-glow rounded-2xl p-5 card flex items-start gap-3.5 relative hover:translate-y-[-2px] transition-all cursor-pointer"
-                style={{ borderLeft: "4px solid var(--warning)" }}>
-                <span className="text-2xl p-2 rounded-xl flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)" }}>⚡</span>
-                <div>
-                  <h4 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>Semantic RAG Engine</h4>
-                  <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>Nearest-neighbor vector matching of files inside Qdrant.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+              )}
 
-          {/* Footer Stats Bar */}
-          <div className="z-10 flex flex-wrap justify-center items-center gap-x-6 gap-y-4 text-xs font-semibold pt-5 md:pt-6 w-full max-w-4xl select-none animate-fade-up delay-6"
-            style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "var(--accent)" }}>A</span>
-                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "var(--secondary)" }}>M</span>
-                <span className="w-7 h-7 rounded-full border-2 text-[9px] font-black text-white flex items-center justify-center" style={{ borderColor: "var(--bg-primary)", background: "#06b6d4" }}>S</span>
-              </div>
-              <span>500,000+ professionals</span>
-            </div>
-            
-            <span className="hidden sm:inline h-4 w-[1.5px]" style={{ background: "var(--border)" }}></span>
-
-            <div className="flex items-center gap-1.5">
-              <span style={{ color: "var(--warning)" }}>★★★★★</span>
-              <span className="font-bold" style={{ color: "var(--text-primary)" }}>4.9/5</span>
-            </div>
-
-            <span className="hidden sm:inline h-4 w-[1.5px]" style={{ background: "var(--border)" }}></span>
-
-            <div className="flex items-center gap-1.5" style={{ color: "var(--success)" }}>
-              <svg className="w-4 h-4 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Open source & free</span>
+              <p className="text-xs text-center text-slate-400 mt-2">
+                By {isRegistering ? "registering" : "signing in"} you agree to our <a href="#" className="underline hover:text-slate-600">Terms</a> and <a href="#" className="underline hover:text-slate-600">Privacy Policy</a>
+              </p>
             </div>
           </div>
         </div>
@@ -1950,24 +1948,21 @@ const fetchProfile = async () => {
           <div className="flex-1 min-h-screen flex relative z-10">
           
           {/* ═══════ LEFT SIDEBAR ═══════ */}
-          <aside className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-screen backdrop-blur-md flex flex-col transition-all duration-300 z-40 md:z-30 ${
-            mobileSidebarOpen ? "translate-x-0 shadow-xl" : "-translate-x-full md:translate-x-0"
-          } ${
-            sidebarCollapsed ? "md:w-20" : "md:w-64 w-64"
+          <aside className={`hidden md:flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-300 z-30 ${
+            sidebarCollapsed ? "w-20" : "w-64"
           }`}
-          style={{ background: "var(--bg-sidebar)", borderRight: "1px solid var(--border)" }}>
+          style={{ background: "#120f2b" }}>
             
             {/* Sidebar Logo */}
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-md text-white shadow-md flex-shrink-0"
-                  style={{ background: "var(--accent)" }}>
-                  Ω
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-[#120f2b] shadow-md flex-shrink-0 bg-amber-500">
+                  AI
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div>
-                    <h1 className="text-sm font-black tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
-                      AI-ENGINEER-OS
+                    <h1 className="text-lg font-black tracking-tight leading-none text-white">
+                      AIOS
                     </h1>
                   </div>
                 )}
@@ -2008,12 +2003,12 @@ const fetchProfile = async () => {
                     setActiveTab(tab.id);
                     setMobileSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold tracking-wide transition-all cursor-pointer ${
-                    activeTab === tab.id ? "nav-active" : ""
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] font-semibold tracking-wide transition-all cursor-pointer ${
+                    activeTab === tab.id ? "rounded-r-xl" : "rounded-xl mx-2"
                   }`}
-                  style={activeTab === tab.id ? {} : { color: "var(--text-muted)" }}
-                  onMouseEnter={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = "var(--accent-soft)"; e.currentTarget.style.color = "var(--text-primary)"; } }}
-                  onMouseLeave={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; } }}
+                  style={activeTab === tab.id ? { background: "rgba(255,255,255,0.08)", borderLeft: "3px solid var(--accent)", color: "var(--accent)" } : { color: "#9ca3af" }}
+                  onMouseEnter={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.color = "white"; } }}
+                  onMouseLeave={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.color = "#9ca3af"; } }}
                 >
                   {tab.icon}
                   {(!sidebarCollapsed || mobileSidebarOpen) && <span>{tab.label}</span>}
@@ -2021,62 +2016,27 @@ const fetchProfile = async () => {
               ))}
             </nav>
 
-            {/* Theme Toggle + User Card */}
-            <div className="p-3" style={{ borderTop: "1px solid var(--border)" }}>
-
-              {/* Theme toggle */}
-              {(!sidebarCollapsed || mobileSidebarOpen) && (
-                <button
-                  onClick={toggleTheme}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl mb-3 text-xs font-semibold cursor-pointer transition-all"
-                  style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}
-                >
-                  <span>{theme === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode"}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                    {theme === "dark" ? "Dark" : "Light"}
-                  </span>
-                </button>
-              )}
-              {sidebarCollapsed && !mobileSidebarOpen && (
-                <button onClick={toggleTheme} className="w-full flex justify-center py-2 mb-3 rounded-xl cursor-pointer text-lg transition-all" style={{ background: "var(--accent-soft)" }}>
-                  {theme === "dark" ? "🌙" : "☀️"}
-                </button>
-              )}
-
-              {/* User avatar */}
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 rounded-full p-0.5 flex-shrink-0 overflow-hidden" style={{ border: "2px solid var(--border)" }}>
+            {/* User Card */}
+            <div className="p-4 mt-auto">
+              <div className="flex items-center gap-3 overflow-hidden p-3 rounded-2xl cursor-pointer" style={{ background: "rgba(255,255,255,0.05)" }}>
+                <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "var(--accent)" }}>
-                      {user.displayName?.[0] || "D"}
-                    </div>
+                    "SA"
                   )}
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-bold truncate leading-tight" style={{ color: "var(--text-primary)" }}>
-                      {user.displayName || "Developer"}
+                    <p className="text-[13px] font-bold truncate leading-tight text-white">
+                      Sai Anirudh
                     </p>
-                    <p className="text-[10px] font-mono truncate leading-none mt-0.5" style={{ color: "var(--text-muted)" }}>
-                      {user.email}
+                    <p className="text-[11px] font-mono truncate leading-none mt-1 text-slate-400">
+                      ai.anirudh@gmail...
                     </p>
                   </div>
                 )}
               </div>
-              
-              {(!sidebarCollapsed || mobileSidebarOpen) && (
-                <button 
-                  onClick={signOut}
-                  className="w-full mt-3 py-1.5 px-3 rounded-lg font-semibold text-[11px] tracking-wide transition-all cursor-pointer text-center"
-                  style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--error)"; e.currentTarget.style.color = "var(--error)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
-                >
-                  Disconnect Session
-                </button>
-              )}
             </div>
           </aside>
 
@@ -2084,13 +2044,11 @@ const fetchProfile = async () => {
           <div className="flex-1 flex flex-col min-w-0">
             
             {/* Header Bar */}
-            <header className="h-16 sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between backdrop-blur-md"
-              style={{ background: "var(--bg-header)", borderBottom: "1px solid var(--border)" }}>
+            <header className="h-20 sticky top-0 z-20 px-8 flex items-center justify-between bg-transparent">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                  className="md:hidden p-1.5 rounded-lg cursor-pointer flex-shrink-0"
-                  style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                  className="md:hidden p-1.5 rounded-lg cursor-pointer flex-shrink-0 text-slate-400"
                   aria-label="Toggle Sidebar Menu"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2098,46 +2056,40 @@ const fetchProfile = async () => {
                   </svg>
                 </button>
                 <div className="min-w-0">
-                  <h2 className="text-sm md:text-lg font-bold flex items-center gap-2 truncate" style={{ color: "var(--text-primary)" }}>
+                  <h2 className="text-xl md:text-2xl font-black flex items-center gap-3 truncate text-slate-900">
                     {activeTab === "dashboard" && "Dashboard"}
                     {activeTab === "roadmaps" && "Roadmaps"}
                     {activeTab === "vector" && "Vector Search"}
                     {activeTab === "analytics" && "Project Analytics"}
-
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "profile" && "Developer Profile"}
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono flex-shrink-0 hidden sm:inline-block"
-                      style={{ background: "var(--accent-soft)", color: "var(--accent-text)", border: "1px solid var(--accent)" }}>
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-600 bg-emerald-100/50">
                       Live
                     </span>
                   </h2>
-                  <p className="text-[10px] font-mono truncate" style={{ color: "var(--text-muted)" }}>
-                    /workspace/{activeTab}
+                  <p className="text-[12px] font-medium truncate text-slate-400 mt-1">
+                    workspace/{activeTab}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 md:gap-4 text-[11px] font-mono flex-shrink-0">
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <span style={{ color: "var(--text-muted)" }}>Gateway:</span>
-                  <span className={`w-2.5 h-2.5 rounded-full ${fastapiOnline ? "animate-pulse" : ""}`}
-                    style={{ background: fastapiOnline ? "var(--success)" : "var(--error)" }}></span>
-                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>{fastapiOnline ? "8000" : "Offline"}</span>
+              <div className="flex items-center gap-4 flex-shrink-0">
+                {/* Search Bar */}
+                <div className="hidden md:flex items-center bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm text-slate-400 text-[13px]">
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  Search...
                 </div>
-                <div className="hidden sm:block h-4 w-[1px]" style={{ background: "var(--border)" }}></div>
-                <div className="flex items-center gap-1.5">
-                  <span className="hidden xs:inline" style={{ color: "var(--text-muted)" }}>Model:</span>
-                  <span className="font-bold uppercase text-[10px] md:text-[11px] truncate max-w-[80px] sm:max-w-none" style={{ color: "var(--accent-text)" }}>
-                    {activeModel.replace(/-/g, " ")}
-                  </span>
+                
+                {/* Model Pill */}
+                <div className="hidden sm:flex items-center gap-2 bg-purple-50 text-purple-600 border border-purple-100 rounded-full px-4 py-2 font-bold text-[12px] shadow-sm">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/></svg>
+                  Gemini 2.5 Flash
                 </div>
-                {/* Header theme toggle */}
-                <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all text-sm"
-                  style={{ border: "1px solid var(--border)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                >
-                  {theme === "dark" ? "🌙" : "☀️"}
+                
+                {/* Notification Bell */}
+                <button className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center relative shadow-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                 </button>
               </div>
             </header>
