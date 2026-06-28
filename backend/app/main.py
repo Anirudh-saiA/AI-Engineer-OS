@@ -89,6 +89,35 @@ def migrate_db():
                     with engine.begin() as conn:
                         conn.execute(text(f"ALTER TABLE error_analyses ADD COLUMN {col_name} {col_type}"))
                         print(f"Migration: Added '{col_name}' column to error_analyses.")
+
+        # 3. Learning profiles table check/migration
+        existing_profile_cols = []
+        try:
+            existing_profile_cols = [col["name"] for col in inspector.get_columns("learning_profiles")]
+        except Exception as e:
+            print("Could not inspect learning_profiles columns:", e)
+
+        if existing_profile_cols:
+            profile_columns = [
+                ("first_name", "VARCHAR"),
+                ("last_name", "VARCHAR"),
+                ("date_of_birth", "VARCHAR"),
+                ("phone_number", "VARCHAR"),
+                ("country", "VARCHAR"),
+                ("city", "VARCHAR"),
+                ("postal_code", "VARCHAR"),
+                ("linkedin_link", "VARCHAR"),
+                ("experience_hackathons", "BOOLEAN DEFAULT FALSE"),
+                ("experience_deployed", "BOOLEAN DEFAULT FALSE"),
+                ("experience_apis", "BOOLEAN DEFAULT FALSE"),
+                ("experience_worked_ai", "BOOLEAN DEFAULT FALSE"),
+                ("interest_areas", "TEXT"),
+            ]
+            for col_name, col_type in profile_columns:
+                if col_name not in existing_profile_cols:
+                    with engine.begin() as conn:
+                        conn.execute(text(f"ALTER TABLE learning_profiles ADD COLUMN {col_name} {col_type}"))
+                        print(f"Migration: Added '{col_name}' column to learning_profiles.")
                         
     except Exception as global_err:
         print("Database startup migration bypassed safely to prevent server crash:", global_err)
