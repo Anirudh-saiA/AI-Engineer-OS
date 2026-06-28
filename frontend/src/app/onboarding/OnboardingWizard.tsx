@@ -12,6 +12,37 @@ interface OnboardingWizardProps {
   close: () => void;
 }
 
+const SKILL_TOPICS = {
+  python: [
+    "Core Python Syntax & Built-ins",
+    "Decorators, Generators & Iterators",
+    "Package Management & Venvs (pip, poetry)",
+    "Popular Libraries (Pandas, Numpy, Requests)",
+    "Asyncio, Multithreading & Concurrency"
+  ],
+  web: [
+    "HTML5 & CSS3 layout structures",
+    "Modern JS (ES6+) & TypeScript",
+    "Frontend Frameworks (React, Next.js)",
+    "Backend Servers & Frameworks (FastAPI, Node)",
+    "Database Systems & ORMs (Postgres, Prisma)"
+  ],
+  dsa: [
+    "Basic Structures (Arrays, Lists, Stacks)",
+    "Trees & Graphs (DFS, BFS, Traversals)",
+    "Sorting, Searching & Binary Search",
+    "Dynamic Programming & Greedy Approaches",
+    "Time/Space Complexity (Big O Notation)"
+  ],
+  ml: [
+    "Supervised learning (Regression, Classification)",
+    "Unsupervised learning (Clustering, PCA)",
+    "Model Evaluation Metrics (Precision, Recall)",
+    "Feature Engineering & Data Preprocessing",
+    "Basic Neural Networks & Deep Learning frameworks"
+  ]
+};
+
 export default function OnboardingWizard({
   step,
   data,
@@ -21,7 +52,7 @@ export default function OnboardingWizard({
 }: OnboardingWizardProps) {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
-  const [analysisText, setAnalysisText] = useState("Initializing cognitive maps...");
+  const [analysisText, setAnalysisText] = useState("Initializing calibration metrics...");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [onboardedResult, setOnboardedResult] = useState<any>(null);
 
@@ -39,6 +70,81 @@ export default function OnboardingWizard({
   const [web, setWeb] = useState<number>(data.web_level || 25);
   const [dsa, setDsa] = useState<number>(data.dsa_level || 20);
   const [ml, setMl] = useState<number>(data.ml_level || 10);
+
+  // State for expanded skill details in Step 3
+  const [expandedSkills, setExpandedSkills] = useState<Record<string, boolean>>({
+    python: false,
+    web: false,
+    dsa: false,
+    ml: false
+  });
+
+  // Checklist state for each skill
+  const [pythonChecked, setPythonChecked] = useState<boolean[]>([false, false, false, false, false]);
+  const [webChecked, setWebChecked] = useState<boolean[]>([false, false, false, false, false]);
+  const [dsaChecked, setDsaChecked] = useState<boolean[]>([false, false, false, false, false]);
+  const [mlChecked, setMlChecked] = useState<boolean[]>([false, false, false, false, false]);
+
+  // Sync checkboxes on mount based on initial level values
+  useEffect(() => {
+    setPythonChecked(Array.from({ length: 5 }, (_, i) => python >= (i + 1) * 20));
+    setWebChecked(Array.from({ length: 5 }, (_, i) => web >= (i + 1) * 20));
+    setDsaChecked(Array.from({ length: 5 }, (_, i) => dsa >= (i + 1) * 20));
+    setMlChecked(Array.from({ length: 5 }, (_, i) => ml >= (i + 1) * 20));
+  }, []);
+
+  const handleSliderChange = (skill: "python" | "web" | "dsa" | "ml", val: number) => {
+    const checkedState = Array.from({ length: 5 }, (_, i) => val >= (i + 1) * 20);
+    if (skill === "python") {
+      setPython(val);
+      setPythonChecked(checkedState);
+    } else if (skill === "web") {
+      setWeb(val);
+      setWebChecked(checkedState);
+    } else if (skill === "dsa") {
+      setDsa(val);
+      setDsaChecked(checkedState);
+    } else if (skill === "ml") {
+      setMl(val);
+      setMlChecked(checkedState);
+    }
+  };
+
+  const handleCheckboxChange = (skill: "python" | "web" | "dsa" | "ml", idx: number) => {
+    let nextChecked: boolean[];
+    if (skill === "python") {
+      nextChecked = [...pythonChecked];
+      nextChecked[idx] = !nextChecked[idx];
+      setPythonChecked(nextChecked);
+      const val = nextChecked.filter(Boolean).length * 20;
+      setPython(val);
+    } else if (skill === "web") {
+      nextChecked = [...webChecked];
+      nextChecked[idx] = !nextChecked[idx];
+      setWebChecked(nextChecked);
+      const val = nextChecked.filter(Boolean).length * 20;
+      setWeb(val);
+    } else if (skill === "dsa") {
+      nextChecked = [...dsaChecked];
+      nextChecked[idx] = !nextChecked[idx];
+      setDsaChecked(nextChecked);
+      const val = nextChecked.filter(Boolean).length * 20;
+      setDsa(val);
+    } else if (skill === "ml") {
+      nextChecked = [...mlChecked];
+      nextChecked[idx] = !nextChecked[idx];
+      setMlChecked(nextChecked);
+      const val = nextChecked.filter(Boolean).length * 20;
+      setMl(val);
+    }
+  };
+
+  const toggleSkillExpand = (skill: string) => {
+    setExpandedSkills(prev => ({
+      ...prev,
+      [skill]: !prev[skill]
+    }));
+  };
 
   // SECTION 4: Skill Experience Pings
   const [builtProjects, setBuiltProjects] = useState<boolean>(data.experience_built_projects || false);
@@ -355,97 +461,213 @@ export default function OnboardingWizard({
         {step === 3 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Core Skill Indices</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Calibrate your proficiency indicators. BADGES update dynamically as you drag.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Core Skills Profile</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Calibrate your levels in key technical domains. Expand each item to view and select specific competency topics.
               </p>
             </div>
 
-            <div className="space-y-5 bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border)] max-h-[350px] overflow-y-auto">
+            <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
               
               {/* Python */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="font-bold">🐍 Python Ecosystem</span>
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-4 transition-all duration-200">
+                <div 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                  onClick={() => toggleSkillExpand("python")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-black text-slate-900">Python Ecosystem</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {expandedSkills.python ? "▲ Collapse" : "▼ Expand Topics"}
+                    </span>
+                  </div>
                   <span className={`px-2.5 py-0.5 rounded-full border text-[9px] ${getSkillTier(python).style}`}>
                     {python}% — {getSkillTier(python).label}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={python}
-                  onChange={(e) => setPython(Number(e.target.value))}
-                  className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
-                />
+                
+                <div className="mt-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="20"
+                    value={python}
+                    onChange={(e) => handleSliderChange("python", Number(e.target.value))}
+                    className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
+                  />
+                </div>
+
+                {expandedSkills.python && (
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2 animate-fadeIn">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Acquired Competencies:</p>
+                    {SKILL_TOPICS.python.map((topic, idx) => (
+                      <label key={idx} className="flex items-start gap-2.5 text-[12px] text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={pythonChecked[idx] || false}
+                          onChange={() => handleCheckboxChange("python", idx)}
+                          className="w-3.5 h-3.5 mt-0.5 accent-[var(--accent)] rounded border-[var(--border)] bg-white cursor-pointer"
+                        />
+                        <span>{topic}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Web Dev */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="font-bold">🌐 Full Stack Web</span>
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-4 transition-all duration-200">
+                <div 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                  onClick={() => toggleSkillExpand("web")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-black text-slate-900">Full Stack Web</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {expandedSkills.web ? "▲ Collapse" : "▼ Expand Topics"}
+                    </span>
+                  </div>
                   <span className={`px-2.5 py-0.5 rounded-full border text-[9px] ${getSkillTier(web).style}`}>
                     {web}% — {getSkillTier(web).label}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={web}
-                  onChange={(e) => setWeb(Number(e.target.value))}
-                  className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
-                />
+                
+                <div className="mt-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="20"
+                    value={web}
+                    onChange={(e) => handleSliderChange("web", Number(e.target.value))}
+                    className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
+                  />
+                </div>
+
+                {expandedSkills.web && (
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2 animate-fadeIn">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Acquired Competencies:</p>
+                    {SKILL_TOPICS.web.map((topic, idx) => (
+                      <label key={idx} className="flex items-start gap-2.5 text-[12px] text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={webChecked[idx] || false}
+                          onChange={() => handleCheckboxChange("web", idx)}
+                          className="w-3.5 h-3.5 mt-0.5 accent-[var(--accent)] rounded border-[var(--border)] bg-white cursor-pointer"
+                        />
+                        <span>{topic}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* DSA */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="font-bold">📊 Algorithms & DSA</span>
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-4 transition-all duration-200">
+                <div 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                  onClick={() => toggleSkillExpand("dsa")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-black text-slate-900">Algorithms & Data Structures</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {expandedSkills.dsa ? "▲ Collapse" : "▼ Expand Topics"}
+                    </span>
+                  </div>
                   <span className={`px-2.5 py-0.5 rounded-full border text-[9px] ${getSkillTier(dsa).style}`}>
                     {dsa}% — {getSkillTier(dsa).label}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={dsa}
-                  onChange={(e) => setDsa(Number(e.target.value))}
-                  className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
-                />
+                
+                <div className="mt-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="20"
+                    value={dsa}
+                    onChange={(e) => handleSliderChange("dsa", Number(e.target.value))}
+                    className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
+                  />
+                </div>
+
+                {expandedSkills.dsa && (
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2 animate-fadeIn">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Acquired Competencies:</p>
+                    {SKILL_TOPICS.dsa.map((topic, idx) => (
+                      <label key={idx} className="flex items-start gap-2.5 text-[12px] text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={dsaChecked[idx] || false}
+                          onChange={() => handleCheckboxChange("dsa", idx)}
+                          className="w-3.5 h-3.5 mt-0.5 accent-[var(--accent)] rounded border-[var(--border)] bg-white cursor-pointer"
+                        />
+                        <span>{topic}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* ML */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="font-bold">🧠 Machine Learning Basics</span>
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-4 transition-all duration-200">
+                <div 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                  onClick={() => toggleSkillExpand("ml")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-black text-slate-900">Machine Learning Foundations</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {expandedSkills.ml ? "▲ Collapse" : "▼ Expand Topics"}
+                    </span>
+                  </div>
                   <span className={`px-2.5 py-0.5 rounded-full border text-[9px] ${getSkillTier(ml).style}`}>
                     {ml}% — {getSkillTier(ml).label}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={ml}
-                  onChange={(e) => setMl(Number(e.target.value))}
-                  className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
-                />
+                
+                <div className="mt-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="20"
+                    value={ml}
+                    onChange={(e) => handleSliderChange("ml", Number(e.target.value))}
+                    className="w-full accent-[var(--accent)] bg-[var(--bg-card)] cursor-pointer h-1.5 rounded-lg appearance-none border border-[var(--border)]"
+                  />
+                </div>
+
+                {expandedSkills.ml && (
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2 animate-fadeIn">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Acquired Competencies:</p>
+                    {SKILL_TOPICS.ml.map((topic, idx) => (
+                      <label key={idx} className="flex items-start gap-2.5 text-[12px] text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={mlChecked[idx] || false}
+                          onChange={() => handleCheckboxChange("ml", idx)}
+                          className="w-3.5 h-3.5 mt-0.5 accent-[var(--accent)] rounded border-[var(--border)] bg-white cursor-pointer"
+                        />
+                        <span>{topic}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex gap-4">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase font-bold text-xs"
               >
                 Continue →
               </button>
@@ -457,9 +679,9 @@ export default function OnboardingWizard({
         {step === 4 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Development Background</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Select your engineering background parameters. We use this to configure initial project templates.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Engineering Background</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select all parameters that apply to your background to configure your initial project templates.
               </p>
             </div>
 
@@ -467,32 +689,36 @@ export default function OnboardingWizard({
               {/* Projects Card */}
               <button
                 onClick={() => setBuiltProjects(!builtProjects)}
-                className={`p-6 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-40 ${
+                className={`p-6 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-36 ${
                   builtProjects
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-3xl">🏗️</span>
-                <div>
-                  <h4 className="text-xs font-bold font-sans">I have built software projects before</h4>
-                  <p className="text-[10px] text-slate-400 mt-1">Select if you have written dynamic programs or scripts.</p>
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
+                  PROJ
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-[13px] font-bold font-sans">I have built software projects before</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">Select if you have written programs or scripts outside of coursework.</p>
                 </div>
               </button>
 
               {/* Git Card */}
               <button
                 onClick={() => setUsedGit(!usedGit)}
-                className={`p-6 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-40 ${
+                className={`p-6 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-36 ${
                   usedGit
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-3xl">🐙</span>
-                <div>
-                  <h4 className="text-xs font-bold font-sans">I have used Git & GitHub in production</h4>
-                  <p className="text-[10px] text-slate-400 mt-1">Pre-configures advanced repository sync nodes.</p>
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
+                  GIT
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-[13px] font-bold font-sans">I have used Git & GitHub in production</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">Pre-configures team collaboration and repository sync modules.</p>
                 </div>
               </button>
             </div>
@@ -500,13 +726,13 @@ export default function OnboardingWizard({
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase font-bold text-xs"
               >
                 Configure Career Goals →
               </button>
@@ -518,36 +744,35 @@ export default function OnboardingWizard({
         {step === 5 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Career Directions</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                What do you want to become? Roadmap and lessons branch dynamically based on selections.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Career Directions</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select your target career paths to dynamically configure your learning syllabus.
               </p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-1">
               {[
-                { title: "AI Engineer", icon: "🤖" },
-                { title: "ML Engineer", icon: "🧠" },
-                { title: "GenAI Engineer", icon: "✨" },
-                { title: "Software Engineer", icon: "💻" },
-                { title: "Placement Preparation", icon: "💼" },
-                { title: "Freelancer", icon: "✈️" },
-                { title: "Startup Founder", icon: "🔥" },
-                { title: "Hackathon Builder", icon: "🏆" },
+                { title: "AI Engineer" },
+                { title: "ML Engineer" },
+                { title: "GenAI Engineer" },
+                { title: "Software Engineer" },
+                { title: "Placement Preparation" },
+                { title: "Freelancer" },
+                { title: "Startup Founder" },
+                { title: "Hackathon Builder" },
               ].map((goal) => {
                 const isSelected = selectedGoals.includes(goal.title);
                 return (
                   <button
                     key={goal.title}
                     onClick={() => toggleGoal(goal.title)}
-                    className={`p-4 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-28 ${
+                    className={`p-4 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-20 ${
                       isSelected
-                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)] text-[var(--accent)] font-bold"
-                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-400"
+                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-bold shadow-sm"
+                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-600"
                     }`}
                   >
-                    <span className="text-2xl">{goal.icon}</span>
-                    <span className="text-[10px] font-sans font-semibold leading-tight">{goal.title}</span>
+                    <span className="text-[12px] font-sans font-bold leading-tight">{goal.title}</span>
                   </button>
                 );
               })}
@@ -556,14 +781,14 @@ export default function OnboardingWizard({
             <div className="flex gap-4">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
                 disabled={selectedGoals.length === 0}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase disabled:opacity-40"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase disabled:opacity-40 font-bold text-xs"
               >
                 Availability Setup →
               </button>
@@ -575,35 +800,34 @@ export default function OnboardingWizard({
         {step === 6 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Time Pacing</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                How much time can you commit daily? Directly controls roadmap pacing speed.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Commitment Level</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select your daily time allocation to adjust the speed and density of your training roadmap.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { title: "30 Mins / Day", value: 30, desc: "Sprint (micro tasks, normal pace)" },
+                { title: "30 Mins / Day", value: 30, desc: "Sprint (micro sessions)" },
                 { title: "1 Hr / Day", value: 60, desc: "Standard (steady, balanced pace)" },
-                { title: "2 Hrs / Day", value: 120, desc: "Aggressive (deep learning, fast pace)" },
-                { title: "4+ Hrs / Day", value: 240, desc: "Immersion (bootcamp mode, rapid paths)" },
-                { title: "Weekends Only", value: 90, desc: "Compact (focused weekend pings)" },
+                { title: "2 Hrs / Day", value: 120, desc: "Aggressive (intensive study)" },
+                { title: "4+ Hrs / Day", value: 240, desc: "Immersion (bootcamp mode)" },
+                { title: "Weekends Only", value: 90, desc: "Weekend Focus (extended sessions)" },
               ].map((time) => {
                 const isSelected = availability === time.value;
                 return (
                   <button
                     key={time.title}
                     onClick={() => setAvailability(time.value)}
-                    className={`p-5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-32 ${
+                    className={`p-5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-28 ${
                       isSelected
-                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                     }`}
                   >
-                    <span className="text-2xl">⏱️</span>
                     <div>
-                      <h4 className="text-xs font-bold font-sans">{time.title}</h4>
-                      <p className="text-[9px] text-slate-400 mt-1 leading-tight">{time.desc}</p>
+                      <h4 className="text-[13px] font-bold font-sans">{time.title}</h4>
+                      <p className="text-[11px] text-slate-400 mt-1.5 leading-tight">{time.desc}</p>
                     </div>
                   </button>
                 );
@@ -613,15 +837,15 @@ export default function OnboardingWizard({
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase font-bold text-xs"
               >
-                Select Learning Preference →
+                Select Study Format →
               </button>
             </div>
           </div>
@@ -631,19 +855,19 @@ export default function OnboardingWizard({
         {step === 7 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Preferred Study Form</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                How do you study best? Adapts sandbox resources dynamically.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Preferred Learning Format</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select how you study best to adapt your learning resources.
               </p>
             </div>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {[
-                { type: "video", title: "Video Tutorials & Lectures", desc: "Watch video tutorials and experts coding directly.", icon: "🎥" },
-                { type: "project-based", title: "Project-Based Builds", desc: "Construct actual microservices and API gateways from scratch.", icon: "🏗️" },
-                { type: "hands-on", title: "Interactive Coding Sandbox", desc: "Execute code cells directly in real-time online workspaces.", icon: "⌨️" },
-                { type: "reading", title: "Technical Docs & Case Manuals", desc: "Review structural specifications and architectural models.", icon: "📚" },
-                { type: "quizzes", title: "Knowledge Check Quizzes", desc: "Validate concepts through cyclical multichoice matrices.", icon: "🎯" },
+                { type: "video", title: "Video Tutorials & Lectures", desc: "Watch video tutorials and experts coding directly.", label: "VIDEO" },
+                { type: "project-based", title: "Project-Based Builds", desc: "Construct actual microservices and API gateways from scratch.", label: "PROJ" },
+                { type: "hands-on", title: "Interactive Coding Sandbox", desc: "Execute code cells directly in real-time online workspaces.", label: "CODE" },
+                { type: "reading", title: "Technical Docs & Case Manuals", desc: "Review structural specifications and architectural models.", label: "DOCS" },
+                { type: "quizzes", title: "Knowledge Check Quizzes", desc: "Validate concepts through multichoice assessments.", label: "QUIZ" },
               ].map((style) => {
                 const isSelected = learningPreference === style.type;
                 return (
@@ -652,17 +876,17 @@ export default function OnboardingWizard({
                     onClick={() => setLearningPreference(style.type)}
                     className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-4 ${
                       isSelected
-                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                     }`}
                   >
-                    <span className="text-3xl p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">{style.icon}</span>
+                    <span className="text-[11px] font-bold p-2 w-12 text-center rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">{style.label}</span>
                     <div className="flex-1">
                       <h4 className="text-xs font-bold leading-tight font-sans">{style.title}</h4>
                       <p className="text-[10px] text-slate-400 mt-1 leading-normal">{style.desc}</p>
                     </div>
                     {isSelected && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] shadow-[var(--shadow-glow)] mr-2 flex-shrink-0"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] mr-2 flex-shrink-0"></span>
                     )}
                   </button>
                 );
@@ -672,13 +896,13 @@ export default function OnboardingWizard({
             <div className="flex gap-4">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase font-bold text-xs"
               >
                 API & Deploy Background →
               </button>
@@ -690,9 +914,9 @@ export default function OnboardingWizard({
         {step === 8 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Deploy & API Background</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Select other systems experience. Helps the AI calibrate your starting milestone badges.
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Deployment & Integration Experience</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select your experience with cloud services and integration patterns.
               </p>
             </div>
 
@@ -700,64 +924,64 @@ export default function OnboardingWizard({
               {/* Hackathons */}
               <button
                 onClick={() => setHackathons(!hackathons)}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-32 ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-28 ${
                   hackathons
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-2xl">🏆</span>
+                <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">HACK</div>
                 <div>
                   <h4 className="text-xs font-bold font-sans">Hackathons</h4>
-                  <p className="text-[9px] text-slate-400 mt-1">Participated in hackathons before.</p>
+                  <p className="text-[9px] text-slate-400 mt-1">Participated in team building hackathons.</p>
                 </div>
               </button>
 
               {/* Deployed */}
               <button
                 onClick={() => setDeployed(!deployed)}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-32 ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-28 ${
                   deployed
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-2xl">🚀</span>
+                <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">DEPL</div>
                 <div>
                   <h4 className="text-xs font-bold font-sans">Online Deployments</h4>
-                  <p className="text-[9px] text-slate-400 mt-1">Deployed live API clients online.</p>
+                  <p className="text-[9px] text-slate-400 mt-1">Deployed web applications or services online.</p>
                 </div>
               </button>
 
               {/* APIs */}
               <button
                 onClick={() => setApis(!apis)}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-32 ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-28 ${
                   apis
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-2xl">⚡</span>
+                <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">API</div>
                 <div>
                   <h4 className="text-xs font-bold font-sans">Used External APIs</h4>
-                  <p className="text-[9px] text-slate-400 mt-1">Worked with Stripe, Firebase, or LLM APIs.</p>
+                  <p className="text-[9px] text-slate-400 mt-1">Worked with Stripe, Firebase, or other web APIs.</p>
                 </div>
               </button>
 
               {/* AI Systems */}
               <button
                 onClick={() => setWorkedAi(!workedAi)}
-                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-32 ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-28 ${
                   workedAi
-                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] shadow-[var(--shadow-glow)]"
-                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400"
+                    ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] font-semibold shadow-sm"
+                    : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-700"
                 }`}
               >
-                <span className="text-2xl">🤖</span>
+                <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">AI</div>
                 <div>
                   <h4 className="text-xs font-bold font-sans">Worked with AI</h4>
-                  <p className="text-[9px] text-slate-400 mt-1">Integrated prompt chains or ml models before.</p>
+                  <p className="text-[9px] text-slate-400 mt-1">Integrated prompt chains or custom LLM frameworks.</p>
                 </div>
               </button>
             </div>
@@ -783,9 +1007,9 @@ export default function OnboardingWizard({
         {step === 9 && (
           <div className="space-y-6 animate-fade-up">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Engineering Focus Interests</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Select your interest modules. These direct your dynamic sandbox project recommendations!
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Engineering Focus Interests</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Select your engineering domains of interest to customize project modules.
               </p>
             </div>
 
@@ -807,8 +1031,8 @@ export default function OnboardingWizard({
                     onClick={() => toggleInterest(interest)}
                     className={`p-4 rounded-xl border text-center transition-all cursor-pointer font-bold text-xs ${
                       isSelected
-                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] shadow-[var(--shadow-glow)]"
-                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-400"
+                        ? "bg-[var(--bg-secondary)] border-[var(--accent)] text-[var(--accent)] shadow-sm"
+                        : "bg-[var(--bg-card)] border-[var(--border)] hover:border-slate-400 text-slate-600"
                     }`}
                   >
                     {interest}
@@ -820,15 +1044,15 @@ export default function OnboardingWizard({
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handlePrev}
-                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer"
+                className="py-3 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-slate-400 font-bold text-xs cursor-pointer text-slate-700"
               >
                 Back
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 btn-accent py-3 cursor-pointer uppercase"
+                className="flex-1 btn-accent py-3 cursor-pointer uppercase font-bold text-xs"
               >
-                Compile Neural Calibration! 🧠⚡
+                Save and Complete Assessment
               </button>
             </div>
           </div>
@@ -841,21 +1065,21 @@ export default function OnboardingWizard({
             {!onboardedResult ? (
               // Stage 1: Calibration Loader
               <div className="space-y-8">
-                {/* Immersive pulsing cerebral sphere */}
+                {/* Immersive pulsing loading sphere */}
                 <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full border border-[var(--accent)] opacity-20 animate-ping"></div>
                   <div className="absolute inset-4 rounded-full border border-[var(--secondary)] opacity-20 animate-pulse"></div>
                   <div className="absolute inset-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] backdrop-blur-sm flex items-center justify-center shadow-inner">
-                    <span className="text-4xl animate-bounce">🧠</span>
+                    <span className="text-[14px] font-black tracking-widest text-slate-400">AIOS</span>
                   </div>
-                  <div className="absolute top-2 left-6 w-4 h-4 rounded-full bg-[var(--accent)] shadow-[var(--shadow-glow)] animate-pulse"></div>
+                  <div className="absolute top-2 left-6 w-4 h-4 rounded-full bg-[var(--accent)] opacity-80 animate-pulse"></div>
                   <div className="absolute bottom-4 left-10 w-3 h-3 rounded-full bg-[var(--secondary)] opacity-60 animate-ping"></div>
                   <div className="absolute top-10 right-4 w-3.5 h-3.5 rounded-full bg-[var(--accent)] opacity-80 animate-pulse"></div>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-2xl font-black animate-pulse">
-                    AI Cognitive Calibration Active
+                  <h3 className="text-2xl font-black text-slate-900 animate-pulse">
+                    Analyzing Technical Profile
                   </h3>
                   <p className="text-xs text-slate-400 font-mono tracking-wide max-w-sm mx-auto leading-relaxed h-12 flex items-center justify-center">
                     {analysisText}
@@ -878,42 +1102,41 @@ export default function OnboardingWizard({
               // Stage 2: Calibration Success Overview
               <div className="space-y-6 animate-scale-in text-left">
                 <div className="text-center space-y-2 pb-2">
-                  <span className="text-5xl block animate-bounce">🏆</span>
-                  <h3 className="text-2xl font-black">Calibration Successful!</h3>
-                  <p className="text-xs text-slate-400">Onboarding data synced with AIOS database core.</p>
+                  <h3 className="text-2xl font-black text-slate-900">Profile Setup Complete</h3>
+                  <p className="text-xs text-slate-500">Onboarding data synchronized with AIOS core database.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border)]">
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">AI Memory Calibrated</h4>
-                    <div className="space-y-1 text-xs">
-                      <p>👤 **Developer**: {onboardedResult.full_name}</p>
-                      <p>⚡ **Track**: {onboardedResult.career_goals.join(", ")}</p>
-                      <p>⏱️ **Commitment**: {onboardedResult.time_availability_mins} mins/day</p>
-                      <p>✨ **Style**: {onboardedResult.learning_style} learning</p>
+                    <h4 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Account Information</h4>
+                    <div className="space-y-1 text-xs text-slate-700">
+                      <p><span className="font-semibold">Developer:</span> {onboardedResult.full_name}</p>
+                      <p><span className="font-semibold">Syllabus Track:</span> {onboardedResult.career_goals.join(", ")}</p>
+                      <p><span className="font-semibold">Allocation:</span> {onboardedResult.time_availability_mins} mins/day</p>
+                      <p><span className="font-semibold">Preferred Style:</span> {onboardedResult.learning_style} learning</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Cognitive Maps & Rewards</h4>
-                    <div className="space-y-1 text-xs">
-                      <p>🧠 **Mentor Personality**: {onboardedResult.bio?.split("[AI Mentor Personality: ")?.[1]?.replace("]", "") || "Pragmatic Architect"}</p>
-                      <p>📈 **Roadmap Size**: {onboardedResult.roadmap?.length} tailored stages</p>
-                      <p>🎁 **Calibration Bonus**: +{onboardedResult.xp_points} XP awarded</p>
-                      <p>🔥 **Daily Streak**: Active (Day 1)</p>
+                    <h4 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Academics & Rewards</h4>
+                    <div className="space-y-1 text-xs text-slate-700">
+                      <p><span className="font-semibold">Academic Path:</span> {onboardedResult.college_name || "Self-taught"}</p>
+                      <p><span className="font-semibold">Roadmap Stages:</span> {onboardedResult.roadmap?.length} tailored stages</p>
+                      <p><span className="font-semibold">Intro Bonus:</span> +{onboardedResult.xp_points} XP awarded</p>
+                      <p><span className="font-semibold">Daily Streak:</span> Active (Day 1)</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[var(--accent-soft)] border border-[var(--accent)] rounded-2xl p-4 text-xs leading-relaxed text-[var(--accent)] font-semibold text-center">
-                  🚀 Your learning roadmap, microservices sandboxes, and AI mentor workspace are fully configured and unlocked!
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs leading-relaxed text-emerald-800 font-semibold text-center">
+                  Your customized learning roadmap, microservices sandboxes, and developer workspace are fully configured and unlocked!
                 </div>
 
                 <button
                   onClick={close}
-                  className="w-full btn-accent uppercase py-4 px-6 tracking-wider active:scale-98 cursor-pointer mt-4"
+                  className="w-full btn-accent uppercase py-4 px-6 tracking-wider font-bold text-xs active:scale-98 cursor-pointer mt-4"
                 >
-                  Enter Workspace 🌌
+                  Enter Workspace
                 </button>
               </div>
             )}
