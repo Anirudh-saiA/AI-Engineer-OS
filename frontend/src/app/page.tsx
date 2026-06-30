@@ -6,6 +6,7 @@ import OnboardingWizard from "./onboarding/OnboardingWizard";
 import ProfileTab from "./components/ProfileTab";
 import SettingsTab from "./components/SettingsTab";
 import DashboardTab from "./components/DashboardTab";
+import { LayoutDashboard, Map, Link2, BarChart3, Terminal, Settings, User, Bell, Search } from "lucide-react";
 
 
 import VectorTab from "./components/VectorTab";
@@ -1948,20 +1949,19 @@ const fetchProfile = async () => {
           <div className="flex-1 min-h-screen flex relative z-10">
           
           {/* ═══════ LEFT SIDEBAR ═══════ */}
-          <aside className={`hidden md:flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-300 z-30 ${
+          <aside className={`hidden md:flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-150 z-30 ${
             sidebarCollapsed ? "w-20" : "w-64"
-          }`}
-          style={{ background: "#120f2b" }}>
+          } bg-white border-r border-gray-200`}>
             
             {/* Sidebar Logo */}
             <div className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-[#120f2b] shadow-md flex-shrink-0 bg-amber-500">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-white shadow-sm flex-shrink-0 bg-blue-600">
                   AI
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div>
-                    <h1 className="text-lg font-black tracking-tight leading-none text-white">
+                    <h1 className="text-base font-bold tracking-tight leading-none text-gray-900">
                       AIOS
                     </h1>
                   </div>
@@ -1970,32 +1970,30 @@ const fetchProfile = async () => {
               
               <button 
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden md:flex w-7 h-7 rounded-lg items-center justify-center cursor-pointer transition-all"
-                style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                className="hidden md:flex w-7 h-7 rounded-lg items-center justify-center cursor-pointer transition-all border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50"
               >
                 {sidebarCollapsed ? "→" : "←"}
               </button>
 
               <button 
                 onClick={() => setMobileSidebarOpen(false)}
-                className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer"
-                style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50"
               >
                 ✕
               </button>
             </div>
 
             {/* Navigation Tabs */}
-            <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
               
               {([
-                { id: "dashboard" as Tab, label: "Dashboard", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg> },
-                { id: "roadmaps" as Tab, label: "Roadmaps", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg> },
-                { id: "integrations" as Tab, label: "Integrations", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg> },
-                { id: "analytics" as Tab, label: "Analytics", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg> },
-                { id: "debugger" as Tab, label: "AI Debugger", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> },
-                { id: "settings" as Tab, label: "Settings", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
-                { id: "profile" as Tab, label: "Profile", icon: <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg> },
+                { id: "dashboard" as Tab, label: "Dashboard", icon: <LayoutDashboard className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "roadmaps" as Tab, label: "Roadmaps", icon: <Map className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "integrations" as Tab, label: "Integrations", icon: <Link2 className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "analytics" as Tab, label: "Analytics", icon: <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "debugger" as Tab, label: "AI Debugger", icon: <Terminal className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "settings" as Tab, label: "Settings", icon: <Settings className="w-[18px] h-[18px] flex-shrink-0" /> },
+                { id: "profile" as Tab, label: "Profile", icon: <User className="w-[18px] h-[18px] flex-shrink-0" /> },
               ]).map((tab) => (
                 <button
                   key={tab.id}
@@ -2003,12 +2001,11 @@ const fetchProfile = async () => {
                     setActiveTab(tab.id);
                     setMobileSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] font-semibold tracking-wide transition-all cursor-pointer ${
-                    activeTab === tab.id ? "rounded-r-xl" : "rounded-xl mx-2"
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all cursor-pointer rounded-lg ${
+                    activeTab === tab.id 
+                      ? "bg-blue-50 text-blue-600 font-semibold" 
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                   }`}
-                  style={activeTab === tab.id ? { background: "rgba(255,255,255,0.08)", borderLeft: "3px solid var(--accent)", color: "var(--accent)" } : { color: "#9ca3af" }}
-                  onMouseEnter={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.color = "white"; } }}
-                  onMouseLeave={(e) => { if (activeTab !== tab.id) { e.currentTarget.style.color = "#9ca3af"; } }}
                 >
                   {tab.icon}
                   {(!sidebarCollapsed || mobileSidebarOpen) && <span>{tab.label}</span>}
@@ -2017,9 +2014,9 @@ const fetchProfile = async () => {
             </nav>
 
             {/* User Card */}
-            <div className="p-4 mt-auto">
-              <div className="flex items-center gap-3 overflow-hidden p-3 rounded-2xl cursor-pointer" style={{ background: "rgba(255,255,255,0.05)" }}>
-                <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
+            <div className="p-4 mt-auto border-t border-gray-100">
+              <div className="flex items-center gap-3 overflow-hidden p-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 bg-gray-50/50">
+                <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -2028,11 +2025,11 @@ const fetchProfile = async () => {
                 </div>
                 {(!sidebarCollapsed || mobileSidebarOpen) && (
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-bold truncate leading-tight text-white">
+                    <p className="text-xs font-semibold truncate leading-tight text-gray-900">
                       Sai Anirudh
                     </p>
-                    <p className="text-[11px] font-mono truncate leading-none mt-1 text-slate-400">
-                      ai.anirudh@gmail...
+                    <p className="text-[10px] font-mono truncate leading-none mt-0.5 text-gray-400">
+                      ai.anirudh@gmail.com
                     </p>
                   </div>
                 )}
@@ -2044,11 +2041,11 @@ const fetchProfile = async () => {
           <div className="flex-1 flex flex-col min-w-0">
             
             {/* Header Bar */}
-            <header className="h-20 sticky top-0 z-20 px-8 flex items-center justify-between bg-transparent">
+            <header className="h-16 sticky top-0 z-20 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-gray-200">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                  className="md:hidden p-1.5 rounded-lg cursor-pointer flex-shrink-0 text-slate-400"
+                  className="md:hidden p-1.5 rounded-lg cursor-pointer flex-shrink-0 text-gray-400 hover:bg-gray-50"
                   aria-label="Toggle Sidebar Menu"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2056,41 +2053,45 @@ const fetchProfile = async () => {
                   </svg>
                 </button>
                 <div className="min-w-0">
-                  <h2 className="text-xl md:text-2xl font-black flex items-center gap-3 truncate text-slate-900">
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                    <span>workspace</span>
+                    <span className="text-gray-300">/</span>
+                    <span className="text-gray-500 font-bold">{activeTab}</span>
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900 mt-0.5 flex items-center gap-2">
                     {activeTab === "dashboard" && "Dashboard"}
                     {activeTab === "roadmaps" && "Roadmaps"}
-                    {activeTab === "vector" && "Vector Search"}
+                    {activeTab === "integrations" && "Integrations"}
                     {activeTab === "analytics" && "Project Analytics"}
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "profile" && "Developer Profile"}
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-600 bg-emerald-100/50">
-                      Live
-                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="System Online"></span>
                   </h2>
-                  <p className="text-[12px] font-medium truncate text-slate-400 mt-1">
-                    workspace/{activeTab}
-                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 flex-shrink-0">
                 {/* Search Bar */}
-                <div className="hidden md:flex items-center bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm text-slate-400 text-[13px]">
-                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  Search...
-                </div>
-                
-                {/* Model Pill */}
-                <div className="hidden sm:flex items-center gap-2 bg-purple-50 text-purple-600 border border-purple-100 rounded-full px-4 py-2 font-bold text-[12px] shadow-sm">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/></svg>
-                  Gemini 2.5 Flash
+                <div className="hidden md:flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-gray-400 text-xs w-64 hover:border-gray-300 transition-colors shadow-xs">
+                  <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                  <span>Search workspace...</span>
+                  <span className="ml-auto text-[9px] bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-400 font-mono shadow-xs">⌘K</span>
                 </div>
                 
                 {/* Notification Bell */}
-                <button className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center relative shadow-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                <button className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center relative shadow-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
                 </button>
+
+                {/* User Profile Avatar */}
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm border border-gray-200">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    "SA"
+                  )}
+                </div>
               </div>
             </header>
 
@@ -2123,6 +2124,7 @@ const fetchProfile = async () => {
                   API_BASE_URL={API_BASE_URL}
                   fetchProfile={fetchProfile}
                   setShowBreatherModal={setShowBreatherModal}
+                  setActiveTab={setActiveTab}
                 />
               )}
 

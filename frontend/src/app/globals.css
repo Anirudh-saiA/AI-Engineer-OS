@@ -9,56 +9,56 @@
 :root,
 [data-theme="light"],
 [data-theme="dark"] {
-  --bg-primary: #f7f5ed;
-  --bg-secondary: #ece8dd;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fdfdfb;
-  --bg-code: #1b1b2f;
-  --bg-input: #eae5d8;
-  --bg-input-focus: #ffffff;
-  --bg-sidebar: rgba(255, 255, 255, 0.9);
-  --bg-header: rgba(255, 255, 255, 0.75);
-  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-primary: #FAFAFA;
+  --bg-secondary: #F3F4F6;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F9FAFB;
+  --bg-code: #1F2937;
+  --bg-input: #FFFFFF;
+  --bg-input-focus: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
 
-  --text-primary: #331f0f;
-  --text-secondary: #5c4533;
-  --text-muted: #8b7561;
-  --text-inverse: #ffffff;
-  --text-code: #e2e8f0;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --text-inverse: #FFFFFF;
+  --text-code: #F3F4F6;
 
-  --accent: #f97316;
-  --accent-hover: #ea580c;
-  --accent-soft: rgba(249, 115, 22, 0.08);
-  --accent-glow: rgba(249, 115, 22, 0.25);
-  --accent-text: #c2410c;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-soft: rgba(37, 99, 235, 0.05);
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-text: #1E40AF;
 
-  --secondary: #3b82f6;
-  --secondary-soft: rgba(59, 130, 246, 0.1);
-  --secondary-text: #1d4ed8;
+  --secondary: #3B82F6;
+  --secondary-soft: rgba(59, 130, 246, 0.05);
+  --secondary-text: #1D4ED8;
 
   --warning: #F59E0B;
   --error: #EF4444;
-  --success: #22C55E;
+  --success: #10B981;
 
-  --border: #dfdacf;
-  --border-hover: #c3bbb0;
+  --border: #E5E7EB;
+  --border-hover: #D1D5DB;
   --border-accent: var(--accent);
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.1);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-glow: none;
 
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
 
-  --scrollbar-track: #ece8dd;
-  --scrollbar-thumb: #c3bbb0;
-  --scrollbar-hover: #94a3b8;
+  --scrollbar-track: #F3F4F6;
+  --scrollbar-thumb: #D1D5DB;
+  --scrollbar-hover: #9CA3AF;
 }
 
 /* ── TAILWIND THEME TOKENS ── */
@@ -68,20 +68,8 @@
   --color-accent: var(--accent);
   --color-border: var(--border);
 
-  --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
-
-  /* Scale up all standard font sizes across the entire app for high readability */
-  --text-xs: 1.04rem;      /* was 0.75rem (12px) -> now 16.6px */
-  --text-sm: 1.15rem;      /* was 0.875rem (14px) -> now 18.4px */
-  --text-base: 1.28rem;    /* was 1rem (16px) -> now 20.5px */
-  --text-lg: 1.45rem;      /* was 1.125rem (18px) -> now 23.2px */
-  --text-xl: 1.75rem;      /* was 1.25rem (20px) -> now 28.0px */
-  --text-2xl: 2.1rem;      /* was 1.5rem (24px) -> now 33.6px */
-  --text-3xl: 2.65rem;     /* was 1.875rem (30px) -> now 42.4px */
-  --text-4xl: 3.6rem;      /* was 2.25rem (36px) -> now 57.6px */
-  --text-5xl: 4.5rem;      /* was 3rem (48px) -> now 72.0px */
-  --text-6xl: 5.6rem;      /* was 3.75rem (60px) -> now 89.6px */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* ═══════════════════════════════════════════
@@ -242,26 +230,25 @@ body {
   box-shadow: var(--shadow-glow) !important;
 }
 
-/* Legacy glass-card — now upgraded with premium blurred glassmorphism */
+/* Legacy glass-card — now upgraded to standard SaaS card */
 .glass-card {
-  background: rgba(18, 18, 20, 0.45) !important;
-  backdrop-filter: blur(20px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 150ms ease-in-out !important;
 }
 
 [data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.65) !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.05) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .glass-card:hover {
-  border-color: var(--accent) !important;
-  box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.5), 0 0 15px 0 var(--accent-soft) !important;
-  transform: translateY(-2px) !important;
+  border-color: var(--border-hover) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: none !important;
 }
 
 /* ═══════════════════════════════════════════
@@ -446,45 +433,7 @@ body {
 [data-theme="light"] .blob-2 { background: linear-gradient(135deg, #6366F1, #EC4899); }
 
 
-/* ── MODERN TYPOGRAPHY OVERRIDE ──
-   Directs legacy cyberpunk font-mono classes to render as clean, premium sans-serif (Inter)
-   across Dashboard, Agent Terminal, Database Explorer, Vector Search, Settings, and Profile tabs.
-   Strict monospaced styling is preserved exclusively for code snippets, logs, and pre tags. */
-.font-mono:not(pre, code, .code-block, .code-block *, .console-terminal, .console-terminal *, .font-mono-strict) {
-  font-family: var(--font-sans) !important;
-  letter-spacing: -0.015em !important;
-}
-
-/* ── PROFESSIONAL READABILITY & TYPOGRAPHY CALIBRATION ──
-   Enforces a clean typographic hierarchy. Instead of forcing microscopic text to be huge
-   (which breaks grids and causes alignment overflows), it maps sizes to premium, highly legible bounds. */
-.text-\[8px\], .text-\[8px\] * {
-  font-size: 11px !important;
-  letter-spacing: 0.03em !important;
-}
-.text-\[9px\], .text-\[9px\] * {
-  font-size: 11.5px !important;
-  letter-spacing: 0.02em !important;
-}
-.text-\[10px\], .text-\[10px\] * {
-  font-size: 12px !important;
-  letter-spacing: 0.01em !important;
-}
-.text-\[11px\], .text-\[11px\] * {
-  font-size: 13px !important;
-}
-.text-\[12px\], .text-\[12px\] * {
-  font-size: 14px !important;
-}
-.text-\[13px\], .text-\[13px\] * {
-  font-size: 14.5px !important;
-}
-.text-\[14px\], .text-\[14px\] * {
-  font-size: 15.5px !important;
-}
-.text-\[15px\], .text-\[15px\] * {
-  font-size: 16px !important;
-}
+/* Custom typography overrides disabled for clean, native standard font hierarchies */
 
 /* ═══════════════════════════════════════════
    WEEK 15: AI DEBUGGING PLATFORM STYLES
