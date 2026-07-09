@@ -6,6 +6,8 @@ interface SettingsTabProps {
   setActiveModel: (model: string) => void;
   addLog: (text: string, type: "system" | "success" | "config" | "info" | "error") => void;
   user: any;
+  theme: string;
+  toggleTheme: () => void;
 }
 
 export default function SettingsTab({
@@ -13,6 +15,8 @@ export default function SettingsTab({
   setActiveModel,
   addLog,
   user,
+  theme,
+  toggleTheme,
 }: SettingsTabProps) {
   const [settings, setSettings] = useState({
     notifications_enabled: true,
@@ -78,9 +82,31 @@ export default function SettingsTab({
       <div className="w-full max-w-3xl glass-card rounded-3xl p-8 space-y-8">
         <div>
           <h2 className="text-xl font-extrabold tracking-tight">Appearance & Theme</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            The application is permanently locked to the Light Beige theme.
+          <p className="text-xs text-slate-400 mt-1 mb-4">
+            Switch between Light Beige and Dark Mode settings.
           </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => theme !== "light" && toggleTheme()}
+              className={`flex-1 max-w-[200px] px-4 py-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                theme === "light"
+                  ? "bg-orange-400 border-orange-500 text-white shadow-sm"
+                  : "bg-[var(--bg-input)] border-[var(--border)] text-slate-400 hover:border-slate-500"
+              }`}
+            >
+              ☀️ Light Beige
+            </button>
+            <button
+              onClick={() => theme !== "dark" && toggleTheme()}
+              className={`flex-1 max-w-[200px] px-4 py-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                theme === "dark"
+                  ? "bg-blue-600 border-blue-700 text-white shadow-sm"
+                  : "bg-[var(--bg-input)] border-[var(--border)] text-slate-400 hover:border-slate-500"
+              }`}
+            >
+              🌙 Dark Mode
+            </button>
+          </div>
         </div>
 
         <hr className="border-[var(--border)]" />

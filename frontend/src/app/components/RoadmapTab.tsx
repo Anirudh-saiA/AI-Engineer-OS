@@ -62,13 +62,12 @@ export default function RoadmapTab({
         {/* Canvas Header */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-6 mb-6 border-b border-[var(--border)] relative z-10">
           <div className="flex items-center gap-3">
-            <span className="text-4xl animate-float">🗺️</span>
             <div>
               <h3 className="text-base sm:text-lg font-black tracking-tight">
-                Cognitive Roadmap Hub
+                Curriculum Roadmap
               </h3>
-              <p className="text-xs font-mono font-bold mt-0.5 text-slate-400">
-                Select, explore, and check off specialized learning trails
+              <p className="text-xs font-mono font-bold mt-0.5 text-[var(--text-muted)]">
+                Select, explore, and track specialized learning paths
               </p>
             </div>
           </div>
@@ -85,7 +84,7 @@ export default function RoadmapTab({
                 }`}
                 style={{ fontSize: "12px" }}
               >
-                🎯 Calibrated Path
+                Calibrated Path
               </button>
             )}
             {Object.entries(staticRoadmaps).map(([key, value]) => {
@@ -216,7 +215,6 @@ export default function RoadmapTab({
                           {isLocked && (
                             <div className="flex items-center gap-1.5 text-xs font-mono font-black text-[var(--text-muted)]">
                               <span>Locked Stage</span>
-                              <span>🔒</span>
                             </div>
                           )}
                         </div>
@@ -335,10 +333,10 @@ export default function RoadmapTab({
                 {staticRoadmaps[selectedRoadmapTrack].nodes.map((node, nodeIdx) => (
                   <div key={node.id} className="glass-card rounded-2xl p-6 border border-[var(--border)] space-y-4 hover:border-slate-700 transition-colors">
                     <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
-                      <span className="w-6 h-6 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center text-[10px] font-mono font-bold text-slate-400">
+                      <span className="w-6 h-6 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center text-[10px] font-mono font-bold text-[var(--text-muted)]">
                         {nodeIdx + 1}
                       </span>
-                      <h4 className="text-xs font-mono font-black uppercase tracking-wider text-slate-200">{node.title}</h4>
+                      <h4 className="text-xs font-mono font-black uppercase tracking-wider text-[var(--text-primary)]">{node.title}</h4>
                     </div>
 
                     <div className="space-y-2.5">
@@ -359,8 +357,8 @@ export default function RoadmapTab({
                             }`}
                           >
                             <div className="min-w-0 flex-1">
-                              <h5 className="text-[11px] font-bold text-slate-200 truncate">{sub.title}</h5>
-                              <p className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">{sub.description}</p>
+                              <h5 className="text-[11px] font-bold text-[var(--text-primary)] truncate">{sub.title}</h5>
+                              <p className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5 truncate">{sub.description}</p>
                             </div>
 
                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -377,20 +375,19 @@ export default function RoadmapTab({
 
               {/* Sub-node Checklist Viewer Drawer/Modal */}
               {activeDetailSubNode && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md animate-fadeIn p-4">
-                  <div className="glass-card max-w-lg w-full rounded-3xl p-6 md:p-8 border border-[var(--accent)] text-left space-y-6 relative overflow-hidden shadow-2xl animate-scale-in"
-                    style={{ background: "#121218" }}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-overlay)] backdrop-blur-md animate-fadeIn p-4">
+                  <div className="glass-card max-w-lg w-full rounded-3xl p-6 md:p-8 border border-[var(--accent)] text-left space-y-6 relative overflow-hidden shadow-2xl animate-scale-in bg-[var(--bg-card)]">
                     <div className="absolute top-[-30%] left-[-20%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-[var(--accent-soft)] to-transparent blur-[80px] pointer-events-none"></div>
 
                     <div className="flex justify-between items-start gap-4 pb-4 border-b border-[var(--border)] relative z-10">
                       <div>
                         <span className="text-[9px] font-mono font-bold text-[var(--accent)] uppercase tracking-wider block">Integrated Sandbox Blueprint Checklist</span>
-                        <h3 className="text-base sm:text-lg font-black text-white mt-0.5">{activeDetailSubNode.title}</h3>
-                        <p className="text-xs text-slate-400 mt-1 leading-normal">{activeDetailSubNode.description}</p>
+                        <h3 className="text-base sm:text-lg font-black text-[var(--text-primary)] mt-0.5">{activeDetailSubNode.title}</h3>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1 leading-normal">{activeDetailSubNode.description}</p>
                       </div>
                       <button
                         onClick={() => setActiveDetailSubNode(null)}
-                        className="w-8 h-8 rounded-xl border border-[var(--border)] hover:border-slate-500 flex items-center justify-center font-bold text-slate-400 hover:text-white cursor-pointer transition-all flex-shrink-0"
+                        className="w-8 h-8 rounded-xl border border-[var(--border)] hover:border-slate-500 flex items-center justify-center font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-all flex-shrink-0"
                       >
                         ✕
                       </button>
@@ -445,9 +442,9 @@ export default function RoadmapTab({
                           setActiveDetailSubNode(null);
                           addLog(`[SYSTEM] Practice Exercise Loaded: Active study session spawned for blueprint node "${activeDetailSubNode.title}"`, "info");
                         }}
-                        className="btn-accent w-full py-4 rounded-2xl font-black text-xs uppercase cursor-pointer transition-all active:scale-95"
+                        className="btn-accent w-full py-4 rounded-2xl font-black text-xs uppercase cursor-pointer transition-all active:scale-95 bg-orange-400 hover:bg-orange-500 text-white border-none"
                       >
-                        Launch Sandbox Practice Session 🪐
+                        Launch Sandbox Practice Session
                       </button>
                     </div>
                   </div>
@@ -459,15 +456,14 @@ export default function RoadmapTab({
       </div>
 
       {/* ═══════ UPCOMING COURSES ═══════ */}
-      <div className="rounded-[24px] p-6 md:p-8 relative overflow-hidden shadow-sm border border-gray-100 bg-[#fbfbfb]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 mb-6 border-b border-gray-200 relative z-10">
+      <div className="rounded-[24px] p-6 md:p-8 relative overflow-hidden shadow-sm border border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 mb-6 border-b border-[var(--border)] relative z-10">
           <div className="flex items-center gap-3">
-            <span className="text-3xl animate-float">🚀</span>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-[#111827]">
+              <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-[var(--text-primary)]">
                 Upcoming Career Paths
               </h3>
-              <p className="text-xs font-semibold mt-0.5 text-[#94a3b8]">
+              <p className="text-xs font-semibold mt-0.5 text-[var(--text-muted)]">
                 Register interest for specialized bootcamps
               </p>
             </div>
@@ -482,10 +478,9 @@ export default function RoadmapTab({
             "Data Analyst",
             "MLOps"
           ].map((course, i) => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-[#111827] shadow-sm overflow-hidden relative cursor-not-allowed group min-w-[240px] flex-1 max-w-[32%]">
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#1e293b]"></div>
-              <span className="font-bold text-sm text-white z-10 pl-6">{course}</span>
-              <svg className="w-5 h-5 text-slate-500 z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] shadow-sm overflow-hidden relative cursor-not-allowed group min-w-[240px] flex-1 max-w-[32%]">
+              <span className="font-bold text-sm text-[var(--text-primary)] z-10 pl-2">{course}</span>
+              <svg className="w-5 h-5 text-[var(--text-muted)] z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
             </div>
@@ -493,7 +488,7 @@ export default function RoadmapTab({
         </div>
 
         <div className="mt-8 text-center relative z-10">
-          <span className="inline-block px-4 py-2 rounded-full border border-dotted border-slate-300 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          <span className="inline-block px-4 py-2 rounded-full border border-dotted border-[var(--border)] bg-[var(--bg-card)] text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             COMING SOON
           </span>
         </div>

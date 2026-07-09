@@ -1125,17 +1125,15 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
   const [debugMode, setDebugMode] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("You are Antigravity, a professional agentic developer working inside the AI-Engineer-OS platform.");
 
-  // Apply theme to document (Enforced Light/Beige Theme)
+  // Apply theme to document
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "light");
-  }, [theme]); // Kept dependency to avoid hooks warning
-
-  // Theme is locked to light/beige
-  useEffect(() => {}, []);
-  useEffect(() => {}, [theme]);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
-    addLog("Dark mode has been removed. Theme is locked to beige.", "info");
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    addLog(`System theme changed to ${nextTheme === "light" ? "Light Beige" : "Dark Mode"}.`, "config");
   };
 
   // Helper log function
@@ -2239,7 +2237,7 @@ const fetchProfile = async () => {
               )}
 
               {/* ═══════ TAB 5: SETTINGS ═══════ */}
-              {activeTab === "settings" && (<SettingsTab activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} />)}
+              {activeTab === "settings" && (<SettingsTab activeModel={activeModel} setActiveModel={setActiveModel} addLog={addLog} user={user} theme={theme} toggleTheme={toggleTheme} />)}
 
               {/* ═══════ TAB 6: PROFILE ═══════ */}
               {activeTab === "profile" && (

@@ -5,50 +5,48 @@
    Inspired by Nexus (dark) & ailingo (light)
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── LIGHT THEME (default) ── Playful, clean, ailingo-inspired ── */
 :root,
-[data-theme="light"],
-[data-theme="dark"] {
-  --bg-primary: #FAFAFA;
-  --bg-secondary: #F3F4F6;
-  --bg-card: #FFFFFF;
-  --bg-card-hover: #F9FAFB;
-  --bg-code: #1F2937;
-  --bg-input: #FFFFFF;
-  --bg-input-focus: #FFFFFF;
-  --bg-sidebar: #FFFFFF;
-  --bg-header: rgba(255, 255, 255, 0.85);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+[data-theme="light"] {
+  --bg-primary: #F8F4EC;
+  --bg-secondary: #F5EFE6;
+  --bg-card: #FFFCF7;
+  --bg-card-hover: #FDFBF7;
+  --bg-code: #1E1B18;
+  --bg-input: #FFFCF7;
+  --bg-input-focus: #FFFCF7;
+  --bg-sidebar: #F5EFE6;
+  --bg-header: rgba(248, 244, 236, 0.9);
+  --bg-overlay: rgba(30, 27, 24, 0.4);
 
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
-  --text-inverse: #FFFFFF;
-  --text-code: #F3F4F6;
+  --text-primary: #2C2621;
+  --text-secondary: #5C524A;
+  --text-muted: #8E8278;
+  --text-inverse: #FFFCF7;
+  --text-code: #F5EFE6;
 
-  --accent: #2563EB;
-  --accent-hover: #1D4ED8;
-  --accent-soft: rgba(37, 99, 235, 0.05);
-  --accent-glow: rgba(37, 99, 235, 0.15);
-  --accent-text: #1E40AF;
+  --accent: #F97316; /* Sunset Orange */
+  --accent-hover: #EA580C;
+  --accent-soft: rgba(249, 115, 22, 0.08);
+  --accent-glow: rgba(249, 115, 22, 0.15);
+  --accent-text: #C2410C;
 
-  --secondary: #3B82F6;
-  --secondary-soft: rgba(59, 130, 246, 0.05);
-  --secondary-text: #1D4ED8;
+  --secondary: #F97316;
+  --secondary-soft: rgba(249, 115, 22, 0.05);
+  --secondary-text: #EA580C;
 
   --warning: #F59E0B;
   --error: #EF4444;
   --success: #10B981;
 
-  --border: #E5E7EB;
-  --border-hover: #D1D5DB;
+  --border: #EADBCC;
+  --border-hover: #D7C4AF;
   --border-accent: var(--accent);
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-glow: none;
+  --shadow-xs: 0 1px 2px rgba(92, 82, 74, 0.05);
+  --shadow-sm: 0 1px 3px rgba(92, 82, 74, 0.08), 0 1px 2px rgba(92, 82, 74, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(92, 82, 74, 0.08), 0 2px 4px -1px rgba(92, 82, 74, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(92, 82, 74, 0.08), 0 4px 6px -2px rgba(92, 82, 74, 0.05);
+  --shadow-glow: 0 0 12px rgba(249, 115, 22, 0.2);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -56,8 +54,57 @@
   --radius-xl: 12px;
   --radius-2xl: 12px;
 
-  --scrollbar-track: #F3F4F6;
-  --scrollbar-thumb: #D1D5DB;
+  --scrollbar-track: #F5EFE6;
+  --scrollbar-thumb: #D7C4AF;
+  --scrollbar-hover: #C5B099;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #121214;
+  --bg-secondary: #1E1E22;
+  --bg-card: #1A1A1E;
+  --bg-card-hover: #222227;
+  --bg-code: #0A0A0C;
+  --bg-input: #1A1A1E;
+  --bg-input-focus: #1A1A1E;
+  --bg-sidebar: #121214;
+  --bg-header: rgba(18, 18, 20, 0.9);
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  --text-primary: #E3E3E6;
+  --text-secondary: #A3A3AC;
+  --text-muted: #6B6B75;
+  --text-inverse: #121214;
+  --text-code: #E3E3E6;
+
+  --accent: #3B82F6; /* Deep Blue Accent for Dark mode */
+  --accent-hover: #2563EB;
+  --accent-soft: rgba(59, 130, 246, 0.1);
+  --accent-glow: rgba(59, 130, 246, 0.25);
+  --accent-text: #60A5FA;
+
+  --secondary: #3B82F6;
+  --secondary-soft: rgba(59, 130, 246, 0.05);
+  --secondary-text: #60A5FA;
+
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --success: #10B981;
+
+  --border: #2D2D34;
+  --border-hover: #3E3E48;
+  --border-accent: var(--accent);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 12px rgba(59, 130, 246, 0.3);
+
+  --scrollbar-track: #121214;
+  --scrollbar-thumb: #2D2D34;
+  --scrollbar-hover: #3E3E48;
+}
   --scrollbar-hover: #9CA3AF;
 }
 
