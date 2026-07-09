@@ -114,59 +114,9 @@ export default function RoadmapTab({
           {/* CASE A: CALIBRATED ROADMAP TIMELINE */}
           {selectedRoadmapTrack === "calibrated" && roadmap && roadmap.length > 0 && (
             <div className="space-y-8 animate-fadeIn">
-              {/* Gamified Mastery Summary Banner */}
-              {(() => {
-                const totalRoadmapTasks = roadmap.reduce((acc, curr) => acc + (curr.tasks?.length || 0), 0);
-                const completedRoadmapTasks = profileData?.completed_tasks?.length || 0;
-                const overallPercent = totalRoadmapTasks > 0 ? Math.round((completedRoadmapTasks / totalRoadmapTasks) * 100) : 0;
-
-                return (
-                  <div className="glass-card rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-[var(--border)] bg-[var(--bg-sidebar)]">
-                    <div className="absolute top-[-40%] left-[-10%] w-[250px] h-[250px] bg-gradient-to-tr from-[var(--accent-soft)] to-transparent blur-[70px] pointer-events-none"></div>
-                    
-                    {/* Info / Progress Text */}
-                    <div className="flex-1 space-y-2 z-10 w-full">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl animate-float">🔥</span>
-                        <div>
-                          <h4 className="text-sm font-black tracking-tight">
-                            Personalized Mastery Roadmap Progress
-                          </h4>
-                          <p className="text-[10px] font-mono text-[var(--accent-text)] font-bold uppercase mt-0.5">
-                            ⚡ Streak: {profileData?.streak_count || 1} Days • 👑 XP: {profileData?.xp_points || 100} XP
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Progress bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center text-[10px] font-mono font-bold text-slate-400">
-                          <span>Objectives Mastered: {completedRoadmapTasks} / {totalRoadmapTasks}</span>
-                          <span className="text-[var(--accent-text)]">{overallPercent}%</span>
-                        </div>
-                        <div className="w-full bg-[var(--bg-secondary)] h-2.5 rounded-full overflow-hidden border border-[var(--border)] relative">
-                          <div 
-                            className="h-full rounded-full transition-all duration-700 bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
-                            style={{ width: `${overallPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Dynamic Badge/Status icon */}
-                    <div className="z-10 flex-shrink-0 flex items-center justify-center bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 w-full md:w-auto md:min-w-[140px] text-center shadow-sm">
-                      <div>
-                        <span className="text-3xl block">🏆</span>
-                        <span className="text-[10px] font-mono font-black uppercase tracking-wider block mt-1 text-slate-400">
-                          {overallPercent === 100 ? "AI Architect" : "OS Initiate"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* Roadmap Node Timeline */}
+
               <div className="relative pl-9 sm:pl-12 space-y-8 before:absolute before:left-[16px] sm:before:left-[20px] before:top-2 before:bottom-2 before:w-[3px] before:bg-[var(--border)]">
                 {roadmap.map((node, index) => {
                   const isActive = node.status === "active";
