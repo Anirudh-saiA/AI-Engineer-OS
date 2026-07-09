@@ -1,22 +1,6 @@
 import React from "react";
 import ActivityHeatmap from "./ActivityHeatmap";
-import { 
-  Flame, 
-  Trophy, 
-  Map, 
-  CheckSquare, 
-  ArrowRight, 
-  Activity, 
-  Bell, 
-  Play, 
-  Terminal, 
-  Search, 
-  Settings, 
-  Clock, 
-  CheckCircle2, 
-  Server, 
-  UserCheck 
-} from "lucide-react";
+import { Map, ArrowRight, Sparkles, BookOpen, ChevronRight } from "lucide-react";
 
 interface RoadmapSubNode {
   id: string;
@@ -67,435 +51,199 @@ interface DashboardTabProps {
   setActiveTab?: (tab: any) => void;
 }
 
+const AVAILABLE_TRACKS = [
+  {
+    id: "ai_engineer",
+    label: "AI Engineer",
+    description: "Master embeddings, RAG pipelines, vector databases, and cognitive AI agents.",
+    icon: "🤖",
+    color: "from-blue-600 to-indigo-600",
+    lightColor: "bg-blue-50 border-blue-100 text-blue-700",
+  },
+  {
+    id: "data_analyst",
+    label: "Data Analyst",
+    description: "Learn SQL, Python data analysis, dashboards, and business intelligence tools.",
+    icon: "📊",
+    color: "from-violet-600 to-purple-600",
+    lightColor: "bg-violet-50 border-violet-100 text-violet-700",
+  },
+  {
+    id: "backend_engineer",
+    label: "Backend Engineer",
+    description: "Build APIs, microservices, databases, and scalable server-side systems.",
+    icon: "⚙️",
+    color: "from-emerald-600 to-teal-600",
+    lightColor: "bg-emerald-50 border-emerald-100 text-emerald-700",
+  },
+];
+
 export default function DashboardTab({
-  dailyTasks,
-  plannerLoading,
-  handleToggleDailyTask,
   profileData,
-  getLast7Days,
   roadmap,
   selectedRoadmapTrack,
   setSelectedRoadmapTrack,
   staticRoadmaps,
-  activeDetailSubNode,
-  setActiveDetailSubNode,
-  checkedTasks,
-  toggleChecklistTask,
-  logs,
-  setLogs,
-  addLog,
-  fetchStatus,
-  fastapiOnline,
-  activeModel,
-  user,
-  API_BASE_URL,
-  fetchProfile,
-  setShowBreatherModal,
   setActiveTab,
 }: DashboardTabProps) {
 
-  // ── 1. (Heatmap data is now handled inside ActivityHeatmap component) ──
+  const hasStarted = roadmap && roadmap.length > 0;
 
-  // ── 2. Module Progress Calculation ──
-  const getModuleProgress = (nodeId: string) => {
-    const track = staticRoadmaps["ai_engineer"];
-    const node = track?.nodes.find(n => n.id === nodeId);
-    if (!node) return 0;
-    
-    let total = 0;
-    let completed = 0;
-    
-    node.subNodes.forEach(sub => {
-      const tasks = sub.checklist || [];
-      total += tasks.length;
-      tasks.forEach(task => {
-        const taskId = `${sub.id}:${task}`;
-        if (profileData?.completed_tasks?.includes(taskId)) {
-          completed++;
-        }
-      });
-    });
-    
-    if (total === 0) return 0;
-    return Math.round((completed / total) * 100);
-  };
+  // Active node from roadmap
+  const activeNode = roadmap?.find((node: any) => node.status === "active") || roadmap?.[0] || null;
 
-  // ── 3. Active Learning Roadmap Node & Upcoming Tasks Extraction ──
-  const activeNode = roadmap?.find(node => node.status === "active") || roadmap?.[0] || null;
-  
-  const getUpcomingTasks = () => {
-    const upcoming: Array<{ id: string; title: string; category: string }> = [];
-    
-    // Prioritize uncompleted tasks from active node
-    if (activeNode && activeNode.tasks) {
-      activeNode.tasks.forEach((task: string) => {
-        const taskId = `${activeNode.node_id}:${task}`;
-        const isDone = profileData?.completed_tasks?.includes(taskId);
-        if (!isDone) {
-          upcoming.push({
-            id: taskId,
-            title: task,
-            category: activeNode.title || "Active Module"
-          });
-        }
-      });
-    }
-    
-    // Fill remaining up to 4 tasks from static curriculum
-    if (upcoming.length < 4) {
-      const track = staticRoadmaps["ai_engineer"];
-      if (track) {
-        track.nodes.forEach(node => {
-          node.subNodes.forEach(sub => {
-            sub.checklist.forEach(task => {
-              const taskId = `${sub.id}:${task}`;
-              const isDone = profileData?.completed_tasks?.includes(taskId);
-              
-              const alreadyAdded = upcoming.some(u => u.id === taskId);
-              if (!isDone && !alreadyAdded && upcoming.length < 4) {
-                upcoming.push({
-                  id: taskId,
-                  title: task,
-                  category: sub.title
-                });
-              }
-            });
-          });
-        });
-      }
-    }
-    
-    return upcoming.slice(0, 4);
-  };
-
-  const upcomingTasks = getUpcomingTasks();
-
-  // Progress variables for active node
+  // Progress calculation
   const totalActiveTasks = activeNode?.tasks?.length || 0;
-  const completedActiveTasks = activeNode?.tasks?.filter((task: string) => 
+  const completedActiveTasks = activeNode?.tasks?.filter((task: string) =>
     profileData?.completed_tasks?.includes(`${activeNode.node_id}:${task}`)
   ).length || 0;
   const activePercent = totalActiveTasks > 0 ? Math.round((completedActiveTasks / totalActiveTasks) * 100) : 0;
 
+  const currentTrack = AVAILABLE_TRACKS.find(t => t.id === selectedRoadmapTrack) || AVAILABLE_TRACKS[0];
+  const completedTasks = profileData?.completed_tasks?.length || 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
 
-      {/* ═══════ OVERVIEW CARDS (4 KPI CARDS) ═══════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card 1: Current Streak */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Current Streak
-            </p>
-            <p className="text-2xl font-bold text-gray-900 leading-none">
-              {profileData?.streak_count || 1} <span className="text-xs font-medium text-gray-500">days</span>
-            </p>
+      {hasStarted ? (
+        /* ─── USER HAS STARTED A ROADMAP: Show Continue Card ─── */
+        <div>
+          {/* Header greeting */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-black text-gray-900">
+              Welcome back{profileData?.name ? `, ${profileData.name.split(" ")[0]}` : ""}! 👋
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Pick up where you left off on your learning journey.</p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <Flame className="w-5 h-5" />
-          </div>
-        </div>
 
-        {/* Card 2: Best Streak */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Best Streak
-            </p>
-            <p className="text-2xl font-bold text-gray-900 leading-none">
-              {profileData?.longest_streak || 1} <span className="text-xs font-medium text-gray-500">days</span>
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <Trophy className="w-5 h-5" />
-          </div>
-        </div>
+          {/* Continue Card */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 shadow-lg shadow-blue-200 text-white relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-        {/* Card 3: Active Roadmaps */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Active Roadmap
-            </p>
-            <p className="text-base font-bold text-gray-900 leading-tight truncate max-w-[150px]">
-              {roadmap && roadmap.length > 0 ? staticRoadmaps[selectedRoadmapTrack]?.title || "AI Engineer" : "AI Engineer"}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <Map className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Card 4: Completed Tasks */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Completed Tasks
-            </p>
-            <p className="text-2xl font-bold text-gray-900 leading-none">
-              {profileData?.completed_tasks?.length || 0} <span className="text-xs font-medium text-gray-500">tasks</span>
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <CheckSquare className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════ MAIN CONTENT (2-COLUMN LAYOUT) ═══════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── LEFT COLUMN: WORKSPACE DATA ── */}
-        <div className="lg:col-span-2 space-y-6">
-
-
-          {/* Block 2: Current Learning Roadmap Node */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Map className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Current Learning Module</h3>
-            </div>
-
-            {activeNode ? (
-              <div className="space-y-4">
+            <div className="relative z-10">
+              <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">
-                    {activeNode.title || "Mastery Path"}
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                    {activeNode.description}
-                  </p>
-                </div>
-
-                <div className="space-y-1.5 bg-gray-50 border border-gray-100 rounded-lg p-3">
-                  <div className="flex justify-between items-center text-xs font-medium text-gray-500">
-                    <span>Module Progress</span>
-                    <span className="text-blue-600 font-bold">{activePercent}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                      style={{ width: `${activePercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => {
-                    if (setActiveTab) {
-                      setActiveTab("roadmaps");
-                    } else {
-                      setSelectedRoadmapTrack(selectedRoadmapTrack);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-50 transition-colors cursor-pointer"
-                >
-                  <span>Continue Curriculum</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-xs text-gray-400">No active roadmap nodes found. Please initialize a path.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Block 3: Learning Progress (Module Percentages) */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Activity className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Curriculum Progress</h3>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { id: "ai-pre-trained", label: "Using Pre-Trained Models" },
-                { id: "ai-embeddings-vector", label: "Embeddings & Vector Databases" },
-                { id: "ai-rag-systems", label: "Retrieval-Augmented Generation" },
-                { id: "ai-agents-cyclical", label: "Cognitive AI Agents" }
-              ].map(module => {
-                const pct = getModuleProgress(module.id);
-                return (
-                  <div key={module.id} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium text-gray-600">{module.label}</span>
-                      <span className="font-mono text-gray-400">{pct}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Block 4: Upcoming Tasks */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-3">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Upcoming Tasks</h3>
-            </div>
-
-            {upcomingTasks.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {upcomingTasks.map((task, idx) => (
-                  <div key={task.id || idx} className="py-2.5 flex items-center justify-between text-xs">
-                    <div className="min-w-0 pr-4">
-                      <p className="font-medium text-gray-700 truncate">{task.title}</p>
-                      <p className="text-[10px] text-gray-400 truncate mt-0.5">{task.category}</p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded border border-gray-200 text-[10px] font-medium text-gray-400 bg-gray-50 flex-shrink-0">
-                      Pending
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold bg-white/20 text-white/90 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {currentTrack.icon} {currentTrack.label} Track
                     </span>
                   </div>
-                ))}
+                  <h2 className="text-2xl font-black leading-tight">
+                    {activeNode?.title || "Continue your path"}
+                  </h2>
+                  <p className="text-blue-100 text-sm mt-2 leading-relaxed max-w-lg">
+                    {activeNode?.description || "Keep going — you're making great progress."}
+                  </p>
+                </div>
+                <div className="hidden md:flex flex-col items-center gap-1 flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center text-4xl">
+                    {currentTrack.icon}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-xs text-gray-400">All curriculum objectives completed!</p>
+
+              {/* Progress */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center text-sm mb-2">
+                  <span className="text-blue-100 font-medium">Module Progress</span>
+                  <span className="font-black text-white text-lg">{activePercent}%</span>
+                </div>
+                <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full transition-all duration-500"
+                    style={{ width: `${activePercent}%` }}
+                  />
+                </div>
+                <p className="text-blue-200 text-xs mt-2">
+                  {completedActiveTasks} of {totalActiveTasks} tasks completed
+                </p>
               </div>
-            )}
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setActiveTab && setActiveTab("roadmaps")}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm cursor-pointer"
+                >
+                  <span>Continue Learning</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setActiveTab && setActiveTab("roadmaps")}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white rounded-xl font-semibold text-sm hover:bg-white/20 transition-colors cursor-pointer border border-white/20"
+                >
+                  <Map className="w-4 h-4" />
+                  <span>View Full Roadmap</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-xs text-center">
+              <p className="text-2xl font-black text-gray-900">{profileData?.streak_count || 0}</p>
+              <p className="text-xs text-gray-500 font-medium mt-1">Day Streak 🔥</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-xs text-center">
+              <p className="text-2xl font-black text-gray-900">{completedTasks}</p>
+              <p className="text-xs text-gray-500 font-medium mt-1">Tasks Done ✅</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-xs text-center col-span-2 sm:col-span-1">
+              <p className="text-2xl font-black text-gray-900">{profileData?.longest_streak || 0}</p>
+              <p className="text-xs text-gray-500 font-medium mt-1">Best Streak 🏆</p>
+            </div>
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN: QUICK INTERACTIONS & FEEDS ── */}
-        <div className="space-y-6">
-
-          {/* Quick Actions Panel */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Activity className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Quick Actions</h3>
+      ) : (
+        /* ─── USER HAS NOT STARTED: Show Roadmap Selection ─── */
+        <div>
+          {/* Header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white mb-4 shadow-lg shadow-blue-200">
+              <Sparkles className="w-8 h-8" />
             </div>
-
-            <div className="space-y-2">
-              <button 
-                onClick={() => setActiveTab && setActiveTab("roadmaps")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-gray-300 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <Play className="w-3.5 h-3.5 text-gray-500" />
-                  <span>Resume Curriculum</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-
-              <button 
-                onClick={() => setActiveTab && setActiveTab("debugger")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-gray-300 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-3.5 h-3.5 text-gray-500" />
-                  <span>AI Debugger Stack</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-
-              <button 
-                onClick={() => setActiveTab && setActiveTab("vector")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-gray-300 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-gray-500" />
-                  <span>Query Vector Index</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-
-              <button 
-                onClick={() => setActiveTab && setActiveTab("settings")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-gray-300 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <Settings className="w-3.5 h-3.5 text-gray-500" />
-                  <span>System Configuration</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-            </div>
+            <h1 className="text-3xl font-black text-gray-900">Choose Your Learning Path</h1>
+            <p className="text-gray-500 mt-2 text-sm max-w-md mx-auto">
+              Select a roadmap to begin your structured AI engineering journey. You can switch tracks at any time.
+            </p>
           </div>
 
-          {/* Recent Activity Timeline Logs */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Activity className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Recent Build Activity</h3>
-            </div>
-
-            {logs && logs.length > 0 ? (
-              <div className="relative pl-4 space-y-4 before:absolute before:left-[5px] before:top-1.5 before:bottom-1.5 before:w-[1px] before:bg-gray-200">
-                {logs.slice(-5).reverse().map((log, idx) => {
-                  let dotColor = "bg-gray-400 border-gray-200";
-                  if (log.type === "success") dotColor = "bg-emerald-500 border-emerald-100";
-                  else if (log.type === "error") dotColor = "bg-red-500 border-red-100";
-                  else if (log.type === "config") dotColor = "bg-blue-500 border-blue-100";
-                  else if (log.type === "system") dotColor = "bg-amber-500 border-amber-100";
-
-                  // Extract timestamp or readable content
-                  const textContent = log.text.replace(/^\[[A-Z]+\]\s*/, "");
-                  
-                  return (
-                    <div key={idx} className="relative text-xs">
-                      {/* Timeline dot */}
-                      <span className={`absolute left-[-15px] top-1.5 w-2 h-2 rounded-full border ${dotColor}`} />
-                      <p className="font-mono text-[10px] text-gray-400 leading-none">BUILD EVENT</p>
-                      <p className="text-gray-700 font-medium leading-normal mt-1 break-words">{textContent}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-400 text-center py-4">No recent activity logged.</p>
-            )}
-          </div>
-
-          {/* System Notifications */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Bell className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">System Notifications</h3>
-            </div>
-
-            <div className="space-y-3.5">
-              {/* Notification 1 */}
-              <div className="flex items-start gap-2.5 text-xs">
-                <Server className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 leading-tight">API Gateway Online</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">FastAPI development stack actively listening on port 8000.</p>
+          {/* Roadmap selection cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {AVAILABLE_TRACKS.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => {
+                  setSelectedRoadmapTrack(track.id);
+                  setActiveTab && setActiveTab("roadmaps");
+                }}
+                className="group bg-white border border-gray-200 hover:border-blue-300 rounded-2xl p-6 text-left shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center text-2xl shadow-sm`}>
+                    {track.icon}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
-              </div>
+                <h3 className="font-bold text-gray-900 text-base mb-1">{track.label}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{track.description}</p>
 
-              {/* Notification 2 */}
-              <div className="flex items-start gap-2.5 text-xs">
-                <UserCheck className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 leading-tight">Developer Identity Verified</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Firebase security credentials parsed. User session active.</p>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${track.lightColor}`}>
+                    <BookOpen className="w-3 h-3" />
+                    Start Roadmap
+                  </span>
                 </div>
-              </div>
-
-              {/* Notification 3 */}
-              <div className="flex items-start gap-2.5 text-xs">
-                <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 leading-tight">Curriculum Sync Success</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Active curriculum nodes mapped. Track is set to ai_engineer.</p>
-                </div>
-              </div>
-            </div>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ═══════ BOTTOM FULL-WIDTH: ACTIVITY HEATMAP ═══════ */}
+      {/* ═══════ BOTTOM: ACTIVITY HEATMAP ═══════ */}
       <ActivityHeatmap profileData={profileData} />
     </div>
   );
