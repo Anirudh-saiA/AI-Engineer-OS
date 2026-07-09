@@ -102,6 +102,14 @@ export default function DashboardTab({
   const currentTrack = AVAILABLE_TRACKS.find(t => t.id === selectedRoadmapTrack) || AVAILABLE_TRACKS[0];
   const completedTasks = profileData?.completed_tasks?.length || 0;
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const name = profileData?.name ? `, ${profileData.name.split(" ")[0]}` : "";
+    if (hour < 12) return `Good Morning${name}`;
+    if (hour < 17) return `Good Afternoon${name}`;
+    return `Good Evening${name}`;
+  };
+
   return (
     <div className="space-y-8">
 
@@ -111,72 +119,59 @@ export default function DashboardTab({
           {/* Header greeting */}
           <div className="mb-6">
             <h1 className="text-2xl font-black text-gray-900">
-              Welcome back{profileData?.name ? `, ${profileData.name.split(" ")[0]}` : ""}! 👋
+              {getGreeting()}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Pick up where you left off on your learning journey.</p>
+            <p className="text-sm text-gray-500 mt-1">Welcome back — here's your learning progress.</p>
           </div>
 
-          {/* Continue Card */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 shadow-lg shadow-blue-200 text-white relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          {/* Continue Card — beige bg, orange outline */}
+          <div className="bg-[#FEFAF3] border-2 border-orange-400 rounded-2xl p-7">
 
-            <div className="relative z-10">
-              <div className="flex items-start justify-between gap-4 mb-6">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-bold bg-white/20 text-white/90 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      {currentTrack.icon} {currentTrack.label} Track
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-black leading-tight">
-                    {activeNode?.title || "Continue your path"}
-                  </h2>
-                  <p className="text-blue-100 text-sm mt-2 leading-relaxed max-w-lg">
-                    {activeNode?.description || "Keep going — you're making great progress."}
-                  </p>
-                </div>
-                <div className="hidden md:flex flex-col items-center gap-1 flex-shrink-0">
-                  <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center text-4xl">
-                    {currentTrack.icon}
-                  </div>
-                </div>
-              </div>
+            <div className="mb-1">
+              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
+                {currentTrack.label} Track
+              </span>
+            </div>
 
-              {/* Progress */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center text-sm mb-2">
-                  <span className="text-blue-100 font-medium">Module Progress</span>
-                  <span className="font-black text-white text-lg">{activePercent}%</span>
-                </div>
-                <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full transition-all duration-500"
-                    style={{ width: `${activePercent}%` }}
-                  />
-                </div>
-                <p className="text-blue-200 text-xs mt-2">
-                  {completedActiveTasks} of {totalActiveTasks} tasks completed
-                </p>
-              </div>
+            <h2 className="text-xl font-black text-gray-900 leading-tight mb-1">
+              {activeNode?.title || "Continue your path"}
+            </h2>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xl mb-6">
+              {activeNode?.description || "Keep going — you're making great progress."}
+            </p>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => setActiveTab && setActiveTab("roadmaps")}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm cursor-pointer"
-                >
-                  <span>Continue Learning</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setActiveTab && setActiveTab("roadmaps")}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white rounded-xl font-semibold text-sm hover:bg-white/20 transition-colors cursor-pointer border border-white/20"
-                >
-                  <Map className="w-4 h-4" />
-                  <span>View Full Roadmap</span>
-                </button>
+            {/* Progress */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="text-gray-600 font-semibold">Module Progress</span>
+                <span className="font-black text-orange-500 text-base">{activePercent}%</span>
               </div>
+              <div className="w-full h-2.5 bg-orange-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-400 rounded-full transition-all duration-500"
+                  style={{ width: `${activePercent}%` }}
+                />
+              </div>
+              <p className="text-gray-400 text-xs mt-2">
+                {completedActiveTasks} of {totalActiveTasks} tasks completed
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setActiveTab && setActiveTab("roadmaps")}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-400 hover:bg-orange-500 text-white rounded-xl font-bold text-sm transition-colors cursor-pointer shadow-sm"
+              >
+                <span>Continue Learning</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setActiveTab && setActiveTab("roadmaps")}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-transparent text-orange-500 rounded-xl font-semibold text-sm hover:bg-orange-50 transition-colors cursor-pointer border border-orange-300"
+              >
+                <Map className="w-4 h-4" />
+                <span>View Full Roadmap</span>
+              </button>
             </div>
           </div>
 
