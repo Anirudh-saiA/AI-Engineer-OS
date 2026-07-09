@@ -1,4 +1,4 @@
-# AI Engineer OS Debugging Assistant v1.0 Release Kit
+# AI Engineer OS Debugging Assistant v1.0 Release Kit (July 9, 2026)
 
 This release kit contains copy templates and assets to announce and document the v1 launch of the AI-powered Debugging Assistant.
 
@@ -6,7 +6,7 @@ This release kit contains copy templates and assets to announce and document the
 
 ## 🚀 GitHub Release Notes
 
-### Title: `v1.0.0` - The Intelligent Developer Debugging Platform 🛠️
+### Title: `v1.0.0` - The Intelligent Developer Debugging Platform 🛠️ (Released: July 9, 2026)
 
 We are thrilled to announce the **v1.0 release of the AI Debugging Assistant**, transforming it from a stack trace viewer into a comprehensive, self-learning debugging platform. 
 
@@ -41,7 +41,7 @@ Access the dashboard at `http://localhost:3000` and the backend endpoints at `ht
 
 ### Post Copy:
 ```text
-🚀 Exciting News! Today we're officially launching v1.0 of the AI Engineer OS Debugging Assistant! 🛠️
+🚀 Exciting News! Today (July 9, 2026), we're officially launching v1.0 of the AI Engineer OS Debugging Assistant! 🛠️
 
 Are you tired of copying and pasting complex stack traces into search engines or chat prompts, only to end up with generic code suggestions?
 

@@ -16,6 +16,7 @@ import RoadmapTab from "./components/RoadmapTab";
 import AgentTab from "./components/AgentTab";
 import DatabaseTab from "./components/DatabaseTab";
 import DebuggerTab from "./components/DebuggerTab";
+import CoolLoader from "./components/CoolLoader";
 
 import { API_BASE_URL } from "./config";
 import { isPlaceholder } from "./firebase";
@@ -345,6 +346,11 @@ function BreathingSpace() {
 
 export default function Home() {
   const { user, loading: authLoading, signInWithGoogle, signInWithGithub, signOut, signInMockDeveloper } = useAuth();
+  const [minLoadComplete, setMinLoadComplete] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMinLoadComplete(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Navigation State
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -1698,15 +1704,8 @@ const fetchProfile = async () => {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
-        <div className="flex flex-col items-center gap-4 animate-fade-up">
-          <div className="w-14 h-14 rounded-full border-[3px] border-t-transparent animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}></div>
-          <p className="font-mono text-sm tracking-wider" style={{ color: "var(--text-muted)" }}>Validating Firebase Session...</p>
-        </div>
-      </div>
-    );
+  if (authLoading || !minLoadComplete) {
+    return <CoolLoader />;
   }
 
   return (
@@ -1990,8 +1989,6 @@ const fetchProfile = async () => {
                 { id: "dashboard" as Tab, label: "Dashboard", icon: <LayoutDashboard className="w-[18px] h-[18px] flex-shrink-0" /> },
                 { id: "roadmaps" as Tab, label: "Roadmaps", icon: <Map className="w-[18px] h-[18px] flex-shrink-0" /> },
                 { id: "integrations" as Tab, label: "Integrations", icon: <Link2 className="w-[18px] h-[18px] flex-shrink-0" /> },
-                { id: "analytics" as Tab, label: "Analytics", icon: <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" /> },
-                { id: "debugger" as Tab, label: "AI Debugger", icon: <Terminal className="w-[18px] h-[18px] flex-shrink-0" /> },
                 { id: "settings" as Tab, label: "Settings", icon: <Settings className="w-[18px] h-[18px] flex-shrink-0" /> },
                 { id: "profile" as Tab, label: "Profile", icon: <User className="w-[18px] h-[18px] flex-shrink-0" /> },
               ]).map((tab) => (

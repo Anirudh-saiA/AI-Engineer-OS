@@ -1,4 +1,5 @@
 import React from "react";
+import ActivityHeatmap from "./ActivityHeatmap";
 import { 
   Flame, 
   Trophy, 
@@ -93,67 +94,7 @@ export default function DashboardTab({
   setActiveTab,
 }: DashboardTabProps) {
 
-  // ── 1. Weekly Consistency Calendar (GitHub Style) Data Generation ──
-  const getContributionData = () => {
-    const data = [];
-    const today = new Date();
-    
-    // Generate 16 weeks = 112 days
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - 111);
-    
-    // Align with Sunday start to match grid rows
-    const startDay = startDate.getDay();
-    startDate.setDate(startDate.getDate() - startDay);
-    
-    for (let i = 0; i < 112; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-      
-      const year = currentDate.getFullYear();
-      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const dateVal = String(currentDate.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${dateVal}`;
-      
-      const hasActivity = profileData?.active_days?.includes(dateStr) || false;
-      
-      data.push({
-        dateStr,
-        hasActivity,
-        dayOfWeek: currentDate.getDay(),
-        month: currentDate.toLocaleString('default', { month: 'short' }),
-        dayOfMonth: currentDate.getDate()
-      });
-    }
-    return data;
-  };
-
-  const contributionData = getContributionData();
-  const weeks: Array<typeof contributionData> = [];
-  for (let w = 0; w < 16; w++) {
-    weeks.push(contributionData.slice(w * 7, (w + 1) * 7));
-  }
-
-  // Find month labels to render above columns
-  const monthLabels: Array<{ text: string; colSpan: number }> = [];
-  let currentMonth = "";
-  let currentMonthSpan = 0;
-
-  weeks.forEach((week, wIdx) => {
-    const firstDayOfWeek = week[0];
-    if (firstDayOfWeek.month !== currentMonth) {
-      if (currentMonth !== "") {
-        monthLabels.push({ text: currentMonth, colSpan: currentMonthSpan });
-      }
-      currentMonth = firstDayOfWeek.month;
-      currentMonthSpan = 1;
-    } else {
-      currentMonthSpan++;
-    }
-    if (wIdx === weeks.length - 1) {
-      monthLabels.push({ text: currentMonth, colSpan: currentMonthSpan });
-    }
-  });
+  // ── 1. (Heatmap data is now handled inside ActivityHeatmap component) ──
 
   // ── 2. Module Progress Calculation ──
   const getModuleProgress = (nodeId: string) => {
@@ -309,70 +250,6 @@ export default function DashboardTab({
         {/* ── LEFT COLUMN: WORKSPACE DATA ── */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Block 1: Weekly Consistency Calendar */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-              <Activity className="w-4 h-4 text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-900">Consistency Tracker</h3>
-            </div>
-            
-            {/* Calendar grid container */}
-            <div className="space-y-2">
-              {/* Month labels header */}
-              <div className="flex text-[10px] text-gray-400 font-mono pl-6 select-none">
-                {monthLabels.map((lbl, idx) => (
-                  <span 
-                    key={idx} 
-                    style={{ width: `${lbl.colSpan * 17}px` }} 
-                    className="inline-block truncate pr-1"
-                  >
-                    {lbl.text}
-                  </span>
-                ))}
-              </div>
-
-              {/* Grid content with row labels */}
-              <div className="flex items-start gap-2">
-                {/* Row labels */}
-                <div className="grid grid-rows-7 gap-[3px] text-[9px] text-gray-400 font-mono text-right w-4 pt-1 select-none">
-                  <span>S</span>
-                  <span>M</span>
-                  <span>T</span>
-                  <span>W</span>
-                  <span>T</span>
-                  <span>F</span>
-                  <span>S</span>
-                </div>
-                
-                {/* 16 columns (weeks) */}
-                <div className="flex gap-[3px] overflow-x-auto pb-1 flex-1">
-                  {weeks.map((week, wIdx) => (
-                    <div key={wIdx} className="grid grid-rows-7 gap-[3px] flex-shrink-0">
-                      {week.map((day) => (
-                        <div
-                          key={day.dateStr}
-                          title={`${day.dateStr}: ${day.hasActivity ? "Developer sessions logged" : "No active builds"}`}
-                          className={`w-3.5 h-3.5 rounded-sm border border-transparent transition-all duration-150 ${
-                            day.hasActivity 
-                              ? "bg-blue-600 border-blue-700 shadow-xs" 
-                              : "bg-gray-100 hover:bg-gray-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Legend footer */}
-              <div className="flex items-center justify-end gap-1.5 text-[10px] text-gray-400 font-mono pt-2">
-                <span>Less</span>
-                <div className="w-3 h-3 bg-gray-100 rounded-sm" />
-                <div className="w-3 h-3 bg-blue-600 rounded-sm" />
-                <span>More</span>
-              </div>
-            </div>
-          </div>
 
           {/* Block 2: Current Learning Roadmap Node */}
           <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-xs">
@@ -617,6 +494,9 @@ export default function DashboardTab({
           </div>
         </div>
       </div>
+
+      {/* ═══════ BOTTOM FULL-WIDTH: ACTIVITY HEATMAP ═══════ */}
+      <ActivityHeatmap profileData={profileData} />
     </div>
   );
 }
