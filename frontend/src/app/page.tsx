@@ -364,7 +364,7 @@ const [onboardingData, setOnboardingData] = useState<any>({});
 const [profileExists, setProfileExists] = useState<boolean>(true);
 const [roadmap, setRoadmap] = useState<any[]>([]);
 const [profileData, setProfileData] = useState<any | null>(null);
-const [selectedRoadmapTrack, setSelectedRoadmapTrack] = useState<string>("calibrated");
+const [selectedRoadmapTrack, setSelectedRoadmapTrack] = useState<string>("ai_engineer");
 const [activeDetailSubNode, setActiveDetailSubNode] = useState<RoadmapSubNode | null>(null);
 const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({});
 
@@ -420,14 +420,7 @@ const toggleChecklistTask = (taskId: string) => {
   });
 };
 
-// Auto-switch default track if calibrated is empty
-useEffect(() => {
-  if (roadmap && roadmap.length > 0) {
-    setSelectedRoadmapTrack("calibrated");
-  } else {
-    setSelectedRoadmapTrack("ai_engineer");
-  }
-}, [roadmap]);
+
 
 const staticRoadmaps: Record<string, RoadmapTrack> = {
   ai_engineer: {
