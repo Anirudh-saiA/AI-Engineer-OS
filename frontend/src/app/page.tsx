@@ -1125,15 +1125,13 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
   const [debugMode, setDebugMode] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("You are Antigravity, a professional agentic developer working inside the AI-Engineer-OS platform.");
 
-  // Apply theme to document
+  // Apply theme to document (Enforced Light/Beige Theme)
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme", "light");
   }, [theme]);
 
   const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    addLog(`System theme changed to ${nextTheme === "light" ? "Light Beige" : "Dark Mode"}.`, "config");
+    addLog("Appearance is locked to the Light Beige theme.", "info");
   };
 
   // Helper log function
