@@ -105,8 +105,6 @@
   --scrollbar-thumb: #2D2D34;
   --scrollbar-hover: #3E3E48;
 }
-  --scrollbar-hover: #9CA3AF;
-}
 
 /* ── TAILWIND THEME TOKENS ── */
 @theme inline {
