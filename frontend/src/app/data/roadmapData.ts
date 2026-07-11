@@ -1436,7 +1436,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Extending models to process speech, images, and audio seamlessly.",
       parentId: "ai-engineer",
       difficulty: "Advanced",
-      estimatedDuration: "12 hours",
+      estimatedDuration: "13 hours",
       xp: 700,
       children: [
         {
@@ -1445,13 +1445,73 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Understanding application possibilities.",
           parentId: "multimodal-ai",
           difficulty: "Intermediate",
-          estimatedDuration: "4 hours",
+          estimatedDuration: "3 hours",
           xp: 200,
           children: [
-            { id: "image-understanding", title: "Image Understanding", description: "Processing diagrams, OCR parsing, and visual context extraction.", parentId: "multimodal-usecases", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 50 },
-            { id: "image-generation", title: "Image Generation", description: "Integrating image creators like DALL-E and Midjourney API calls.", parentId: "multimodal-usecases", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 50 },
-            { id: "video-understanding", title: "Video Understanding", description: "Breaking frames down to run context queries over timed sequences.", parentId: "multimodal-usecases", difficulty: "Advanced", estimatedDuration: "1 hour", xp: 60 },
-            { id: "audio-processing", title: "Audio & Speech Processing", description: "Speech-to-text, text-to-speech, and audio semantic searches.", parentId: "multimodal-usecases", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 50 }
+            {
+              id: "image-understanding",
+              title: "Image Understanding",
+              description: "Processing diagrams, OCR parsing, and visual context extraction.",
+              parentId: "multimodal-usecases",
+              difficulty: "Intermediate",
+              estimatedDuration: "45 mins",
+              xp: 50,
+              resources: [
+                { title: "TileDB - Multimodal AI Complete Guide", type: "article", url: "https://www.tiledb.com/blog/multimodal-ai-guide", xp: 30 },
+                { title: "Rasa - Real-World Multimodal AI Use Cases", type: "article", url: "https://rasa.com/blog/multimodal-ai-use-cases", xp: 30 },
+                { title: "What is Multimodal AI? (IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=kYmZ64gqL7c", xp: 50 }
+              ],
+              flashcardQuestion: "What is a key business use case for Image Understanding?",
+              flashcardAnswer: "Automating data extraction from visual documents (like receipts, architectural blueprints, or medical scans) into structured text without requiring manual data entry."
+            },
+            {
+              id: "image-generation",
+              title: "Image Generation",
+              description: "Integrating image creators like DALL-E and Midjourney API calls.",
+              parentId: "multimodal-usecases",
+              difficulty: "Intermediate",
+              estimatedDuration: "45 mins",
+              xp: 50,
+              resources: [
+                { title: "TileDB - Multimodal AI Complete Guide", type: "article", url: "https://www.tiledb.com/blog/multimodal-ai-guide", xp: 30 },
+                { title: "Rasa - Real-World Multimodal AI Use Cases", type: "article", url: "https://rasa.com/blog/multimodal-ai-use-cases", xp: 30 },
+                { title: "What is Multimodal AI? (IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=kYmZ64gqL7c", xp: 50 }
+              ],
+              flashcardQuestion: "How do Multimodal AI systems differ from standard text-only LLMs?",
+              flashcardAnswer: "Multimodal systems can process, cross-reference, and generate multiple types of data simultaneously (e.g., text, images, and audio), rather than just understanding pure text sequences."
+            },
+            {
+              id: "video-understanding",
+              title: "Video Understanding",
+              description: "Breaking frames down to run context queries over timed sequences.",
+              parentId: "multimodal-usecases",
+              difficulty: "Advanced",
+              estimatedDuration: "45 mins",
+              xp: 60,
+              resources: [
+                { title: "TileDB - Multimodal AI Complete Guide", type: "article", url: "https://www.tiledb.com/blog/multimodal-ai-guide", xp: 30 },
+                { title: "Rasa - Real-World Multimodal AI Use Cases", type: "article", url: "https://rasa.com/blog/multimodal-ai-use-cases", xp: 30 },
+                { title: "What is Multimodal AI? (IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=kYmZ64gqL7c", xp: 50 }
+              ],
+              flashcardQuestion: "How is video processing typically handled by a multimodal model?",
+              flashcardAnswer: "Video is usually broken down into a series of individual image frames and an extracted audio transcript. These are processed together to understand the visual and spoken context over time."
+            },
+            {
+              id: "audio-processing",
+              title: "Audio & Speech Processing",
+              description: "Speech-to-text, text-to-speech, and audio semantic searches.",
+              parentId: "multimodal-usecases",
+              difficulty: "Intermediate",
+              estimatedDuration: "45 mins",
+              xp: 50,
+              resources: [
+                { title: "TileDB - Multimodal AI Complete Guide", type: "article", url: "https://www.tiledb.com/blog/multimodal-ai-guide", xp: 30 },
+                { title: "Rasa - Real-World Multimodal AI Use Cases", type: "article", url: "https://rasa.com/blog/multimodal-ai-use-cases", xp: 30 },
+                { title: "What is Multimodal AI? (IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=kYmZ64gqL7c", xp: 50 }
+              ],
+              flashcardQuestion: "What is a major advantage of modern Multimodal Speech-to-Text models over older transcription software?",
+              flashcardAnswer: "Modern models can not only transcribe the text but also detect the language, translate it on the fly, and understand emotional tone or speakers' intent."
+            }
           ]
         },
         {
@@ -1460,15 +1520,101 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Practical code orchestration examples.",
           parentId: "multimodal-ai",
           difficulty: "Advanced",
-          estimatedDuration: "8 hours",
+          estimatedDuration: "10 hours",
           xp: 500,
           children: [
-            { id: "vision-api", title: "OpenAI Vision API", description: "Passing images as URL or base64 structures to GPT-4o.", parentId: "implementing-multimodal", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 80 },
-            { id: "dalle-api", title: "DALL-E API", description: "Generating and editing images programmatically.", parentId: "implementing-multimodal", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 60 },
-            { id: "whisper-api", title: "Whisper API", description: "Transcribing and translating audio file streams.", parentId: "implementing-multimodal", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 80 },
-            { id: "hf-multimodal", title: "Hugging Face Models", description: "Integrating open weights vision-language models.", parentId: "implementing-multimodal", difficulty: "Advanced", estimatedDuration: "1.5 hours", xp: 90 },
-            { id: "langchain-multimodal", title: "LangChain for Multimodal Apps", description: "Chaining text prompts, image inputs, and vision outputs.", parentId: "implementing-multimodal", difficulty: "Advanced", estimatedDuration: "1.5 hours", xp: 95 },
-            { id: "llamaindex-multimodal", title: "LlamaIndex for Multimodal Apps", description: "Indexing image-text metadata for vector similarity lookups.", parentId: "implementing-multimodal", difficulty: "Advanced", estimatedDuration: "1 hour", xp: 95 }
+            {
+              id: "vision-api",
+              title: "OpenAI Vision API",
+              description: "Passing images as URL or base64 structures to GPT-4o.",
+              parentId: "implementing-multimodal",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "OpenAI Official Docs - Images and Vision", type: "article", url: "https://developers.openai.com/api/docs/guides/images-vision", xp: 40 },
+                { title: "OpenAI GPT4 Vision API Python Tutorial", type: "video", url: "https://www.youtube.com/watch?v=FZCaO7n2reA", xp: 60 }
+              ],
+              flashcardQuestion: "What are the two primary ways to pass an image to the OpenAI Vision API?",
+              flashcardAnswer: "You can either pass a publicly accessible URL of the image, or you can encode the image file locally as a base64 string and pass it directly in the JSON payload."
+            },
+            {
+              id: "dalle-api",
+              title: "DALL-E API",
+              description: "Generating and editing images programmatically.",
+              parentId: "implementing-multimodal",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 60,
+              resources: [
+                { title: "OpenAI Official Docs - Image Generation", type: "article", url: "https://platform.openai.com/docs/guides/images/image-generation", xp: 40 },
+                { title: "How to Use OpenAI DALL-E 3 API in Python", type: "video", url: "https://www.youtube.com/watch?v=Fq2C4A2H93M", xp: 60 }
+              ],
+              flashcardQuestion: "Which parameter controls the dimension shape in the DALL-E 3 API?",
+              flashcardAnswer: "The 'size' parameter. DALL-E 3 supports specific resolutions like '1024x1024' (square), '1024x1792' (portrait), and '1792x1024' (landscape)."
+            },
+            {
+              id: "whisper-api",
+              title: "Whisper API",
+              description: "Transcribing and translating audio file streams.",
+              parentId: "implementing-multimodal",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "OpenAI Official Docs - Speech to Text", type: "article", url: "https://platform.openai.com/docs/guides/speech-to-text", xp: 40 },
+                { title: "OpenAI Whisper API Tutorial for Beginners", type: "video", url: "https://www.youtube.com/watch?v=8zbC62F5h8A", xp: 60 }
+              ],
+              flashcardQuestion: "What is the primary difference between the 'transcription' and 'translation' endpoints in the Whisper API?",
+              flashcardAnswer: "The transcription endpoint returns the text in the original language of the audio. The translation endpoint automatically translates the spoken audio into English text."
+            },
+            {
+              id: "hf-multimodal",
+              title: "Hugging Face Models",
+              description: "Integrating open weights vision-language models.",
+              parentId: "implementing-multimodal",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 90,
+              resources: [
+                { title: "Hugging Face - Multimodal Models Overview", type: "article", url: "https://huggingface.co/models?pipeline_tag=multimodal", xp: 40 },
+                { title: "How to use Hugging Face Multimodal Models - Image to Text", type: "video", url: "https://www.youtube.com/watch?v=nOQdIBXFp4Y", xp: 60 }
+              ],
+              flashcardQuestion: "When filtering models on Hugging Face, what tag should you look for to find models that handle both text and images?",
+              flashcardAnswer: "You should filter by the 'multimodal' pipeline tag, or more specifically, 'image-text-to-text' or 'visual-question-answering' depending on the exact task."
+            },
+            {
+              id: "langchain-multimodal",
+              title: "LangChain for Multimodal Apps",
+              description: "Chaining text prompts, image inputs, and vision outputs.",
+              parentId: "implementing-multimodal",
+              difficulty: "Advanced",
+              estimatedDuration: "2 hours",
+              xp: 95,
+              resources: [
+                { title: "Google Cloud - Build Multimodal Agents with LangChain", type: "article", url: "https://cloud.google.com/blog/products/ai-machine-learning/build-multimodal-agents-using-gemini-langchain-and-langgraph", xp: 40 },
+                { title: "How to Build a Multimodal RAG Pipeline with LangChain", type: "video", url: "https://www.youtube.com/watch?v=jgqe9dMeacQ", xp: 60 },
+                { title: "LangChain for Multimodal Apps: Chat With Text/Image Data", type: "video", url: "https://www.youtube.com/watch?v=lxwn_Jl0100", xp: 60 }
+              ],
+              flashcardQuestion: "How do you pass an image into a LangChain prompt template?",
+              flashcardAnswer: "You pass it within a HumanMessage object, providing a list of dictionaries where one dictionary is type 'text' (the prompt) and another is type 'image_url' (containing the image link or base64 string)."
+            },
+            {
+              id: "llamaindex-multimodal",
+              title: "LlamaIndex for Multimodal Apps",
+              description: "Indexing image-text metadata for vector similarity lookups.",
+              parentId: "implementing-multimodal",
+              difficulty: "Advanced",
+              estimatedDuration: "2 hours",
+              xp: 95,
+              resources: [
+                { title: "LlamaIndex Blog - MultiModal RAG for Advanced Video Processing", type: "article", url: "https://www.llamaindex.ai/blog/multimodal-rag-for-advanced-video-processing-with-llamaindex-lancedb-33be4804822e", xp: 40 },
+                { title: "Multimodal Video Search with LlamaIndex", type: "article", url: "https://ibrahimhkoyuncu.medium.com/multimodal-video-search-with-llamaindex-videodb-a-rag-approach-to-finding-and-streaming-key-57d1815e25cd", xp: 40 },
+                { title: "LlamaIndex Multi-Modal RAG Tutorial", type: "video", url: "https://www.youtube.com/watch?v=tFmUjGq20wU", xp: 60 }
+              ],
+              flashcardQuestion: "In a MultiModal RAG pipeline built with LlamaIndex, how do you handle searching both text and images?",
+              flashcardAnswer: "You create a MultiModalVectorStoreIndex, which uses two specialized embedding models under the hood: one for encoding the text documents, and a multimodal embedding model (like CLIP) for encoding the images."
+            }
           ]
         }
       ]
