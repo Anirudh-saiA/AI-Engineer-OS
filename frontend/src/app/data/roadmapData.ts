@@ -1126,40 +1126,194 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Retrieval-Augmented Generation processes injecting customized contexts dynamically.",
       parentId: "ai-engineer",
       difficulty: "Advanced",
-      estimatedDuration: "20 hours",
+      estimatedDuration: "14.5 hours",
       xp: 900,
       children: [
-        { id: "rag-usecases", title: "RAG Usecases", description: "Enterprise document Q&A, code repositories traversal, and private database chat.", parentId: "rag-implementation", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 80 },
-        { id: "rag-vs-finetuning", title: "RAG vs Fine-tuning", description: "Contrasting dynamic background injection with structural training parameter alignment.", parentId: "rag-implementation", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
+        {
+          id: "rag-usecases",
+          title: "RAG Usecases",
+          description: "Enterprise document Q&A, code repositories traversal, and private database chat.",
+          parentId: "rag-implementation",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 80,
+          resources: [
+            { title: "What is RAG? (AWS)", type: "article", url: "https://aws.amazon.com/what-is/retrieval-augmented-generation/", xp: 30 },
+            { title: "Top 5 RAG Use Cases Explained (IBM Technology)", type: "video", url: "https://www.youtube.com/results?search_query=Top+5+RAG+Use+Cases+Explained+IBM+Technology", xp: 50 }
+          ],
+          flashcardQuestion: "What is the primary benefit of a RAG architecture for enterprise chatbots?",
+          flashcardAnswer: "RAG grounds the LLM in specific, private, or real-time enterprise data, eliminating the need to retrain the model and drastically reducing hallucinations."
+        },
+        {
+          id: "rag-vs-finetuning",
+          title: "RAG vs Fine-tuning",
+          description: "Contrasting dynamic background injection with structural training parameter alignment.",
+          parentId: "rag-implementation",
+          difficulty: "Intermediate",
+          estimatedDuration: "1.5 hours",
+          xp: 80,
+          resources: [
+            { title: "RAG vs Fine-Tuning: Which is the Best Tool for your LLM Application?", type: "article", url: "https://www.pinecone.io/learn/rag-vs-finetuning/", xp: 30 },
+            { title: "The LLM Interview Series #8: RAG vs Fine-Tuning", type: "video", url: "https://www.youtube.com/results?search_query=The+LLM+Interview+Series+%238:+RAG+vs+Fine-Tuning", xp: 50 }
+          ],
+          flashcardQuestion: "When should you choose Fine-tuning over RAG?",
+          flashcardAnswer: "Fine-tuning is best for changing the tone, style, or specific behavioral format of an LLM. RAG is best for teaching the model new facts or grounding it in up-to-date knowledge."
+        },
         {
           id: "implementing-rag-details",
           title: "Implementing RAG",
           description: "Step-by-step pipeline architectures.",
           parentId: "rag-implementation",
           difficulty: "Advanced",
-          estimatedDuration: "8 hours",
+          estimatedDuration: "5 hours",
           xp: 400,
           children: [
-            { id: "rag-chunking", title: "Chunking", description: "Sentence splitter, token boundaries, and overlapping configurations.", parentId: "implementing-rag-details", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 90 },
-            { id: "rag-embedding", title: "Embedding", description: "Generating vectors for individual content segments dynamically.", parentId: "implementing-rag-details", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 80 },
-            { id: "rag-db-storage", title: "Vector Database Storage", description: "Upserting data chunks along with custom document metadata fields.", parentId: "implementing-rag-details", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 80 },
-            { id: "rag-retrieval", title: "Retrieval Process", description: "Fetching relevant metadata using vector similarity and filtering constraints.", parentId: "implementing-rag-details", difficulty: "Advanced", estimatedDuration: "1.5 hours", xp: 90 },
-            { id: "rag-generation", title: "Generation", description: "Constructing prompts matching context and raw query to output completions.", parentId: "implementing-rag-details", difficulty: "Advanced", estimatedDuration: "1.5 hours", xp: 90 }
+            {
+              id: "rag-chunking",
+              title: "Chunking",
+              description: "Sentence splitter, token boundaries, and overlapping configurations.",
+              parentId: "implementing-rag-details",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 90,
+              resources: [
+                { title: "Retrieval Augmented Generation (RAG) Complete Guide", type: "article", url: "https://www.datacamp.com/tutorial/how-to-build-a-rag-system-with-langchain-and-fastapi", xp: 40 },
+                { title: "Complete RAG Tutorial | Indexes, Embeddings, Vectors & Retrieval", type: "video", url: "https://www.youtube.com/results?search_query=Complete+RAG+Tutorial", xp: 50 }
+              ],
+              flashcardQuestion: "Why is 'chunking' a necessary first step in a RAG pipeline?",
+              flashcardAnswer: "LLMs have limited context windows and embedding models have maximum token limits. Chunking breaks large documents into smaller, semantically meaningful pieces that fit into these constraints."
+            },
+            {
+              id: "rag-embedding",
+              title: "Embedding",
+              description: "Generating vectors for individual content segments dynamically.",
+              parentId: "implementing-rag-details",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 80,
+              resources: [
+                { title: "Retrieval Augmented Generation (RAG) Complete Guide", type: "article", url: "https://www.datacamp.com/tutorial/how-to-build-a-rag-system-with-langchain-and-fastapi", xp: 40 },
+                { title: "Complete RAG Tutorial | Indexes, Embeddings, Vectors & Retrieval", type: "video", url: "https://www.youtube.com/results?search_query=Complete+RAG+Tutorial", xp: 50 }
+              ],
+              flashcardQuestion: "What happens during the embedding phase of a RAG pipeline?",
+              flashcardAnswer: "Each text chunk is passed through an embedding model (like OpenAI's text-embedding-3) to be converted into a numerical vector representing its semantic meaning."
+            },
+            {
+              id: "rag-db-storage",
+              title: "Vector Database Storage",
+              description: "Upserting data chunks along with custom document metadata fields.",
+              parentId: "implementing-rag-details",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 80,
+              resources: [
+                { title: "Retrieval Augmented Generation (RAG) Complete Guide", type: "article", url: "https://www.datacamp.com/tutorial/how-to-build-a-rag-system-with-langchain-and-fastapi", xp: 40 },
+                { title: "Complete RAG Tutorial | Indexes, Embeddings, Vectors & Retrieval", type: "video", url: "https://www.youtube.com/results?search_query=Complete+RAG+Tutorial", xp: 50 }
+              ],
+              flashcardQuestion: "Why should you store metadata alongside vectors in the database?",
+              flashcardAnswer: "Metadata (like document title, date, or author) allows you to pre-filter your vector searches (e.g., 'only search documents from 2024') before calculating similarity, vastly improving accuracy and speed."
+            },
+            {
+              id: "rag-retrieval",
+              title: "Retrieval Process",
+              description: "Fetching relevant metadata using vector similarity and filtering constraints.",
+              parentId: "implementing-rag-details",
+              difficulty: "Advanced",
+              estimatedDuration: "1 hour",
+              xp: 90,
+              resources: [
+                { title: "Retrieval Augmented Generation (RAG) Complete Guide", type: "article", url: "https://www.datacamp.com/tutorial/how-to-build-a-rag-system-with-langchain-and-fastapi", xp: 40 },
+                { title: "Complete RAG Tutorial | Indexes, Embeddings, Vectors & Retrieval", type: "video", url: "https://www.youtube.com/results?search_query=Complete+RAG+Tutorial", xp: 50 }
+              ],
+              flashcardQuestion: "How does the retrieval process map a user query to documents?",
+              flashcardAnswer: "The user query is converted into an embedding, and the database calculates the cosine similarity between the query vector and all stored document vectors, returning the top K closest matches."
+            },
+            {
+              id: "rag-generation",
+              title: "Generation",
+              description: "Constructing prompts matching context and raw query to output completions.",
+              parentId: "implementing-rag-details",
+              difficulty: "Advanced",
+              estimatedDuration: "1 hour",
+              xp: 90,
+              resources: [
+                { title: "Retrieval Augmented Generation (RAG) Complete Guide", type: "article", url: "https://www.datacamp.com/tutorial/how-to-build-a-rag-system-with-langchain-and-fastapi", xp: 40 },
+                { title: "Complete RAG Tutorial | Indexes, Embeddings, Vectors & Retrieval", type: "video", url: "https://www.youtube.com/results?search_query=Complete+RAG+Tutorial", xp: 50 }
+              ],
+              flashcardQuestion: "What is sent to the LLM during the Generation phase?",
+              flashcardAnswer: "The system creates a combined prompt containing a system instruction (e.g. 'Use the following context to answer...'), the retrieved text chunks as context, and the user's original question."
+            }
           ]
         },
-        { id: "openai-assistant-api", title: "OpenAI Assistant API", description: "Offloading threading, parsing, and retrieval indexes natively to OpenAI gateways.", parentId: "rag-implementation", difficulty: "Intermediate", estimatedDuration: "4 hours", xp: 180 },
+        {
+          id: "openai-assistant-api",
+          title: "OpenAI Assistant API",
+          description: "Offloading threading, parsing, and retrieval indexes natively to OpenAI gateways.",
+          parentId: "rag-implementation",
+          difficulty: "Intermediate",
+          estimatedDuration: "2 hours",
+          xp: 180,
+          resources: [
+            { title: "OpenAI Assistants API Documentation (File Search)", type: "article", url: "https://platform.openai.com/docs/assistants/tools/file-search", xp: 40 },
+            { title: "Create An AI Assistant Chatbot With RAG Capability", type: "video", url: "https://www.youtube.com/results?search_query=Create+An+AI+Assistant+Chatbot+With+RAG+Capability+With+OpenAI+Assistants+API+%26+Python", xp: 50 }
+          ],
+          flashcardQuestion: "What is the main advantage of using the OpenAI Assistants API for RAG (File Search)?",
+          flashcardAnswer: "It manages the entire vector database, chunking, and retrieval process natively on OpenAI's servers, meaning you don't have to build or host a separate vector DB."
+        },
         {
           id: "rag-frameworks",
           title: "Ways of Implementing RAG",
           description: "Integrating code base pipelines directly or utilizing orchestration libraries.",
           parentId: "rag-implementation",
           difficulty: "Advanced",
-          estimatedDuration: "4 hours",
+          estimatedDuration: "4.5 hours",
           xp: 200,
           children: [
-            { id: "sdks-directly", title: "Using SDKs Directly", description: "Building chunk-upsert-query pipeline manually using standard HTTP requests.", parentId: "rag-frameworks", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 80 },
-            { id: "langchain-rag", title: "Langchain Integration", description: "Abstract chains, loaders, splitters, and custom prompts orchestration.", parentId: "rag-frameworks", difficulty: "Advanced", estimatedDuration: "1.5 hours", xp: 90 },
-            { id: "llamaindex-rag", title: "Llama Index Integration", description: "Optimized index loaders, connectors, and advanced querying capabilities.", parentId: "rag-frameworks", difficulty: "Advanced", estimatedDuration: "1 hour", xp: 90 }
+            {
+              id: "sdks-directly",
+              title: "Using SDKs Directly",
+              description: "Building chunk-upsert-query pipeline manually using standard HTTP requests.",
+              parentId: "rag-frameworks",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "Building RAG from Scratch (without frameworks)", type: "article", url: "https://cookbook.openai.com/examples/rag_from_scratch", xp: 30 },
+                { title: "Build RAG From Scratch (No Langchain/LlamaIndex)", type: "video", url: "https://www.youtube.com/watch?v=R-kM6o8D2x4", xp: 50 }
+              ],
+              flashcardQuestion: "Why might a team choose to build RAG using direct API calls instead of a framework like LangChain?",
+              flashcardAnswer: "Building from scratch reduces dependency bloat, offers complete control over the pipeline logic, and prevents the 'black box' debugging issues common in heavy orchestration frameworks."
+            },
+            {
+              id: "langchain-rag",
+              title: "Langchain Integration",
+              description: "Abstract chains, loaders, splitters, and custom prompts orchestration.",
+              parentId: "rag-frameworks",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 90,
+              resources: [
+                { title: "LangChain RAG Tutorial (Official Docs)", type: "article", url: "https://python.langchain.com/docs/tutorials/rag/", xp: 30 },
+                { title: "LangChain Tutorial (Python) #4: RAG — Chat with Your Own Documents", type: "video", url: "https://www.youtube.com/results?search_query=LangChain+Tutorial+(Python)+%234:+RAG+—+Chat+with+Your+Own+Documents", xp: 50 }
+              ],
+              flashcardQuestion: "What is the role of a 'Document Loader' in LangChain?",
+              flashcardAnswer: "Document Loaders are utility classes that extract text and metadata from hundreds of different sources (PDFs, Notion, SQL databases, websites) and normalize them into a standard Document format."
+            },
+            {
+              id: "llamaindex-rag",
+              title: "Llama Index Integration",
+              description: "Optimized index loaders, connectors, and advanced querying capabilities.",
+              parentId: "rag-frameworks",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 90,
+              resources: [
+                { title: "LlamaIndex: High-Level Concepts", type: "article", url: "https://docs.llamaindex.ai/en/stable/getting_started/concepts/", xp: 30 },
+                { title: "LlamaIndex for beginners", type: "video", url: "https://www.youtube.com/results?search_query=LlamaIndex+for+beginners", xp: 50 }
+              ],
+              flashcardQuestion: "How does LlamaIndex differentiate itself from LangChain for RAG applications?",
+              flashcardAnswer: "While LangChain is a general-purpose LLM orchestration tool, LlamaIndex is heavily specialized and optimized specifically for data ingestion, indexing, and advanced retrieval patterns (like routing and sub-queries)."
+            }
           ]
         }
       ]
