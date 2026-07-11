@@ -27,13 +27,7 @@ export default function CoolLoader() {
       
       <div className="flex flex-col items-center gap-10 animate-fade-up z-10 w-full">
         
-        {/* Logo Hint */}
-        <div className="flex items-center gap-3 w-fit px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-sm bg-gradient-to-br from-indigo-500 to-blue-600 shadow-inner">
-            AI
-          </div>
-          <span className="text-slate-800 font-black text-xl tracking-[0.2em] uppercase">AIOS</span>
-        </div>
+
 
         {/* Clean minimal typography for the numbers */}
         <div className="flex items-baseline justify-center">
