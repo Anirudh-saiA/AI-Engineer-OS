@@ -641,8 +641,8 @@ export default function RoadmapTab({
                       </span>
                       <p className="text-xs font-semibold text-gray-800 leading-relaxed">
                         {flashcardFlipped 
-                          ? `This topic focuses on structuring variables, parameters, and environments to get maximum output performance without compiling from scratch.`
-                          : `What is the core target metric optimized in the "${selectedNode.title}" curriculum segment?`}
+                          ? (selectedNode.flashcardAnswer || `This topic focuses on structuring variables, parameters, and environments to get maximum output performance without compiling from scratch.`)
+                          : (selectedNode.flashcardQuestion || `What is the core target metric optimized in the "${selectedNode.title}" curriculum segment?`)}
                       </p>
                     </div>
                     <span className="text-[9px] font-mono text-orange-400 mt-2 text-right">

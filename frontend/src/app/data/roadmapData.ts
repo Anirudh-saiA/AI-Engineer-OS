@@ -18,6 +18,8 @@ export interface RoadmapNode {
   skillsLearned?: string[];
   prerequisites?: string[];
   completionCriteria?: string;
+  flashcardQuestion?: string;
+  flashcardAnswer?: string;
 }
 
 export const AI_ENGINEER_ROADMAP: RoadmapNode = {
@@ -56,7 +58,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "What Is an AI Engineer? (And What Do They Do?) - 365 Data Science", type: "video", url: "http://www.youtube.com/watch?v=gT1SiZttBDE", xp: 50 },
             { title: "What is AI Engineering - Telusko", type: "video", url: "http://www.youtube.com/watch?v=cp0_xWxLGaI", xp: 50 },
             { title: "What Is an AI Engineer? | Re:Sourced", type: "article", url: "https://www.resourced.com.au/articles/what-is-an-ai-engineer", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is the primary role of an AI Engineer compared to a traditional software developer?",
+          flashcardAnswer: "An AI Engineer focuses on integrating, configuring, and orchestrating pre-trained models, embeddings, and vector databases into production-grade applications, rather than building custom model architectures from scratch."
         },
         {
           id: "ai-vs-ml-eng",
@@ -70,7 +74,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "AI Engineer vs. Machine Learning Engineer - Marina Wyss", type: "video", url: "http://www.youtube.com/watch?v=NmBW49OBeBU", xp: 50 },
             { title: "Don't Waste 2026 on the Wrong Career - Zen van Riel", type: "video", url: "http://www.youtube.com/watch?v=cqDQV5g7zHo", xp: 50 },
             { title: "Which Career Path Fits You? - IIT Kharagpur", type: "article", url: "https://online.iitkgp.ac.in/blog/ai-engineer-vs-ml-engineer-career-comparison", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is the key difference in focus between an AI Engineer and a Machine Learning (ML) Engineer?",
+          flashcardAnswer: "AI Engineers focus on application development, APIs, prompt orchestration, and systems integration using existing models, whereas ML Engineers focus on training, optimizing, and deploying custom mathematical models and data pipelines."
         },
         {
           id: "ai-vs-agi",
@@ -84,7 +90,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "AI vs. AGI: What's the Difference? - AI Global", type: "video", url: "http://www.youtube.com/watch?v=dGdSK4lD1bU", xp: 50 },
             { title: "The 7 SCARY Stages of AI - Technomics", type: "video", url: "http://www.youtube.com/watch?v=wF5kwCjLCtI", xp: 50 },
             { title: "What is the difference between AGI vs AI? - ServiceNow", type: "article", url: "https://www.servicenow.com/ai/what-is-ai-vs-agi.html", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "How does standard (Narrow) AI differ from Artificial General Intelligence (AGI)?",
+          flashcardAnswer: "Narrow AI is designed and trained to perform specific tasks (like image recognition or text generation) within a defined domain, whereas AGI represents hypothetical systems with human-like general cognitive abilities across any domain."
         },
         {
           id: "common-terminology",
@@ -98,7 +106,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "7 AI Terms You Need to Know - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=VSFuqMh4hus", xp: 50 },
             { title: "Understanding AI Jargon - Gary Explains", type: "video", url: "http://www.youtube.com/watch?v=sqFZaIebSB0", xp: 50 },
             { title: "Artificial Intelligence - Terminology - TutorialsPoint", inArticle: true, type: "article", url: "https://www.tutorialspoint.com/artificial_intelligence/artificial_intelligence_terminology.htm", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is the difference between a model's 'context window' and its 'inference' phase?",
+          flashcardAnswer: "The context window is the maximum number of tokens a model can process in a single prompt session, while inference is the real-time generation phase where the model outputs predictions or text."
         },
         {
           id: "impact-product",
@@ -112,7 +122,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "AI Engineers - What Do They Do? - Krish Naik", type: "video", url: "http://www.youtube.com/watch?v=y8qRq9PMCh8", xp: 50 },
             { title: "Should YOU Become An AI Engineer? - CodeHead", type: "video", url: "http://www.youtube.com/watch?v=TQwwK7P_J4I", xp: 50 },
             { title: "AI Engineer Roadmap - roadmap.sh", type: "article", url: "https://roadmap.sh/ai-engineer", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "In what way does generative AI shift traditional product design and iteration cycles?",
+          flashcardAnswer: "Generative AI introduces non-deterministic outputs and conversational user interfaces, shifting the focus towards rapid prompt iteration, dynamic UI generation, and continuous alignment evaluation."
         },
         {
           id: "roles-responsibilities",
@@ -126,7 +138,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "What is an AI Engineer? (And what do they do?) - Jay Feng", type: "video", url: "http://www.youtube.com/watch?v=o0OczKvQ_is", xp: 50 },
             { title: "How to Become an AI Engineer FAST (2026) - Sajjaad Khader", type: "video", url: "http://www.youtube.com/watch?v=aAItDrJ8-rE", xp: 50 },
             { title: "What Does an AI Engineer Do? - Codecademy", type: "article", url: "https://www.codecademy.com/resources/blog/what-does-an-ai-engineer-do", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is a major compliance and security responsibility unique to AI Engineers?",
+          flashcardAnswer: "AI Engineers must actively audit systems for prompt injection vulnerabilities, prevent leaking sensitive PII data to external LLM APIs, and ensure model output formatting safety."
         }
       ]
     },
