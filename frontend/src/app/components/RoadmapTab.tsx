@@ -158,8 +158,8 @@ export default function RoadmapTab({
       if (!q) return true;
       return (
         node.title.toLowerCase().includes(q) ||
-        node.description.toLowerCase().includes(q) ||
-        (node.skillsLearned && node.skillsLearned.some(s => s.toLowerCase().includes(q)))
+        (node.description?.toLowerCase().includes(q) ?? false) ||
+        (node.skillsLearned?.some(s => s.toLowerCase().includes(q)) ?? false)
       );
     };
 
@@ -579,6 +579,9 @@ export default function RoadmapTab({
                           onClick={() => {
                             if (logActivity) {
                               logActivity(res.type || 'video', res.title, res.type === 'video' ? 15 : 10);
+                            }
+                            if (res.url) {
+                              window.open(res.url, '_blank');
                             }
                           }}
                           className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs cursor-pointer text-left w-full font-normal"

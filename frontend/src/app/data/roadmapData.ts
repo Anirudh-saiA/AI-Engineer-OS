@@ -51,7 +51,11 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "How to Become an AI Engineer - Pace Online", type: "article", url: "https://online.pace.edu/articles/computer-science/how-to-become-an-ai-engineer/", xp: 30 },
+            { title: "What Is an AI Engineer? | Re:Sourced", type: "article", url: "https://www.resourced.com.au/articles/what-is-an-ai-engineer", xp: 30 }
+          ]
         },
         {
           id: "ai-vs-ml-eng",
@@ -60,7 +64,11 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "Which Career Path Fits You? - IIT Kharagpur", type: "article", url: "https://online.iitkgp.ac.in/blog/ai-engineer-vs-ml-engineer-career-comparison", xp: 30 },
+            { title: "Core Differences, Skills, and Salary - Simplilearn", type: "article", url: "https://www.simplilearn.com/ai-engineer-vs-ml-engineer-article", xp: 30 }
+          ]
         },
         {
           id: "ai-vs-agi",
@@ -69,7 +77,12 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "What is the difference between AGI vs AI? - ServiceNow", type: "article", url: "https://www.servicenow.com/ai/what-is-ai-vs-agi.html", xp: 30 },
+            { title: "AI vs AGI vs ASI in 2026 - Kanerika", type: "article", url: "https://kanerika.com/blogs/ai-vs-agi-vs-asi/", xp: 30 },
+            { title: "Understanding the Shift in Future of Intelligence - Medium", type: "article", url: "https://medium.com/@poorvis885/ai-vs-agi-understanding-the-shift-in-the-future-of-intelligence-56302a6fa38f", xp: 30 }
+          ]
         },
         {
           id: "common-terminology",
@@ -78,7 +91,11 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "Artificial Intelligence Achievement Glossary - Globee Awards", type: "article", url: "https://globeeawards.com/artificial-intelligence-achievement-glossary/", xp: 30 },
+            { title: "Artificial Intelligence - Terminology - TutorialsPoint", type: "article", url: "https://www.tutorialspoint.com/artificial_intelligence/artificial_intelligence_terminology.htm", xp: 30 }
+          ]
         },
         {
           id: "impact-product",
@@ -87,7 +104,11 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "AI Engineer Roadmap - roadmap.sh", type: "article", url: "https://roadmap.sh/ai-engineer", xp: 30 },
+            { title: "AI Trainer Job Description Template - Rework", type: "article", url: "https://resources.rework.com/libraries/job-description-templates/ai-trainer", xp: 30 }
+          ]
         },
         {
           id: "roles-responsibilities",
@@ -96,7 +117,12 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           parentId: "intro",
           difficulty: "Beginner",
           estimatedDuration: "1 hour",
-          xp: 50
+          xp: 50,
+          resources: [
+            { title: "AI Engineer Career: Job Description, Salary & Outlook - Arkansas State", type: "article", url: "https://degree.astate.edu/online-programs/undergraduate/bs-digital-technology-design/ai/career-path-salary-outlook/", xp: 30 },
+            { title: "Roles and Responsibilities Industry-Wise - Taggd", type: "article", url: "https://taggd.in/blogs/ai-engineer-job-description-roles-and-responsibilites/", xp: 30 },
+            { title: "What Does an AI Engineer Do? - Codecademy", type: "article", url: "https://www.codecademy.com/resources/blog/what-does-an-ai-engineer-do", xp: 30 }
+          ]
         }
       ]
     },
