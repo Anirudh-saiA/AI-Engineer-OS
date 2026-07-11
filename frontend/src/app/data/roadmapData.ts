@@ -290,7 +290,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Interacting with hosted foundation models via standard client SDKs.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "14 hours",
+      estimatedDuration: "13 hours",
       xp: 500,
       children: [
         {
@@ -299,11 +299,46 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Understanding architecture limitations and model evaluation.",
           parentId: "using-pretrained-models",
           difficulty: "Beginner",
-          estimatedDuration: "3 hours",
+          estimatedDuration: "2 hours",
           xp: 100,
           children: [
-            { id: "benefits-pretrained", title: "Benefits of Pre-trained Models", description: "Cost efficiency, immediate deployment, and state-of-the-art accuracy.", parentId: "pretrained-concepts", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "limitations-considerations", title: "Limitations and Considerations", description: "Data cut-off times, hallucinations, and context size limits.", parentId: "pretrained-concepts", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 }
+            {
+              id: "benefits-pretrained",
+              title: "Benefits of Pre-trained Models",
+              description: "Cost efficiency, immediate deployment, and state-of-the-art accuracy.",
+              parentId: "pretrained-concepts",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "Pretrained Models: The AI Revolution in 5 Minutes!", type: "video", url: "https://www.youtube.com/watch?v=DWnWJeH9-uI", xp: 50 },
+                { title: "Using pre-trained models in TensorFlow", type: "video", url: "https://www.youtube.com/watch?v=iTlj3gMYzw8", xp: 50 },
+                { title: "Leveraging Pre-Trained Machine Learning Models for Efficient Entity Resolution", type: "video", url: "https://www.youtube.com/watch?v=nqKwCEvR6n4", xp: 50 },
+                { title: "What Is A Pretrained Model? | IBM", type: "article", url: "https://www.ibm.com/think/topics/pretrained-model", xp: 30 },
+                { title: "Why Pre-Trained Models Matter for Machine Learning - AHEAD", type: "article", url: "https://www.ahead.com/resources/why-pre-trained-models-matter-for-machine-learning/", xp: 30 },
+                { title: "How do pre-trained models benefit deep learning? - Milvus", type: "article", url: "https://milvus.io/ai-quick-reference/how-do-pretrained-models-benefit-deep-learning", xp: 30 }
+              ],
+              flashcardQuestion: "What is the main operational benefit of using a pre-trained model rather than building one from scratch?",
+              flashcardAnswer: "Pre-trained models save significant time, data collection efforts, and computational resources since the foundation of learned features is already established, allowing developers to focus purely on application integration or light fine-tuning."
+            },
+            {
+              id: "limitations-considerations",
+              title: "Limitations and Considerations",
+              description: "Data cut-off times, hallucinations, and context size limits.",
+              parentId: "pretrained-concepts",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "L14: Task specific fine tuning and its limitations | GPT for real NLP task", type: "video", url: "https://www.youtube.com/watch?v=cwSfU3g-9zs", xp: 50 },
+                { title: "Chapter 3: Finetuning Pretrained Model | Trainer-API", type: "video", url: "https://www.youtube.com/watch?v=CbpaWfKtunY", xp: 50 },
+                { title: "What are the pros and cons of using pre-trained models in machine learning? - Verve AI", type: "article", url: "https://www.vervecopilot.com/question-bank/advantages-disadvantages-pre-trained-model", xp: 30 },
+                { title: "The Pros and Cons of Using Pre-Trained Models in Machine Learning - Medium", type: "article", url: "https://medium.com/@bhupendra360i/the-pros-and-cons-of-using-pre-trained-models-in-machine-learning-9bbd9e6802f", xp: 30 },
+                { title: "Challenges of Using Pre-trained Models: the Practitioners' Perspective - ResearchGate", type: "article", url: "https://www.researchgate.net/publication/382312695_Challenges_of_Using_Pre-trained_Models_the_Practitioners'_Perspective", xp: 30 }
+              ],
+              flashcardQuestion: "What is a major risk or limitation of relying on third-party pre-trained models?",
+              flashcardAnswer: "You inherit any biases or poor data quality present in the original training dataset. Furthermore, if using an opaque model behind an API, you face a lack of transparency and potential intellectual property or licensing risks."
+            }
           ]
         },
         {
