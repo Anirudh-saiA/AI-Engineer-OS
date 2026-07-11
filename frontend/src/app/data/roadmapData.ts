@@ -37,7 +37,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Foundational concepts defining the landscape of AI Engineering.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "6 hours",
+      estimatedDuration: "3.5 hours",
       xp: 200,
       skillsLearned: ["Terminology Clarity", "Role Differentiation"],
       resources: [
@@ -52,7 +52,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Understanding the role, scope, and engineering expectations.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "30 mins",
           xp: 50,
           resources: [
             { title: "What Is an AI Engineer? (And What Do They Do?) - 365 Data Science", type: "video", url: "http://www.youtube.com/watch?v=gT1SiZttBDE", xp: 50 },
@@ -68,7 +68,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Contrasting systems integration with training core models.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "35 mins",
           xp: 50,
           resources: [
             { title: "AI Engineer vs. Machine Learning Engineer - Marina Wyss", type: "video", url: "http://www.youtube.com/watch?v=NmBW49OBeBU", xp: 50 },
@@ -84,7 +84,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Understanding narrow artificial intelligence versus artificial general intelligence.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "30 mins",
           xp: 50,
           resources: [
             { title: "AI vs. AGI: What's the Difference? - AI Global", type: "video", url: "http://www.youtube.com/watch?v=dGdSK4lD1bU", xp: 50 },
@@ -100,7 +100,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Glossary of parameters, tokens, context windows, and inference.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "35 mins",
           xp: 50,
           resources: [
             { title: "7 AI Terms You Need to Know - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=VSFuqMh4hus", xp: 50 },
@@ -116,7 +116,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "How generative AI changes UI/UX design paradigms and product iteration.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "30 mins",
           xp: 50,
           resources: [
             { title: "AI Engineers - What Do They Do? - Krish Naik", type: "video", url: "http://www.youtube.com/watch?v=y8qRq9PMCh8", xp: 50 },
@@ -132,7 +132,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Team dynamics, AI safety compliance, and API infrastructure maintenance.",
           parentId: "intro",
           difficulty: "Beginner",
-          estimatedDuration: "1 hour",
+          estimatedDuration: "35 mins",
           xp: 50,
           resources: [
             { title: "What is an AI Engineer? (And what do they do?) - Jay Feng", type: "video", url: "http://www.youtube.com/watch?v=o0OczKvQ_is", xp: 50 },
