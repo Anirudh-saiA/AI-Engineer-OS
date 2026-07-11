@@ -1324,24 +1324,108 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Cognitive loop architectures allowing models to choose tool routes dynamically.",
       parentId: "ai-engineer",
       difficulty: "Advanced",
-      estimatedDuration: "18 hours",
+      estimatedDuration: "9 hours",
       xp: 900,
       children: [
-        { id: "agents-usecases", title: "Agents Usecases", description: "Autonomous coding scripts, complex data analysts, and task schedulers.", parentId: "ai-agents", difficulty: "Intermediate", estimatedDuration: "3 hours", xp: 100 },
-        { id: "prompt-eng-agents", title: "Prompt Engineering for Agents", description: "Constructing robust agent rules, system limitations, and JSON templates.", parentId: "ai-agents", difficulty: "Intermediate", estimatedDuration: "3 hours", xp: 100 },
-        { id: "react-prompting", title: "ReAct Prompting", description: "Reasoning and Acting loop architectures (Thought, Action, Observation).", parentId: "ai-agents", difficulty: "Advanced", estimatedDuration: "4 hours", xp: 200 },
+        {
+          id: "agents-usecases",
+          title: "Agents Usecases",
+          description: "Autonomous coding scripts, complex data analysts, and task schedulers.",
+          parentId: "ai-agents",
+          difficulty: "Intermediate",
+          estimatedDuration: "1.5 hours",
+          xp: 100,
+          resources: [
+            { title: "Prompt Engineering Guide: Introduction to Agents", type: "article", url: "https://www.promptingguide.ai/agents/introduction", xp: 40 },
+            { title: "AI Agents Explained (IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=FwOTs4UxQS4", xp: 60 }
+          ],
+          flashcardQuestion: "What is the defining characteristic of an AI Agent compared to a standard LLM chatbot?",
+          flashcardAnswer: "An AI agent has agency; it can autonomously decide which tools to use, execute actions in an environment, and reason about the results to achieve a high-level goal, rather than just generating text."
+        },
+        {
+          id: "prompt-eng-agents",
+          title: "Prompt Engineering for Agents",
+          description: "Constructing robust agent rules, system limitations, and JSON templates.",
+          parentId: "ai-agents",
+          difficulty: "Intermediate",
+          estimatedDuration: "1.5 hours",
+          xp: 100,
+          resources: [
+            { title: "Prompt engineering for AI agents (Wandb)", type: "article", url: "https://wandb.ai/ai-team-articles/prompt-engineering/reports/Prompt-engineering-for-AI-agents--VmlldzoxNTIyNDA1NQ", xp: 50 },
+            { title: "Prompt Engineering for Agents Video Tutorial", type: "video", url: "https://www.youtube.com/watch?v=J_OJAwnEuFs", xp: 50 }
+          ],
+          flashcardQuestion: "Why is prompt engineering fundamentally different for agents than for standard user-facing chatbots?",
+          flashcardAnswer: "For agents, prompt engineering focuses heavily on strictly formatting outputs (like JSON), defining tool schemas, and establishing rigid system boundaries so the agent's logic loop can parse the response without crashing."
+        },
+        {
+          id: "react-prompting",
+          title: "ReAct Prompting",
+          description: "Reasoning and Acting loop architectures (Thought, Action, Observation).",
+          parentId: "ai-agents",
+          difficulty: "Advanced",
+          estimatedDuration: "1.5 hours",
+          xp: 200,
+          resources: [
+            { title: "n8n Blog on ReAct Architecture", type: "article", url: "https://blog.n8n.io/react-agent/", xp: 80 },
+            { title: "ReAct LangChain Video Tutorial", type: "video", url: "https://www.youtube.com/watch?v=jENqvjsrxRE", xp: 120 }
+          ],
+          flashcardQuestion: "What are the three core steps of a ReAct loop?",
+          flashcardAnswer: "Thought (reasoning about what to do), Action (executing a tool or command), and Observation (reading the result of the tool). This loop repeats until the goal is achieved."
+        },
         {
           id: "building-agents-details",
           title: "Building AI Agents",
           description: "Practical implementations of autonomous scripts.",
           parentId: "ai-agents",
           difficulty: "Advanced",
-          estimatedDuration: "8 hours",
+          estimatedDuration: "4.5 hours",
           xp: 500,
           children: [
-            { id: "manual-agents", title: "Manual Implementation", description: "Writing pure logic structures parsing agent function calls.", parentId: "building-agents-details", difficulty: "Advanced", estimatedDuration: "3 hours", xp: 150 },
-            { id: "openai-tools", title: "OpenAI Functions / Tools", description: "Declaring valid JSON schemas inside the chat request to retrieve arguments.", parentId: "building-agents-details", difficulty: "Intermediate", estimatedDuration: "2.5 hours", xp: 120 },
-            { id: "openai-assistant-agents", title: "OpenAI Assistant API Tools", description: "Connecting code interpreter, custom web hook tools, and search capabilities.", parentId: "building-agents-details", difficulty: "Advanced", estimatedDuration: "2.5 hours", xp: 150 }
+            {
+              id: "manual-agents",
+              title: "Manual Implementation",
+              description: "Writing pure logic structures parsing agent function calls.",
+              parentId: "building-agents-details",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 150,
+              resources: [
+                { title: "GitHub Tutorial: AI Agents (amitshekhariitbhu)", type: "article", url: "https://github.com/amitshekhariitbhu/ai-agents-tutorial", xp: 50 },
+                { title: "OpenClaw Case Study Video", type: "video", url: "https://www.youtube.com/watch?v=AZDSpS5v57w", xp: 100 }
+              ],
+              flashcardQuestion: "Why might a developer choose to implement an agent manually instead of using an orchestration framework?",
+              flashcardAnswer: "Manual implementation using standard while-loops and if-statements provides complete transparency, makes debugging agent loops significantly easier, and prevents framework bloat."
+            },
+            {
+              id: "openai-tools",
+              title: "OpenAI Functions / Tools",
+              description: "Declaring valid JSON schemas inside the chat request to retrieve arguments.",
+              parentId: "building-agents-details",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 120,
+              resources: [
+                { title: "OpenAI Developers - Building Agents Track", type: "article", url: "https://developers.openai.com/tracks/building-agents", xp: 60 },
+                { title: "Function Calling Video Tutorial", type: "video", url: "https://www.youtube.com/watch?v=0RS9W8MtZe4", xp: 60 }
+              ],
+              flashcardQuestion: "What happens when you pass an array of tools (JSON schemas) to the OpenAI API?",
+              flashcardAnswer: "The model will intelligently decide whether it needs to call one of those tools. If it does, instead of returning text, it returns a structured JSON payload matching your schema containing the arguments for that tool."
+            },
+            {
+              id: "openai-assistant-agents",
+              title: "OpenAI Assistant API Tools",
+              description: "Connecting code interpreter, custom web hook tools, and search capabilities.",
+              parentId: "building-agents-details",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 150,
+              resources: [
+                { title: "OpenAI Agents SDK Documentation", type: "article", url: "https://developers.openai.com/api/docs/guides/agents", xp: 70 },
+                { title: "Assistant API Chatbot Video", type: "video", url: "https://www.youtube.com/watch?v=5-O0A1R28hI", xp: 80 }
+              ],
+              flashcardQuestion: "What is the primary difference between standard Function Calling and the Assistants API?",
+              flashcardAnswer: "The Assistants API provides stateful threads (memory) and hosted tools like the Code Interpreter and File Search natively out of the box, whereas standard Function Calling requires you to manage memory and execute tools yourself."
+            }
           ]
         }
       ]
