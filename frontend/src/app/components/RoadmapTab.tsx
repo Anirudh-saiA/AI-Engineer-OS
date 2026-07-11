@@ -103,29 +103,19 @@ export default function RoadmapTab({
     if (!hasStarted) return false; // Don't lock before start so they can explore
     if (node.id === "intro" || node.parentId === "intro" || node.id === "ai-engineer") return false;
 
-    // A node is unlocked if the previous sibling or parent sibling is completed
-    const flatList = getFlatNodeList(AI_ENGINEER_ROADMAP);
-    const nodeIdx = flatList.findIndex(n => n.id === node.id);
+    // If it's a parent node, it is locked if its first child is locked
+    if (node.children && node.children.length > 0) {
+      return isNodeLocked(node.children[0]);
+    }
+
+    // A node is unlocked if the previous sibling leaf node is completed
+    const leafNodes = getLeafNodes(AI_ENGINEER_ROADMAP);
+    const nodeIdx = leafNodes.findIndex(n => n.id === node.id);
     if (nodeIdx <= 0) return false;
 
-    // Check if the immediately preceding high-level group or node is completed
-    // To make it simple: unlock if at least 1 previous node is completed
-    const previousNode = flatList[nodeIdx - 1];
+    // Check if the immediately preceding leaf node is completed
+    const previousNode = leafNodes[nodeIdx - 1];
     return !isNodeCompleted(previousNode);
-  };
-
-  // Recursive flat list generator to find previous nodes
-  const getFlatNodeList = (node: RoadmapNode): RoadmapNode[] => {
-    const list: RoadmapNode[] = [];
-    if (node.id !== "ai-engineer") {
-      list.push(node);
-    }
-    if (node.children) {
-      node.children.forEach(child => {
-        list.push(...getFlatNodeList(child));
-      });
-    }
-    return list;
   };
 
   // Recursive leaf node extractor
