@@ -11,6 +11,139 @@ from app.services import profile_service
 
 router = APIRouter()
 
+def log_user_activity(
+    db: Session,
+    uid: str,
+    activity_type: str,
+    title: str,
+    duration_mins: int = None,
+    date_str: str = None,
+    xp_award: int = None
+):
+    if not date_str:
+        date_str = datetime.datetime.utcnow().date().isoformat()
+        
+    profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
+    
+    xp_to_add = 0
+    default_duration = 0
+    
+    type_lower = activity_type.lower()
+    if type_lower == "video":
+        default_duration = 15
+        xp_to_add = 20
+        desc_prefix = "Watched video"
+    elif type_lower == "course":
+        default_duration = 45
+        xp_to_add = 100
+        desc_prefix = "Completed course"
+    elif type_lower == "article":
+        default_duration = 10
+        xp_to_add = 15
+        desc_prefix = "Read article"
+    elif type_lower == "problem":
+        default_duration = 20
+        xp_to_add = 30
+        desc_prefix = "Solved problem"
+    else: # resource
+        default_duration = 5
+        xp_to_add = 10
+        desc_prefix = "Visited resource"
+        
+    duration = duration_mins if duration_mins is not None else default_duration
+    xp_to_add = xp_award if xp_award is not None else xp_to_add
+    
+    activity = db.query(models.UserDailyActivity).filter(
+        models.UserDailyActivity.user_id == uid,
+        models.UserDailyActivity.activity_date == date_str
+    ).first()
+    
+    if not activity:
+        activity = models.UserDailyActivity(
+            user_id=uid,
+            activity_date=date_str,
+            learning_time_mins=0,
+            videos_watched=0,
+            courses_completed=0,
+            articles_read=0,
+            problems_solved=0,
+            resources_visited=0,
+            activities_completed="[]"
+        )
+        db.add(activity)
+        db.flush()
+        
+    activity.learning_time_mins += duration
+    if type_lower == "video":
+        activity.videos_watched += 1
+    elif type_lower == "course":
+        activity.courses_completed += 1
+    elif type_lower == "article":
+        activity.articles_read += 1
+    elif type_lower == "problem":
+        activity.problems_solved += 1
+    else:
+        activity.resources_visited += 1
+        
+    try:
+        activities_list = json.loads(activity.activities_completed)
+        if not isinstance(activities_list, list):
+            activities_list = []
+    except Exception:
+        activities_list = []
+        
+    description = f"{desc_prefix}: {title}"
+    if description not in activities_list:
+        activities_list.append(description)
+        activity.activities_completed = json.dumps(activities_list)
+        
+    if profile:
+        profile.xp_points += xp_to_add
+        
+    db.flush()
+    return activity
+
+@router.post("/activity/log")
+def log_activity_endpoint(
+    payload: schemas.ActivityLogRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Log a learning activity dynamically and increment stats + XP.
+    """
+    uid = current_user["uid"]
+    try:
+        activity = log_user_activity(
+            db=db,
+            uid=uid,
+            activity_type=payload.activity_type,
+            title=payload.title,
+            duration_mins=payload.duration_mins,
+            date_str=payload.date_str
+        )
+        db.commit()
+        return {
+            "status": "success",
+            "message": "Activity logged successfully",
+            "activity": {
+                "date": activity.activity_date,
+                "learning_time": activity.learning_time_mins,
+                "videos": activity.videos_watched,
+                "courses": activity.courses_completed,
+                "articles": activity.articles_read,
+                "problems": activity.problems_solved,
+                "resources": activity.resources_visited,
+                "activity_list": json.loads(activity.activities_completed)
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database transaction error: {str(e)}"
+        )
+
 @router.get("/me", response_model=schemas.UserProfileResponse)
 def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends(verify_token)):
     """
@@ -104,6 +237,28 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
     # 6.5 Fetch study activity calendar dates
     active_days_set = set()
     
+    # Fetch daily activities
+    activities = db.query(models.UserDailyActivity).filter(
+        models.UserDailyActivity.user_id == uid
+    ).all()
+    
+    activities_map = {}
+    for act in activities:
+        active_days_set.add(act.activity_date)
+        try:
+            act_list = json.loads(act.activities_completed)
+        except Exception:
+            act_list = []
+        activities_map[act.activity_date] = {
+            "learning_time": act.learning_time_mins,
+            "videos": act.videos_watched,
+            "courses": act.courses_completed,
+            "articles": act.articles_read,
+            "problems": act.problems_solved,
+            "resources": act.resources_visited,
+            "activity_list": act_list
+        }
+
     # Completed roadmap check list tasks
     for rt in completed_tasks_records:
         active_days_set.add(rt.completed_at.date().isoformat())
@@ -124,6 +279,7 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         active_days_set.add(s.session_date.date().isoformat())
         
     active_days_list = sorted(list(active_days_set))
+
  
     # 7. Package complete response
     skills_map = {
@@ -164,6 +320,8 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
         completed_tasks=completed_tasks_schema,
         weak_topics=weak_topics_schema,
         active_days=active_days_list,
+        activities_map=activities_map,
+
         experience_built_projects=profile.experience_built_projects,
         experience_used_git=profile.experience_used_git,
         experience_hackathons=profile.experience_hackathons,
@@ -483,10 +641,16 @@ def complete_roadmap_node(node_id: str, db: Session = Depends(get_db), current_u
         node.status = "completed"
         node.completed_at = datetime.datetime.utcnow()
         
-        # Award XP points to user profile
-        profile = db.query(models.LearningProfile).filter(models.LearningProfile.user_id == uid).first()
-        if profile:
-            profile.xp_points += 50  # Award 50 XP for node completion!
+        # Log course completion and award 50 XP
+        log_user_activity(
+            db=db,
+            uid=uid,
+            activity_type="course",
+            title=node.title,
+            duration_mins=60,
+            xp_award=50
+        )
+
             
         # 3. Find the next node in order to mark it as 'active'
         next_node = db.query(models.RoadmapProgress).filter(
@@ -554,8 +718,17 @@ def toggle_roadmap_task(
                     completed_at=datetime.datetime.utcnow()
                 )
                 db.add(new_task)
-                profile.xp_points += 10  # +10 XP per task!
+                # Log task completion and award 10 XP
+                log_user_activity(
+                    db=db,
+                    uid=uid,
+                    activity_type="problem" if "problem" in task_text.lower() else "resource",
+                    title=f"Roadmap Task: {task_text}",
+                    duration_mins=15,
+                    xp_award=10
+                )
         else:
+
             if existing_task:
                 # Delete task record
                 db.delete(existing_task)
@@ -669,9 +842,20 @@ def toggle_daily_task(
     try:
         task.completed = not task.completed
         if task.completed:
-            profile.xp_points += 20
+            task_date_str = task.task_date.date().isoformat()
+            act_type = "problem" if task.category == "DSA" or "problem" in task.task_text.lower() else "resource"
+            log_user_activity(
+                db=db,
+                uid=uid,
+                activity_type=act_type,
+                title=task.task_text,
+                duration_mins=15,
+                date_str=task_date_str,
+                xp_award=20
+            )
         else:
             profile.xp_points = max(0, profile.xp_points - 20)
+
             
         db.commit()
         db.refresh(task)

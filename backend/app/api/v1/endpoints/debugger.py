@@ -795,8 +795,19 @@ def feedback_endpoint(
 
     analysis.was_fix_helpful = helpful
     try:
+        if helpful:
+            from app.api.v1.endpoints.profile import log_user_activity
+            log_user_activity(
+                db=db,
+                uid=uid,
+                activity_type="problem",
+                title=analysis.error_type or "Code Bug Fix",
+                duration_mins=20,
+                xp_award=30
+            )
         db.commit()
     except Exception as e:
+
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save feedback: {e}")
 

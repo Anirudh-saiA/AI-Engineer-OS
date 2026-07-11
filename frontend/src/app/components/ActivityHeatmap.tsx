@@ -41,34 +41,69 @@ export default function ActivityHeatmap({ profileData }: ActivityHeatmapProps) {
       const dateVal = String(currentDate.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${dateVal}`;
       
-      const hasActivity = profileData?.active_days?.includes(dateStr) || false;
+      const dayActivity = profileData?.activities_map?.[dateStr];
+      const hasActivity = !!dayActivity || profileData?.active_days?.includes(dateStr) || false;
       const isToday = dateStr === todayStr;
-      
-      // Seed deterministic pseudo-random values based on the date string
-      // Just so it looks realistic for the demo
-      const seed = parseInt(dateStr.replace(/-/g, '')) % 100;
       
       let level = 0;
       let minutes = 0;
       let videos = 0;
       let lessons = 0;
+      let articles = 0;
+      let problems = 0;
+      let resources = 0;
       let xp = 0;
       let status = "No Activity";
+      let activityList: string[] = [];
 
-      if (hasActivity) {
+      if (dayActivity) {
         activeDaysCount++;
         currentStreakCounter++;
         if (currentStreakCounter > longestStreak) longestStreak = currentStreakCounter;
         
-        // Determine level 1-6 pseudo-randomly
+        minutes = dayActivity.learning_time;
+        videos = dayActivity.videos || 0;
+        lessons = dayActivity.courses || 0;
+        articles = dayActivity.articles || 0;
+        problems = dayActivity.problems || 0;
+        resources = dayActivity.resources || 0;
+        activityList = dayActivity.activity_list || [];
+        xp = (videos * 20) + (lessons * 100) + (articles * 15) + (problems * 30) + (resources * 10);
+        
+        const totalActivities = videos + lessons + articles + problems + resources;
+        if (minutes >= 90 || totalActivities >= 8) level = 6;
+        else if (minutes >= 60 || totalActivities >= 6) level = 5;
+        else if (minutes >= 40 || totalActivities >= 4) level = 4;
+        else if (minutes >= 20 || totalActivities >= 3) level = 3;
+        else if (minutes >= 10 || totalActivities >= 2) level = 2;
+        else if (minutes > 0 || totalActivities > 0) level = 1;
+        
+        if (level === 1) status = "Just Started";
+        else if (level === 2) status = "Warming Up";
+        else if (level === 3) status = "Good Session";
+        else if (level === 4) status = "Deep Work";
+        else if (level === 5) status = "In the Flow";
+        else if (level === 6) status = "Daily Goal Crushed 🔥";
+        
+        totalMinutes += minutes;
+        totalVideos += videos;
+        totalLessons += lessons;
+        totalXP += xp;
+      } else if (hasActivity) {
+        // Fallback for legacy database entries
+        activeDaysCount++;
+        currentStreakCounter++;
+        if (currentStreakCounter > longestStreak) longestStreak = currentStreakCounter;
+        
+        const seed = parseInt(dateStr.replace(/-/g, '')) % 100;
         level = (seed % 6) + 1;
         
-        if (level === 1) { minutes = 3; videos = 0; lessons = 1; xp = 15; status = "Just Started"; }
-        else if (level === 2) { minutes = 8; videos = 1; lessons = 1; xp = 40; status = "Warming Up"; }
-        else if (level === 3) { minutes = 15; videos = 1; lessons = 2; xp = 80; status = "Good Session"; }
-        else if (level === 4) { minutes = 30; videos = 2; lessons = 3; xp = 150; status = "Deep Work"; }
-        else if (level === 5) { minutes = 50; videos = 3; lessons = 4; xp = 220; status = "In the Flow"; }
-        else if (level === 6) { minutes = 75; videos = 4; lessons = 5; xp = 350; status = "Daily Goal Crushed 🔥"; }
+        if (level === 1) { minutes = 5; lessons = 1; xp = 15; status = "Just Started"; activityList = ["Completed daily planner task"]; }
+        else if (level === 2) { minutes = 10; videos = 1; xp = 40; status = "Warming Up"; activityList = ["Watched learning video"]; }
+        else if (level === 3) { minutes = 20; lessons = 1; xp = 80; status = "Good Session"; activityList = ["Completed daily planner tasks"]; }
+        else if (level === 4) { minutes = 35; videos = 1; lessons = 1; xp = 150; status = "Deep Work"; activityList = ["Completed focus session"]; }
+        else if (level === 5) { minutes = 55; videos = 2; lessons = 1; xp = 220; status = "In the Flow"; activityList = ["Watched tutorials & worked"]; }
+        else if (level === 6) { minutes = 80; videos = 3; lessons = 2; xp = 350; status = "Daily Goal Crushed 🔥"; activityList = ["Completed multiple tasks"]; }
         
         totalMinutes += minutes;
         totalVideos += videos;
@@ -79,7 +114,7 @@ export default function ActivityHeatmap({ profileData }: ActivityHeatmapProps) {
       }
       
       if (isToday) {
-        currentStreak = currentStreakCounter; // Snapshot current streak
+        currentStreak = currentStreakCounter;
       }
 
       data.push({
@@ -94,8 +129,12 @@ export default function ActivityHeatmap({ profileData }: ActivityHeatmapProps) {
         minutes,
         videos,
         lessons,
+        articles,
+        problems,
+        resources,
         xp,
-        status
+        status,
+        activityList
       });
     }
 
@@ -293,26 +332,33 @@ export default function ActivityHeatmap({ profileData }: ActivityHeatmapProps) {
             
             {hoverDay.hasActivity ? (
               <div className="space-y-1.5 text-xs text-slate-300">
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-4">
                   <span>Learning Time:</span>
                   <span className="font-semibold text-white">{hoverDay.minutes} minutes</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Videos Watched:</span>
-                  <span className="font-semibold text-white">{hoverDay.videos}</span>
+                <div className="flex justify-between gap-4">
+                  <span>Resources Visited:</span>
+                  <span className="font-semibold text-white">{(hoverDay.resources || 0) + (hoverDay.articles || 0)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Lessons Completed:</span>
-                  <span className="font-semibold text-white">{hoverDay.lessons}</span>
-                </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-4">
                   <span>XP Earned:</span>
-                  <span className="font-semibold text-blue-400">{hoverDay.xp}</span>
+                  <span className="font-semibold text-blue-400">+{hoverDay.xp} XP</span>
                 </div>
-                <div className="flex justify-between pt-1 mt-1 border-t border-slate-700/50">
+                <div className="flex justify-between gap-4 pt-1 mt-1 border-t border-slate-700/50">
                   <span>Status:</span>
                   <span className="font-semibold text-emerald-400">{hoverDay.status}</span>
                 </div>
+
+                {hoverDay.activityList && hoverDay.activityList.length > 0 && (
+                  <div className="pt-2 mt-2 border-t border-slate-700/50">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Activities Completed</p>
+                    <ul className="list-disc pl-3.5 space-y-1 text-[10px] max-h-24 overflow-y-auto">
+                      {hoverDay.activityList.map((act: string, aIdx: number) => (
+                        <li key={aIdx} className="text-white/95 leading-normal">{act}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-xs text-slate-400">No activity on this day.</p>

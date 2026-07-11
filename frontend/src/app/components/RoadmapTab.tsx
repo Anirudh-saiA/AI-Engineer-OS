@@ -36,6 +36,7 @@ interface RoadmapTabProps {
   user: any;
   API_BASE_URL: string;
   fetchProfile: () => void;
+  logActivity?: (activityType: string, title: string, durationMins?: number) => Promise<void>;
 }
 
 export default function RoadmapTab({
@@ -46,6 +47,7 @@ export default function RoadmapTab({
   user,
   API_BASE_URL,
   fetchProfile,
+  logActivity,
 }: RoadmapTabProps) {
   // Navigation tabs: "tree" or "visual"
   const [viewTab, setViewTab] = useState<"tree" | "visual">("tree");
@@ -205,6 +207,24 @@ export default function RoadmapTab({
       setConfetti({ active: true, x: window.innerWidth / 2, y: window.innerHeight / 2 });
       setTimeout(() => setConfetti(null), 3000);
       addLog(`[SUCCESS] Completed topic: "${node.title}"! Earned +${node.xp || 50} XP.`, "success");
+
+      // Log activity to heatmap
+      if (logActivity) {
+        logActivity('course', `Course Module: ${node.title}`, 45);
+      }
+
+      // Sync backend stage completion
+      try {
+        await fetch(`${API_BASE_URL}/api/v1/profile/roadmap/${node.id}/complete`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${user.uid}`
+          }
+        });
+        fetchProfile();
+      } catch (err) {
+        console.error("Failed to complete stage on backend:", err);
+      }
     }
   };
 
@@ -550,34 +570,56 @@ export default function RoadmapTab({
 
                 {/* Video Lesson / Article list */}
                 <div className="space-y-2.5">
-                  <h4 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider">Curriculum Study Materials</h4>
+                  <h4 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider">Curriculum Study Materials (Click to study)</h4>
                   <div className="space-y-2">
                     {selectedNode.resources && selectedNode.resources.length > 0 ? (
                       selectedNode.resources.map((res, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white text-xs">
+                        <button 
+                          key={i} 
+                          onClick={() => {
+                            if (logActivity) {
+                              logActivity(res.type || 'video', res.title, res.type === 'video' ? 15 : 10);
+                            }
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs cursor-pointer text-left w-full font-normal"
+                        >
                           <div className="flex items-center gap-2">
                             {res.type === 'video' ? <Play className="w-4.5 h-4.5 text-red-500" /> : <FileText className="w-4.5 h-4.5 text-blue-500" />}
                             <span className="font-semibold text-gray-700 truncate max-w-[240px]">{res.title}</span>
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">+{res.xp} XP</span>
-                        </div>
+                        </button>
                       ))
                     ) : (
                       <>
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white text-xs">
+                        <button 
+                          onClick={() => {
+                            if (logActivity) {
+                              logActivity('video', `Deep-dive core tutorial on ${selectedNode.title}`, 15);
+                            }
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs cursor-pointer text-left w-full font-normal"
+                        >
                           <div className="flex items-center gap-2">
                             <Play className="w-4.5 h-4.5 text-red-500" />
                             <span className="font-semibold text-gray-700">Video: Deep-dive core tutorial</span>
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">+50 XP</span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white text-xs">
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (logActivity) {
+                              logActivity('article', `Advanced integration mechanics on ${selectedNode.title}`, 10);
+                            }
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-xs cursor-pointer text-left w-full font-normal"
+                        >
                           <div className="flex items-center gap-2">
                             <FileText className="w-4.5 h-4.5 text-blue-500" />
                             <span className="font-semibold text-gray-700">Article: Advanced integration mechanics</span>
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">+30 XP</span>
-                        </div>
+                        </button>
                       </>
                     )}
                   </div>

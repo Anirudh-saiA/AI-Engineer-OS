@@ -717,6 +717,38 @@ const staticRoadmaps: Record<string, RoadmapTrack> = {
     }
   };
 
+  const logActivity = async (activityType: string, title: string, durationMins?: number) => {
+    if (!user) return;
+    try {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/profile/activity/log`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.uid}`
+        },
+        body: JSON.stringify({
+          activity_type: activityType,
+          title: title,
+          duration_mins: durationMins,
+          date_str: dateStr
+        })
+      });
+
+      if (res.ok) {
+        addLog(`[SUCCESS] Learning telemetry registered: ${activityType} - "${title}"`, "success");
+        fetchProfile();
+      }
+    } catch (err) {
+      console.error("Failed to log activity:", err);
+    }
+  };
+
 
   // Fetch existing chat sessions from the backend API gateway
   const fetchChatSessions = async () => {
@@ -2134,7 +2166,9 @@ const fetchProfile = async () => {
                   user={user}
                   API_BASE_URL={API_BASE_URL}
                   fetchProfile={fetchProfile}
+                  logActivity={logActivity}
                 />
+
               )}
 
               {/* ═══════ TAB 2: COGNITIVE AGENT TERMINAL ═══════ */}

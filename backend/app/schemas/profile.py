@@ -123,6 +123,8 @@ class UserProfileResponse(BaseModel):
     completed_tasks: List[str] = []
     weak_topics: List[str] = []
     active_days: List[str] = []
+    activities_map: dict = {}
+
 
 class UserSettingsSchema(BaseModel):
     theme: str = Field("dark", description="App interface theme preference")
@@ -192,5 +194,13 @@ class ProjectAnalyticsResponse(BaseModel):
     hours_spent: int
     success_rate: float
     skills_gained: List[str]
+
+
+class ActivityLogRequest(BaseModel):
+    activity_type: str  # "video", "course", "article", "problem", "resource"
+    title: str          # Name/title of the activity
+    duration_mins: Optional[int] = None
+    date_str: Optional[str] = None # format: YYYY-MM-DD
+
 
 

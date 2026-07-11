@@ -328,3 +328,22 @@ class DebuggingAnalyticsSnapshot(Base):
     most_common_category = Column(String, nullable=True)
     fix_success_rate = Column(Integer, nullable=True)        # percentage 0-100
     learning_score = Column(Integer, default=0)
+
+
+class UserDailyActivity(Base):
+    """
+    Tracks daily detailed learning activities (videos, courses, articles, problems, resources)
+    """
+    __tablename__ = "user_daily_activities"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    activity_date = Column(String, index=True, nullable=False) # Format "YYYY-MM-DD"
+    learning_time_mins = Column(Integer, default=0)
+    videos_watched = Column(Integer, default=0)
+    courses_completed = Column(Integer, default=0)
+    articles_read = Column(Integer, default=0)
+    problems_solved = Column(Integer, default=0)
+    resources_visited = Column(Integer, default=0)
+    activities_completed = Column(Text, default="[]") # JSON array of activity descriptions
+
