@@ -737,7 +737,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Running open-weights models locally and deploying cost-effective custom servers.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "15.5 hours",
+      estimatedDuration: "14.5 hours",
       xp: 700,
       children: [
         {
@@ -765,12 +765,56 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Leveraging open weights repositories and inference scripts.",
           parentId: "opensource-ai",
           difficulty: "Intermediate",
-          estimatedDuration: "5 hours",
+          estimatedDuration: "4 hours",
           xp: 250,
           children: [
-            { id: "hf-hub", title: "Hugging Face Hub", description: "Navigating model repositories, licenses, and documentation cards.", parentId: "huggingface", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "hf-tasks", title: "Hugging Face Tasks", description: "Matching pipelines to classification, summarization, or generation goals.", parentId: "huggingface", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "finding-models", title: "Finding Open Source Models", description: "Filtering by leaderboard rankings, quantizations, and benchmarks.", parentId: "huggingface", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 }
+            {
+              id: "hf-hub",
+              title: "Hugging Face Hub",
+              description: "Navigating model repositories, licenses, and documentation cards.",
+              parentId: "huggingface",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 50,
+              resources: [
+                { title: "Hugging Face Hub Documentation", type: "article", url: "https://huggingface.co/docs/hub/index", xp: 30 },
+                { title: "Command Line Interface (CLI) Guide", type: "article", url: "https://huggingface.co/docs/huggingface_hub/guides/cli", xp: 30 },
+                { title: "Fine-Tune AI Text Generation Model & Upload to Hugging Face Hub", type: "video", url: "https://www.youtube.com/watch?v=uE0_XKh2d6g", xp: 50 }
+              ],
+              flashcardQuestion: "What is the primary function of the Hugging Face Hub?",
+              flashcardAnswer: "It serves as a central platform (often called the 'GitHub of ML') where developers can host, share, and discover pre-trained models, datasets, and interactive ML applications (Spaces)."
+            },
+            {
+              id: "hf-tasks",
+              title: "Hugging Face Tasks",
+              description: "Matching pipelines to classification, summarization, or generation goals.",
+              parentId: "huggingface",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 50,
+              resources: [
+                { title: "Supported Tasks Overview", type: "article", url: "https://huggingface.co/docs/microsoft-azure/foundry/tasks", xp: 30 },
+                { title: "The Epic Hugging Face Tasks Overview", type: "video", url: "https://www.youtube.com/watch?v=nIjpVLsrSBE", xp: 50 },
+                { title: "AI Models Guide for Consultants & Product Managers | Hugging Face Tasks", type: "video", url: "https://www.youtube.com/watch?v=iHIU-bXkpnk", xp: 50 }
+              ],
+              flashcardQuestion: "Why does Hugging Face categorize models by 'Tasks' (e.g., text-generation, zero-shot-classification)?",
+              flashcardAnswer: "Different AI capabilities require fundamentally different input/output structures. Categorizing by tasks allows developers to easily find the correct pipeline and architecture for their specific problem."
+            },
+            {
+              id: "finding-models",
+              title: "Finding Open Source Models",
+              description: "Filtering by leaderboard rankings, quantizations, and benchmarks.",
+              parentId: "huggingface",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 80,
+              resources: [
+                { title: "Download files from the Hub Guide", type: "article", url: "https://huggingface.co/docs/huggingface_hub/guides/download", xp: 30 },
+                { title: "How to find models on Hugging Face", type: "video", url: "https://www.youtube.com/watch?v=PPV5SL2axMA", xp: 50 }
+              ],
+              flashcardQuestion: "When searching for an open-source model on the Hugging Face Hub, why is it important to check the model's 'Model Card'?",
+              flashcardAnswer: "The Model Card provides critical metadata about how the model was trained, its intended use cases, potential biases, hardware requirements, and most importantly, its licensing restrictions for commercial use."
+            }
           ]
         },
         {
