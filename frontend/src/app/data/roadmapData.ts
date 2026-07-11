@@ -737,10 +737,28 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Running open-weights models locally and deploying cost-effective custom servers.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "15 hours",
+      estimatedDuration: "15.5 hours",
       xp: 700,
       children: [
-        { id: "open-vs-closed", title: "Open vs Closed Source Models", description: "Trade-offs between licensing cost, data privacy, and reasoning capability.", parentId: "opensource-ai", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 50 },
+        {
+          id: "open-vs-closed",
+          title: "Open vs Closed Source Models",
+          description: "Trade-offs between licensing cost, data privacy, and reasoning capability.",
+          parentId: "opensource-ai",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 50,
+          resources: [
+            { title: "AI open models have benefits. So why aren't they more widely used? - MIT Sloan", type: "article", url: "https://mitsloan.mit.edu/ideas-made-to-matter/ai-open-models-have-benefits-so-why-arent-they-more-widely-used", xp: 30 },
+            { title: "Open Source AI vs Closed AI Models: Which Is Better for Enterprise Applications?", type: "article", url: "https://www.rwit.io/blog/open-source-ai-vs-closed-ai-models-enterprise-applications", xp: 30 },
+            { title: "How to Choose Between Open Source and Closed Source LLMs: A 2024 Guide | Arcee AI", type: "article", url: "https://www.arcee.ai/blog/how-to-choose-between-open-source-and-closed-source-llms-a-2024-guide", xp: 30 },
+            { title: "Open vs Closed AI Models Explained", type: "video", url: "https://www.youtube.com/watch?v=Payv6hhq6Qw", xp: 50 },
+            { title: "Open vs. Closed Source: The Ultimate ROI Analysis", type: "video", url: "https://www.youtube.com/watch?v=FerQUw5u3KU", xp: 50 },
+            { title: "Open-Source vs. Closed-Source AI", type: "video", url: "https://www.youtube.com/watch?v=ZfYrJlfLs1Q", xp: 50 }
+          ],
+          flashcardQuestion: "What is the primary trade-off between using an open-source model versus a closed-source proprietary model?",
+          flashcardAnswer: "Closed-source models typically offer higher out-of-the-box reasoning capabilities with managed infrastructure, while open-source models offer complete data privacy, fine-grained control, and zero vendor lock-in at the cost of requiring your own hosting infrastructure."
+        },
         {
           id: "huggingface",
           title: "Hugging Face Ecosystem",
