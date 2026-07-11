@@ -636,15 +636,99 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Implementing structural safety checks, moderation gates, and user constraint filters.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "10 hours",
+      estimatedDuration: "7 hours",
       xp: 500,
       children: [
-        { id: "prompt-injection", title: "Prompt Injection Attacks", description: "Understanding jailbreaks, system role overrides, and defense strategies.", parentId: "ai-safety-ethics", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-        { id: "bias-fairness", title: "Bias and Fairness", description: "Auditing completions for programmatic equity and representation.", parentId: "ai-safety-ethics", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 },
-        { id: "security-privacy", title: "Security and Privacy Concerns", description: "Managing data leakages, scrubbing PII, and using HIPAA-compliant gateways.", parentId: "ai-safety-ethics", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-        { id: "adversarial-testing", title: "Conducting Adversarial Testing", description: "Red-teaming models with unexpected instruction pipelines.", parentId: "ai-safety-ethics", difficulty: "Advanced", estimatedDuration: "2.5 hours", xp: 100 },
-        { id: "moderation-api", title: "OpenAI Moderation API", description: "Executing lightweight pre-checks for hate speech, self-harm, or illegal activity.", parentId: "ai-safety-ethics", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 50 },
-        { id: "safety-best-practices", title: "Safety Best Practices", description: "Sanitizing model inputs, limiting outputs, and tracking API abuse.", parentId: "ai-safety-ethics", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 50 }
+        {
+          id: "prompt-injection",
+          title: "Prompt Injection Attacks",
+          description: "Understanding jailbreaks, system role overrides, and defense strategies.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Intermediate",
+          estimatedDuration: "1 hour",
+          xp: 80,
+          resources: [
+            { title: "How AI Prompt Injection Works | Hands-on with LLMs (by AppSecEngineer)", type: "video", url: "https://www.youtube.com/watch?v=fCpAr2OylDw", xp: 50 },
+            { title: "Prompt Injection Attacks and Defense in LLMs (by OWASP)", type: "article", url: "https://www.youtube.com/post/Ugkx9d8mweOFLgGlDB9XQX6mcRkb7Mskbuzw", xp: 30 }
+          ],
+          flashcardQuestion: "What is the primary difference between a traditional SQL injection and a prompt injection attack?",
+          flashcardAnswer: "Unlike SQL injection which targets rigidly structured database queries, prompt injection uses natural language to manipulate the LLM's non-deterministic instruction parsing, causing it to override its original system instructions."
+        },
+        {
+          id: "bias-fairness",
+          title: "Bias and Fairness",
+          description: "Auditing completions for programmatic equity and representation.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 50,
+          resources: [
+            { title: "Ep 119: Bias and Fairness — Hidden Problems in AI | LLM Mastery Podcast", type: "video", url: "https://www.youtube.com/watch?v=u7nqV-89rhM", xp: 50 },
+            { title: "NIST AI Risk Management Framework", type: "article", url: "https://www.nist.gov/itl/ai-risk-management-framework", xp: 30 }
+          ],
+          flashcardQuestion: "What is 'representation bias' in the context of an LLM's training pipeline?",
+          flashcardAnswer: "Representation bias occurs when the data used to train the model disproportionately represents certain demographics, cultures, or perspectives while underrepresenting others, leading to skewed or prejudiced outputs."
+        },
+        {
+          id: "security-privacy",
+          title: "Security and Privacy Concerns",
+          description: "Managing data leakages, scrubbing PII, and using HIPAA-compliant gateways.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Intermediate",
+          estimatedDuration: "1 hour",
+          xp: 80,
+          resources: [
+            { title: "Stop Your AI Agent from Deleting Production (LLM Security Best Practices)", type: "video", url: "https://www.youtube.com/watch?v=qQP9wh8ZW9I", xp: 50 },
+            { title: "I gave my local LLM my Docker Compose files, and it found security holes I missed", type: "article", url: "https://www.xda-developers.com/gave-my-local-llm-my-docker-compose-files-found-security-holes-i-missed/", xp: 30 }
+          ],
+          flashcardQuestion: "Why is it dangerous to give an LLM unconstrained write access to a production database?",
+          flashcardAnswer: "LLMs can hallucinate or be manipulated via prompt injection to execute destructive commands (like dropping tables or modifying records), making the principle of least privilege essential for agent tools."
+        },
+        {
+          id: "adversarial-testing",
+          title: "Conducting Adversarial Testing",
+          description: "Red-teaming models with unexpected instruction pipelines.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Advanced",
+          estimatedDuration: "1.5 hours",
+          xp: 100,
+          resources: [
+            { title: "Red Teaming: Adversarial Testing for Systems and AI", type: "video", url: "https://www.youtube.com/watch?v=BigAVX-5-VI", xp: 50 },
+            { title: "Tutorial: Adversarial testing for LLM applications (by Evidently AI)", type: "video", url: "https://www.youtube.com/watch?v=tdBj6vafHbg", xp: 50 }
+          ],
+          flashcardQuestion: "What is the goal of 'red-teaming' an AI model?",
+          flashcardAnswer: "Red-teaming involves actively trying to break or exploit the model's safety guardrails (e.g., through jailbreaks or adversarial prompts) to identify vulnerabilities before the application is deployed to production."
+        },
+        {
+          id: "moderation-api",
+          title: "OpenAI Moderation API",
+          description: "Executing lightweight pre-checks for hate speech, self-harm, or illegal activity.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Beginner",
+          estimatedDuration: "1 hour",
+          xp: 50,
+          resources: [
+            { title: "Harnessing OpenAI for Content Moderation: React & Firebase Integration", type: "video", url: "https://www.youtube.com/watch?v=sQuHVpQNUJ8", xp: 50 },
+            { title: "OpenAI's Moderation API with GUI - Gradio", type: "video", url: "https://www.youtube.com/watch?v=rtHa2gcIg8Q", xp: 50 }
+          ],
+          flashcardQuestion: "Why might a developer use OpenAI's Moderation API in front of their main text generation pipeline?",
+          flashcardAnswer: "The Moderation API acts as a fast, lightweight, and free pre-filter to detect and block policy violations (like hate speech, self-harm, or illicit content) before the expensive LLM processes the prompt."
+        },
+        {
+          id: "safety-best-practices",
+          title: "Safety Best Practices",
+          description: "Sanitizing model inputs, limiting outputs, and tracking API abuse.",
+          parentId: "ai-safety-ethics",
+          difficulty: "Beginner",
+          estimatedDuration: "1 hour",
+          xp: 50,
+          resources: [
+            { title: "Building Safer AI: Implementing Guardrails for LLM Applications", type: "video", url: "https://www.youtube.com/watch?v=frW8EXcNVc8", xp: 50 },
+            { title: "Responsible AI in Action: LLM Models and Ethical Best Practices", type: "video", url: "https://www.youtube.com/watch?v=q1uzoIk4IP8", xp: 50 }
+          ],
+          flashcardQuestion: "What role do tools like Llama Guard or IBM Risk Atlas play in an AI application?",
+          flashcardAnswer: "They serve as specialized 'guardrail' models that sit between the user and the main LLM to classify and block toxic inputs and sanitize inappropriate outputs in real-time."
+        }
       ]
     },
     {
