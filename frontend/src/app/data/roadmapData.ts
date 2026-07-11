@@ -737,7 +737,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Running open-weights models locally and deploying cost-effective custom servers.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "12.5 hours",
+      estimatedDuration: "11.5 hours",
       xp: 700,
       children: [
         {
@@ -868,11 +868,41 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Local runner orchestration system for GGUF model formats.",
           parentId: "opensource-ai",
           difficulty: "Intermediate",
-          estimatedDuration: "4 hours",
+          estimatedDuration: "3 hours",
           xp: 200,
           children: [
-            { id: "ollama-models", title: "Ollama Models (Llama3, Phi3)", description: "Pulling and running custom model weights locally.", parentId: "ollama", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 80 },
-            { id: "ollama-sdk", title: "Ollama SDK", description: "Integrating local API calls with Node.js and Python projects.", parentId: "ollama", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 90 }
+            {
+              id: "ollama-models",
+              title: "Ollama Models (Llama3, Phi3)",
+              description: "Pulling and running custom model weights locally.",
+              parentId: "ollama",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "Local AI in 10 Minutes! Install Ollama & Run Llama 3 on Linux", type: "video", url: "https://www.youtube.com/watch?v=U5Fj7Gt3PAA", xp: 50 },
+                { title: "Ollama Full Tutorial for Beginners 2026: How to Use Ollama", type: "video", url: "https://www.youtube.com/watch?v=WC0NOMb3Yn0", xp: 50 },
+                { title: "Phi-3 Mini with Ollama", type: "article", url: "https://microsoft.github.io/genaiscript/guides/phi3-with-ollama/", xp: 30 }
+              ],
+              flashcardQuestion: "What is the primary advantage of using a tool like Ollama?",
+              flashcardAnswer: "Ollama abstracts away the complex environment setup, dependencies, and configuration required to run large language models, allowing developers to pull and run quantized models (like Llama 3 or Phi-3) locally with a single terminal command."
+            },
+            {
+              id: "ollama-sdk",
+              title: "Ollama SDK",
+              description: "Integrating local API calls with Node.js and Python projects.",
+              parentId: "ollama",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 90,
+              resources: [
+                { title: "Python & JavaScript Libraries - Ollama Blog", type: "article", url: "https://ollama.com/blog/python-javascript-libraries", xp: 30 },
+                { title: "Learn Ollama in 15 Minutes - Run LLM Models Locally for FREE", type: "video", url: "https://www.youtube.com/watch?v=UtSSMs6ObqY", xp: 50 },
+                { title: "Ollama Python Library Released! How to implement Ollama RAG?", type: "video", url: "https://www.youtube.com/watch?v=4HfSfFvLn9Q", xp: 50 }
+              ],
+              flashcardQuestion: "When building an application with the Ollama SDK, where does the inference processing occur?",
+              flashcardAnswer: "The inference occurs entirely on the local machine where the Ollama server is running, ensuring complete data privacy and zero API costs, unlike cloud-based APIs (e.g., OpenAI) where data is sent to external servers."
+            }
           ]
         }
       ]
