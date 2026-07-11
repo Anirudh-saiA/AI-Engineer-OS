@@ -913,7 +913,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Managing semantic knowledge mapping and storage indexing patterns.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "18 hours",
+      estimatedDuration: "14.5 hours",
       xp: 800,
       children: [
         {
@@ -925,10 +925,63 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "4 hours",
           xp: 200,
           children: [
-            { id: "semantic-search-concept", title: "Semantic Search", description: "Revising literal keyword search into concept similarity match.", parentId: "what-are-embeddings", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 50 },
-            { id: "data-classification", title: "Data Classification", description: "Grouping vector coordinates with clustering algorithms.", parentId: "what-are-embeddings", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 50 },
-            { id: "recommendation-systems", title: "Recommendation Systems", description: "Mapping consumer attributes to find nearest product vectors.", parentId: "what-are-embeddings", difficulty: "Intermediate", estimatedDuration: "1 hour", xp: 50 },
-            { id: "anomaly-detection", title: "Anomaly Detection", description: "Isolating vector spikes mapping outside standard clusters.", parentId: "what-are-embeddings", difficulty: "Advanced", estimatedDuration: "1 hour", xp: 60 }
+            {
+              id: "semantic-search-concept",
+              title: "Semantic Search",
+              description: "Revising literal keyword search into concept similarity match.",
+              parentId: "what-are-embeddings",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "Vector Embeddings Tutorial - Semantic Search", type: "video", url: "https://www.youtube.com/watch?v=-Ui18NydqEI", xp: 50 },
+                { title: "Semantic Search with Vector Embeddings", type: "video", url: "https://www.youtube.com/watch?v=BDwPdLJMwbc", xp: 50 }
+              ],
+              flashcardQuestion: "How does semantic search differ from traditional keyword search?",
+              flashcardAnswer: "Traditional search looks for exact word matches, while semantic search uses embeddings to find content that is conceptually similar, even if the exact keywords are missing."
+            },
+            {
+              id: "data-classification",
+              title: "Data Classification",
+              description: "Grouping vector coordinates with clustering algorithms.",
+              parentId: "what-are-embeddings",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "What are vector embeddings? (IBM)", type: "article", url: "https://www.ibm.com/think/topics/embedding", xp: 30 }
+              ],
+              flashcardQuestion: "How do embeddings enable data classification?",
+              flashcardAnswer: "By translating data into high-dimensional vectors, related concepts cluster close together in the vector space, making it easy for algorithms to categorize and separate different types of data."
+            },
+            {
+              id: "recommendation-systems",
+              title: "Recommendation Systems",
+              description: "Mapping consumer attributes to find nearest product vectors.",
+              parentId: "what-are-embeddings",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "What are vector embeddings? (IBM)", type: "article", url: "https://www.ibm.com/think/topics/embedding", xp: 30 }
+              ],
+              flashcardQuestion: "How are embeddings utilized in modern recommendation systems?",
+              flashcardAnswer: "User profiles and items (like movies or products) are both converted into embeddings. The system recommends items whose vectors are mathematically closest to the user's vector (e.g., using cosine similarity)."
+            },
+            {
+              id: "anomaly-detection",
+              title: "Anomaly Detection",
+              description: "Isolating vector spikes mapping outside standard clusters.",
+              parentId: "what-are-embeddings",
+              difficulty: "Advanced",
+              estimatedDuration: "1 hour",
+              xp: 60,
+              resources: [
+                { title: "Anomaly Detection with Embeddings", type: "video", url: "https://www.youtube.com/watch?v=12Xq9KBbBQw", xp: 50 }
+              ],
+              flashcardQuestion: "How can embeddings be used for anomaly detection?",
+              flashcardAnswer: "Since normal, expected data points will naturally cluster together in the vector space, any data point that lands far away from these clusters can be flagged as an anomaly or outlier."
+            }
           ]
         },
         {
@@ -940,8 +993,35 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "3 hours",
           xp: 150,
           children: [
-            { id: "openai-embedding-models", title: "Open AI Embedding Models", description: "Selecting dimension parameters (256, 1536, 3072).", parentId: "openai-embeddings-api", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 60 },
-            { id: "pricing-embeddings", title: "Pricing Considerations", description: "Calculating throughput costs per million input tokens.", parentId: "openai-embeddings-api", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 }
+            {
+              id: "openai-embedding-models",
+              title: "Open AI Embedding Models",
+              description: "Selecting dimension parameters (256, 1536, 3072).",
+              parentId: "openai-embeddings-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 60,
+              resources: [
+                { title: "Free video walkthrough of embeddings", type: "article", url: "https://community.openai.com/t/free-video-walkthrough-of-embedding/29616", xp: 30 },
+                { title: "OpenAI Embeddings Tutorial", type: "video", url: "https://www.youtube.com/watch?v=bDL3EJaqN50", xp: 50 }
+              ],
+              flashcardQuestion: "Why might a developer choose text-embedding-3-small over text-embedding-3-large?",
+              flashcardAnswer: "While the 'large' model captures more complex semantic meaning, the 'small' model is significantly cheaper, faster, and produces smaller vectors, which saves storage costs in a vector database."
+            },
+            {
+              id: "pricing-embeddings",
+              title: "Pricing Considerations",
+              description: "Calculating throughput costs per million input tokens.",
+              parentId: "openai-embeddings-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 50,
+              resources: [
+                { title: "OpenAI Embeddings Explained with Code Examples", type: "article", url: "https://www.classcentral.com/course/youtube-openai-embeddings-explained-with-code-examples-how-to-use-openai-gpt3-ada-vectorized-embeddings-api-151765", xp: 30 }
+              ],
+              flashcardQuestion: "How does OpenAI charge for their embeddings API?",
+              flashcardAnswer: "OpenAI charges based on the number of input tokens you send to the embeddings model, usually priced per 1 million tokens. There is no cost for 'output' tokens since the output is just a mathematical array."
+            }
           ]
         },
         {
@@ -950,11 +1030,38 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Running embedding pipelines locally on CPU/GPU structures.",
           parentId: "embeddings-vector-dbs",
           difficulty: "Intermediate",
-          estimatedDuration: "4 hours",
+          estimatedDuration: "3 hours",
           xp: 200,
           children: [
-            { id: "sentence-transformers", title: "Sentence Transformers", description: "Integrating high-performance local BERT models.", parentId: "os-embeddings", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 90 },
-            { id: "hf-embeddings", title: "Models on Hugging Face", description: "Downloading open source models mapping coordinates directly.", parentId: "os-embeddings", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 90 }
+            {
+              id: "sentence-transformers",
+              title: "Sentence Transformers",
+              description: "Integrating high-performance local BERT models.",
+              parentId: "os-embeddings",
+              difficulty: "Intermediate",
+              estimatedDuration: "2 hours",
+              xp: 90,
+              resources: [
+                { title: "Sentence Transformers Tutorial", type: "video", url: "https://www.youtube.com/watch?v=MrTMaqrdrP8", xp: 50 },
+                { title: "Intro to Sentence Embeddings with Transformers", type: "article", url: "https://www.classcentral.com/index.php/course/youtube-intro-to-sentence-embeddings-with-transformers-128385", xp: 30 }
+              ],
+              flashcardQuestion: "What is the primary library used for generating open-source embeddings in Python?",
+              flashcardAnswer: "The 'sentence-transformers' library is the industry standard for loading and executing open-source embedding models locally."
+            },
+            {
+              id: "hf-embeddings",
+              title: "Models on Hugging Face",
+              description: "Downloading open source models mapping coordinates directly.",
+              parentId: "os-embeddings",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 90,
+              resources: [
+                { title: "Hugging Face Embedding Models Leaderboard", type: "article", url: "https://huggingface.co/models?other=embeddings", xp: 30 }
+              ],
+              flashcardQuestion: "Where can you find and compare the performance of various open-source embedding models?",
+              flashcardAnswer: "The Hugging Face Hub hosts a massive repository of embedding models, often evaluated against each other on the MTEB (Massive Text Embedding Benchmark) leaderboard."
+            }
           ]
         },
         {
@@ -963,12 +1070,52 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Orchestrating vector indices for persistent lookups.",
           parentId: "embeddings-vector-dbs",
           difficulty: "Advanced",
-          estimatedDuration: "7 hours",
+          estimatedDuration: "4.5 hours",
           xp: 350,
           children: [
-            { id: "purpose-functionality", title: "Purpose and Functionality", description: "HNSW algorithms, Flat index structures, and cosine similarity.", parentId: "vector-databases", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-            { id: "popular-dbs", title: "Popular Vector DBs", description: "Exploring Chroma, Pinecone, Weaviate, FAISS, LanceDB, Qdrant, Supabase, and MongoDB Atlas.", parentId: "vector-databases", difficulty: "Intermediate", estimatedDuration: "3 hours", xp: 120 },
-            { id: "indexing-similarity", title: "Implementing Vector Search", description: "Connecting datasets, calculating vectors, and querying nearest neighbors.", parentId: "vector-databases", difficulty: "Advanced", estimatedDuration: "2 hours", xp: 100 }
+            {
+              id: "purpose-functionality",
+              title: "Purpose and Functionality",
+              description: "HNSW algorithms, Flat index structures, and cosine similarity.",
+              parentId: "vector-databases",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "Vector Databases Explained", type: "video", url: "https://www.youtube.com/watch?v=RkKO9_lP4co", xp: 50 }
+              ],
+              flashcardQuestion: "Why can't we just store embeddings in a traditional SQL database?",
+              flashcardAnswer: "While SQL databases can technically store arrays of numbers, they are not optimized for calculating the multidimensional distance (like cosine similarity) between thousands of vectors quickly. Vector databases use specialized indices like HNSW for blazing-fast similarity search."
+            },
+            {
+              id: "popular-dbs",
+              title: "Popular Vector DBs",
+              description: "Exploring Chroma, Pinecone, Weaviate, FAISS, LanceDB, Qdrant, Supabase, and MongoDB Atlas.",
+              parentId: "vector-databases",
+              difficulty: "Intermediate",
+              estimatedDuration: "2 hours",
+              xp: 120,
+              resources: [
+                { title: "ChromaDB - The open-source AI database", type: "article", url: "https://www.trychroma.com/", xp: 30 },
+                { title: "Vector Databases Overview", type: "video", url: "https://www.youtube.com/watch?v=RkKO9_lP4co", xp: 50 }
+              ],
+              flashcardQuestion: "Name a popular open-source local vector database optimized for quick prototyping.",
+              flashcardAnswer: "ChromaDB is highly popular for prototyping because it can run completely locally in-memory or save to a local SQLite-like file without needing Docker or cloud infrastructure."
+            },
+            {
+              id: "indexing-similarity",
+              title: "Implementing Vector Search",
+              description: "Connecting datasets, calculating vectors, and querying nearest neighbors.",
+              parentId: "vector-databases",
+              difficulty: "Advanced",
+              estimatedDuration: "1 hour",
+              xp: 100,
+              resources: [
+                { title: "Vector Database Implementation Guide", type: "video", url: "https://www.youtube.com/watch?v=RkKO9_lP4co", xp: 50 }
+              ],
+              flashcardQuestion: "What is the standard mathematical metric used to determine if two embeddings are similar?",
+              flashcardAnswer: "Cosine Similarity is the most common metric, which measures the angle between two vectors. A higher cosine similarity (closer to 1) means the concepts are highly related."
+            }
           ]
         }
       ]
