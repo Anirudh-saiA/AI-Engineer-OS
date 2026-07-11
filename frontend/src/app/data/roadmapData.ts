@@ -504,8 +504,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "Chat Completions API Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/text", xp: 30 },
                 { title: "Migrate to Responses Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/migrate-to-responses", xp: 30 },
-                { title: "OpenAI API Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=cLJ9KE4iyeY", xp: 50 },
-                { title: "OpenAI API Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=WeqnZGZWyrI", xp: 50 }
+                { title: "OpenAI Chat Completions API Explained | Full Breakdown Step-by-Step", type: "video", url: "https://www.youtube.com/watch?v=WeqnZGZWyrI", xp: 50 },
+                { title: "OpenAI API vs Local LLMs | Chat Completions Explained", type: "video", url: "https://www.youtube.com/watch?v=7gTn2TzJVH8", xp: 50 }
               ],
               flashcardQuestion: "In the OpenAI Chat Completions API, what are the primary roles used to construct a conversation?",
               flashcardAnswer: "The primary roles are 'system' (sets the behavior), 'user' (provides the query), and 'assistant' (the model's past responses)."
@@ -521,8 +521,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "Prompt Engineering Guide (OpenAI)", type: "article", url: "https://platform.openai.com/docs/guides/prompt-engineering", xp: 30 },
                 { title: "Prompting Guide", type: "article", url: "https://www.promptingguide.ai/", xp: 30 },
-                { title: "Writing Prompts Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=jC4v5AS4ART", xp: 50 },
-                { title: "Writing Prompts Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=dOxUroR57hs", xp: 50 }
+                { title: "Prompt Engineering Tutorial – Master ChatGPT and LLM Responses (by freeCodeCamp.org)", type: "video", url: "https://www.youtube.com/watch?v=_ZvnD73m40o", xp: 50 },
+                { title: "ChatGPT Prompt Engineering Course (by freeCodeCamp.org)", type: "video", url: "https://www.youtube.com/watch?v=b1K5L8vV7Gg", xp: 50 }
               ],
               flashcardQuestion: "What is the benefit of putting instructions in the 'system' message rather than the 'user' message?",
               flashcardAnswer: "The system message provides high-level persistent instructions that the model prioritizes, making it more robust against user prompt injections and ensuring consistent formatting."
@@ -538,7 +538,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "What are tokens and how to count them", type: "article", url: "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them", xp: 30 },
                 { title: "Models Overview", type: "article", url: "https://platform.openai.com/docs/models", xp: 30 },
-                { title: "Understanding Tokens Tutorial", type: "video", url: "https://www.youtube.com/watch?v=ic3sYZJ9WxQ", xp: 50 }
+                { title: "Tokens and Context Windows, Explained (by IBM Technology)", type: "video", url: "https://www.youtube.com/watch?v=0hX0I4uR0H4", xp: 50 }
               ],
               flashcardQuestion: "What does the 'max_tokens' parameter actually control in an OpenAI API request?",
               flashcardAnswer: "It strictly limits the maximum number of tokens generated in the OUTPUT (completion), it does not limit the size of the input prompt (which is constrained by the model's context window)."
@@ -554,7 +554,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "Token Counting Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/token-counting", xp: 30 },
                 { title: "Tiktoken GitHub Repository", type: "article", url: "https://github.com/openai/tiktoken", xp: 30 },
-                { title: "Token Counting Tutorial", type: "video", url: "https://www.youtube.com/watch?v=f9x0L-z3Oq4", xp: 50 }
+                { title: "How AI Tokens Are Measured (Tokenizers & API Usage)", type: "video", url: "https://www.youtube.com/watch?v=ic3sYZJ9WxQ", xp: 50 },
+                { title: "Tokens in ChatGPT & OpenAI API Explained (TikToken)", type: "video", url: "https://www.youtube.com/watch?v=nO2_sP_S_K0", xp: 50 }
               ],
               flashcardQuestion: "Why should developers use a library like 'tiktoken' before sending requests to the API?",
               flashcardAnswer: "To accurately calculate the number of tokens in a string offline, ensuring the prompt doesn't exceed context limits and accurately estimating API costs before making the call."
@@ -570,7 +571,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "OpenAI Pricing", type: "article", url: "https://openai.com/api/pricing/", xp: 30 },
                 { title: "Managing Costs (Production Best Practices)", type: "article", url: "https://platform.openai.com/docs/guides/production-best-practices/managing-costs", xp: 30 },
-                { title: "API Pricing Tutorial", type: "video", url: "https://www.youtube.com/watch?v=b4OtwM1T6wQ", xp: 50 }
+                { title: "OpenAI API Pricing Explained (Tokens, Context Window, Models)", type: "video", url: "https://www.youtube.com/watch?v=2T1uK2J_3Ew", xp: 50 }
               ],
               flashcardQuestion: "How is the OpenAI API typically billed?",
               flashcardAnswer: "It is billed based on usage, calculated per 1,000 (or 1 million) tokens. The cost is split between input tokens (the prompt you send) and output tokens (the response the model generates), with output tokens usually being more expensive."
@@ -586,7 +587,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
               resources: [
                 { title: "Rate Limits", type: "article", url: "https://platform.openai.com/docs/guides/rate-limits", xp: 30 },
                 { title: "How to Handle Rate Limits", type: "article", url: "https://cookbook.openai.com/examples/how_to_handle_rate_limits", xp: 30 },
-                { title: "Managing Rate Limits Tutorial", type: "video", url: "https://www.youtube.com/watch?v=HntcHYNfD3Q", xp: 50 }
+                { title: "How to Handle OpenAI API Rate Limits in Python", type: "video", url: "https://www.youtube.com/watch?v=kYJv13_zWn4", xp: 50 }
               ],
               flashcardQuestion: "What happens if a chat conversation history grows larger than the model's maximum context window?",
               flashcardAnswer: "The API request will fail with an error. Developers must implement sliding window strategies, summarizing old messages, or dropping the oldest messages to manage token limits."
@@ -604,8 +605,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           resources: [
             { title: "OpenAI Playground", type: "article", url: "https://platform.openai.com/playground", xp: 30 },
             { title: "Learn the OpenAI API Playground", type: "article", url: "https://www.codecademy.com/learn/learn-the-open-ai-api-playground", xp: 30 },
-            { title: "OpenAI Playground Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=nWArLQfY0Ls", xp: 50 },
-            { title: "OpenAI Playground Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=SmzmPNsEpNM", xp: 50 }
+            { title: "The OpenAI Playground Tutorial", type: "video", url: "https://www.youtube.com/watch?v=nWArLQfY0Ls", xp: 50 },
+            { title: "How to Use OpenAI Playground Tutorial (ChatGPT Alternative)", type: "video", url: "https://www.youtube.com/watch?v=SmzmPNsEpNM", xp: 50 }
           ],
           flashcardQuestion: "What is the primary purpose of the OpenAI Playground?",
           flashcardAnswer: "It provides a web-based UI for developers to quickly experiment with API parameters (like temperature, top_p, and roles) and test prompts without needing to write any code."
@@ -621,8 +622,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           resources: [
             { title: "Supervised Fine-tuning Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/supervised-fine-tuning", xp: 30 },
             { title: "Fine-tuning Best Practices", type: "article", url: "https://developers.openai.com/api/docs/guides/fine-tuning-best-practices", xp: 30 },
-            { title: "Fine-tuning Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=o9jz04bIW0E", xp: 50 },
-            { title: "Fine-tuning Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=ya888p-_HJ0", xp: 50 }
+            { title: "How to Train a Custom AI on Your Data (A Step-by-Step OpenAI Tutorial)", type: "video", url: "https://www.youtube.com/watch?v=MUbMw3Ecx14", xp: 50 },
+            { title: "Fine-tuning OpenAI's GPT-4o Using Direct Preference Optimization (DPO)", type: "video", url: "https://www.youtube.com/watch?v=ftfuR9pTy70", xp: 50 }
           ],
           flashcardQuestion: "In what format must data be prepared for OpenAI's supervised fine-tuning API?",
           flashcardAnswer: "Data must be formatted as a JSONL (JSON Lines) file, where each line is a valid JSON object representing a single conversational training example with 'system', 'user', and 'assistant' roles."
