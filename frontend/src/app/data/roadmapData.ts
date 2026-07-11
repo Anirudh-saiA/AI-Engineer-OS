@@ -481,7 +481,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Mastering the developer portal, APIs, and client configurations of OpenAI.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "15 hours",
+      estimatedDuration: "10 hours",
       xp: 600,
       children: [
         {
@@ -490,19 +490,143 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Core REST structures and SDK integrations.",
           parentId: "openai-platform",
           difficulty: "Beginner",
-          estimatedDuration: "10 hours",
+          estimatedDuration: "7 hours",
           xp: 400,
           children: [
-            { id: "chat-completions", title: "Chat Completions API", description: "Integrating chat history, system instructions, and completion formats.", parentId: "openai-api", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 80 },
-            { id: "writing-prompts-api", title: "Writing Prompts", description: "Formatting instructions programmatically inside system role templates.", parentId: "openai-api", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 60 },
-            { id: "max-tokens", title: "Maximum Tokens", description: "Configuring safety ceilings for completion and usage limits.", parentId: "openai-api", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 40 },
-            { id: "token-counting", title: "Token Counting", description: "Using tiktoken to calculate lengths prior to request execution.", parentId: "openai-api", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-            { id: "pricing-considerations", title: "Pricing Considerations", description: "Optimizing input vs output token expenditures.", parentId: "openai-api", difficulty: "Beginner", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "managing-tokens-api", title: "Managing Tokens", description: "Implementing custom sliding context filters to prevent overflow.", parentId: "openai-api", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 90 }
+            {
+              id: "chat-completions",
+              title: "Chat Completions API",
+              description: "Integrating chat history, system instructions, and completion formats.",
+              parentId: "openai-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 80,
+              resources: [
+                { title: "Chat Completions API Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/text", xp: 30 },
+                { title: "Migrate to Responses Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/migrate-to-responses", xp: 30 },
+                { title: "OpenAI API Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=cLJ9KE4iyeY", xp: 50 },
+                { title: "OpenAI API Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=WeqnZGZWyrI", xp: 50 }
+              ],
+              flashcardQuestion: "In the OpenAI Chat Completions API, what are the primary roles used to construct a conversation?",
+              flashcardAnswer: "The primary roles are 'system' (sets the behavior), 'user' (provides the query), and 'assistant' (the model's past responses)."
+            },
+            {
+              id: "writing-prompts-api",
+              title: "Writing Prompts",
+              description: "Formatting instructions programmatically inside system role templates.",
+              parentId: "openai-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 60,
+              resources: [
+                { title: "Prompt Engineering Guide (OpenAI)", type: "article", url: "https://platform.openai.com/docs/guides/prompt-engineering", xp: 30 },
+                { title: "Prompting Guide", type: "article", url: "https://www.promptingguide.ai/", xp: 30 },
+                { title: "Writing Prompts Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=jC4v5AS4ART", xp: 50 },
+                { title: "Writing Prompts Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=dOxUroR57hs", xp: 50 }
+              ],
+              flashcardQuestion: "What is the benefit of putting instructions in the 'system' message rather than the 'user' message?",
+              flashcardAnswer: "The system message provides high-level persistent instructions that the model prioritizes, making it more robust against user prompt injections and ensuring consistent formatting."
+            },
+            {
+              id: "max-tokens",
+              title: "Maximum Tokens",
+              description: "Configuring safety ceilings for completion and usage limits.",
+              parentId: "openai-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 40,
+              resources: [
+                { title: "What are tokens and how to count them", type: "article", url: "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them", xp: 30 },
+                { title: "Models Overview", type: "article", url: "https://platform.openai.com/docs/models", xp: 30 },
+                { title: "Understanding Tokens Tutorial", type: "video", url: "https://www.youtube.com/watch?v=ic3sYZJ9WxQ", xp: 50 }
+              ],
+              flashcardQuestion: "What does the 'max_tokens' parameter actually control in an OpenAI API request?",
+              flashcardAnswer: "It strictly limits the maximum number of tokens generated in the OUTPUT (completion), it does not limit the size of the input prompt (which is constrained by the model's context window)."
+            },
+            {
+              id: "token-counting",
+              title: "Token Counting",
+              description: "Using tiktoken to calculate lengths prior to request execution.",
+              parentId: "openai-api",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 80,
+              resources: [
+                { title: "Token Counting Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/token-counting", xp: 30 },
+                { title: "Tiktoken GitHub Repository", type: "article", url: "https://github.com/openai/tiktoken", xp: 30 },
+                { title: "Token Counting Tutorial", type: "video", url: "https://www.youtube.com/watch?v=f9x0L-z3Oq4", xp: 50 }
+              ],
+              flashcardQuestion: "Why should developers use a library like 'tiktoken' before sending requests to the API?",
+              flashcardAnswer: "To accurately calculate the number of tokens in a string offline, ensuring the prompt doesn't exceed context limits and accurately estimating API costs before making the call."
+            },
+            {
+              id: "pricing-considerations",
+              title: "Pricing Considerations",
+              description: "Optimizing input vs output token expenditures.",
+              parentId: "openai-api",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "OpenAI Pricing", type: "article", url: "https://openai.com/api/pricing/", xp: 30 },
+                { title: "Managing Costs (Production Best Practices)", type: "article", url: "https://platform.openai.com/docs/guides/production-best-practices/managing-costs", xp: 30 },
+                { title: "API Pricing Tutorial", type: "video", url: "https://www.youtube.com/watch?v=b4OtwM1T6wQ", xp: 50 }
+              ],
+              flashcardQuestion: "How is the OpenAI API typically billed?",
+              flashcardAnswer: "It is billed based on usage, calculated per 1,000 (or 1 million) tokens. The cost is split between input tokens (the prompt you send) and output tokens (the response the model generates), with output tokens usually being more expensive."
+            },
+            {
+              id: "managing-tokens-api",
+              title: "Managing Tokens",
+              description: "Implementing custom sliding context filters to prevent overflow.",
+              parentId: "openai-api",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 90,
+              resources: [
+                { title: "Rate Limits", type: "article", url: "https://platform.openai.com/docs/guides/rate-limits", xp: 30 },
+                { title: "How to Handle Rate Limits", type: "article", url: "https://cookbook.openai.com/examples/how_to_handle_rate_limits", xp: 30 },
+                { title: "Managing Rate Limits Tutorial", type: "video", url: "https://www.youtube.com/watch?v=HntcHYNfD3Q", xp: 50 }
+              ],
+              flashcardQuestion: "What happens if a chat conversation history grows larger than the model's maximum context window?",
+              flashcardAnswer: "The API request will fail with an error. Developers must implement sliding window strategies, summarizing old messages, or dropping the oldest messages to manage token limits."
+            }
           ]
         },
-        { id: "openai-playground", title: "OpenAI Playground", description: "Direct developer console simulation of parameters like temperature, top_p, and frequency penalty.", parentId: "openai-platform", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 50 },
-        { id: "fine-tuning", title: "Fine-tuning", description: "Preparing JSONL data patterns to align structural output styles.", parentId: "openai-platform", difficulty: "Advanced", estimatedDuration: "3 hours", xp: 120 }
+        {
+          id: "openai-playground",
+          title: "OpenAI Playground",
+          description: "Direct developer console simulation of parameters like temperature, top_p, and frequency penalty.",
+          parentId: "openai-platform",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 50,
+          resources: [
+            { title: "OpenAI Playground", type: "article", url: "https://platform.openai.com/playground", xp: 30 },
+            { title: "Learn the OpenAI API Playground", type: "article", url: "https://www.codecademy.com/learn/learn-the-open-ai-api-playground", xp: 30 },
+            { title: "OpenAI Playground Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=nWArLQfY0Ls", xp: 50 },
+            { title: "OpenAI Playground Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=SmzmPNsEpNM", xp: 50 }
+          ],
+          flashcardQuestion: "What is the primary purpose of the OpenAI Playground?",
+          flashcardAnswer: "It provides a web-based UI for developers to quickly experiment with API parameters (like temperature, top_p, and roles) and test prompts without needing to write any code."
+        },
+        {
+          id: "fine-tuning",
+          title: "Fine-tuning",
+          description: "Preparing JSONL data patterns to align structural output styles.",
+          parentId: "openai-platform",
+          difficulty: "Advanced",
+          estimatedDuration: "1.5 hours",
+          xp: 120,
+          resources: [
+            { title: "Supervised Fine-tuning Guide", type: "article", url: "https://developers.openai.com/api/docs/guides/supervised-fine-tuning", xp: 30 },
+            { title: "Fine-tuning Best Practices", type: "article", url: "https://developers.openai.com/api/docs/guides/fine-tuning-best-practices", xp: 30 },
+            { title: "Fine-tuning Tutorial 1", type: "video", url: "https://www.youtube.com/watch?v=o9jz04bIW0E", xp: 50 },
+            { title: "Fine-tuning Tutorial 2", type: "video", url: "https://www.youtube.com/watch?v=ya888p-_HJ0", xp: 50 }
+          ],
+          flashcardQuestion: "In what format must data be prepared for OpenAI's supervised fine-tuning API?",
+          flashcardAnswer: "Data must be formatted as a JSONL (JSON Lines) file, where each line is a valid JSON object representing a single conversational training example with 'system', 'user', and 'assistant' roles."
+        }
       ]
     },
     {
