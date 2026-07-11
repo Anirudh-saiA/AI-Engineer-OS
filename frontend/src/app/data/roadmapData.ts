@@ -171,7 +171,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "Why Inference is hard.. - Caleb Writes Code", type: "video", url: "http://www.youtube.com/watch?v=B18zBnjZKmc", xp: 50 },
             { title: "LLM Inference Guide (Google)", type: "article", url: "https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference", xp: 30 },
             { title: "LLM Inference Handbook", type: "article", url: "https://bentoml.com/llm/", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is the primary difference between a model's 'training' phase and its 'inference' phase?",
+          flashcardAnswer: "Training is the computationally expensive process of teaching a model by adjusting its internal weights using vast datasets, whereas inference is the process of using the frozen, fully trained model to generate predictions or text token by token in real-time."
         },
         {
           id: "training",
@@ -187,7 +189,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "How to Train an LLM on Your Own Data - Decodo", type: "video", url: "http://www.youtube.com/watch?v=syH-T9OSMqk", xp: 50 },
             { title: "A Practical Guide to LLM Fine Tuning", type: "article", url: "https://www.databricks.com/blog/llm-fine-tuning", xp: 30 },
             { title: "Fine-tuning LLMs Overview (Google Cloud)", type: "article", url: "https://cloud.google.com/use-cases/fine-tuning-ai-models", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "Why do AI Engineers typically use 'fine-tuning' instead of training a Large Language Model from scratch?",
+          flashcardAnswer: "Pre-training an LLM from scratch requires millions of dollars in compute (GPUs) and massive amounts of raw internet data. Fine-tuning allows engineers to take an existing pre-trained model and adapt it to a specific task or behavior using a much smaller, specialized dataset, saving significant time and resources."
         },
         {
           id: "embeddings-fundamental",
@@ -202,7 +206,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "Tokens vs Embeddings - Annie Sexton", type: "video", url: "http://www.youtube.com/watch?v=izbifbq3-eI", xp: 50 },
             { title: "A Guide to LLM Embeddings", type: "article", url: "https://www.couchbase.com/blog/llm-embeddings/", xp: 30 },
             { title: "What Are LLM Embeddings?", type: "article", url: "https://aisera.com/blog/llm-embeddings/", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What exactly is an 'embedding' in the context of Large Language Models?",
+          flashcardAnswer: "An embedding is a numerical representation of text (or other data) formatted as a dense vector (an array of floating-point numbers). It captures semantic meaning, meaning words or concepts with similar meanings have vectors that are mathematically closer together in high-dimensional space."
         },
         {
           id: "vector-dbs-fundamental",
@@ -218,7 +224,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "Vector Databases simply explained! - AssemblyAI", type: "video", url: "http://www.youtube.com/watch?v=dN0lsF2cvm4", xp: 50 },
             { title: "Vector databases and LLMs", type: "article", url: "https://www.instaclustr.com/education/open-source-ai/vector-databases-and-llms-better-together/", xp: 30 },
             { title: "Vector Database for LLM Use Cases", type: "article", url: "https://cloudian.com/guides/ai-infrastructure/vector-database-for-llm-use-cases-and-notable-dbs-in-2026/", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "Why use a Vector Database instead of a traditional relational database (like PostgreSQL) for AI search?",
+          flashcardAnswer: "Traditional databases rely on exact keyword matches (lexical search). Vector databases are optimized to store high-dimensional embeddings and perform 'similarity searches' using algorithms like cosine similarity. This allows you to find contextually relevant information even if the exact keywords don't match."
         },
         {
           id: "rag-fundamental",
@@ -234,7 +242,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "Introduction To Understanding RAG - Krish Naik", type: "video", url: "http://www.youtube.com/watch?v=fZM3oX4xEyg", xp: 50 },
             { title: "RAG Complete Guide", type: "article", url: "https://www.datacamp.com/blog/what-is-retrieval-augmented-generation-rag", xp: 30 },
             { title: "What is RAG?", type: "article", url: "https://aws.amazon.com/what-is/retrieval-augmented-generation/", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "How does RAG (Retrieval-Augmented Generation) prevent a Large Language Model from hallucinating?",
+          flashcardAnswer: "Instead of relying purely on the model's static internal memory, RAG intercepts the user query, retrieves verified factual information from an external vector database, and injects that information directly into the prompt. The LLM is then instructed to answer based ONLY on the provided retrieved context."
         },
         {
           id: "prompt-eng-fundamental",
@@ -250,7 +260,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "Learn PROMPT ENGINEERING from Scratch - Digital Skills", type: "video", url: "http://www.youtube.com/watch?v=dUulqgLqPBk", xp: 50 },
             { title: "Prompt engineering: A guide to improving LLM performance", type: "article", url: "https://circleci.com/blog/prompt-engineering/", xp: 30 },
             { title: "Prompt Engineering Guide", type: "article", url: "https://github.com/dair-ai/prompt-engineering-guide", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What is the 'Few-Shot Prompting' technique in Prompt Engineering?",
+          flashcardAnswer: "Few-shot prompting involves providing the model with a few concrete examples (shots) of the desired input-output format within the prompt itself. This teaches the model the exact pattern, tone, or formatting structure it should replicate for the actual query, leading to much more reliable outputs."
         },
         {
           id: "ai-agents-fundamental",
@@ -266,7 +278,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
             { title: "What is OpenClaw? Inside AI Agents - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=L7FF8Zgab3M", xp: 50 },
             { title: "LLM agents: The ultimate guide", type: "article", url: "https://www.superannotate.com/blog/llm-agents", xp: 30 },
             { title: "A practical guide to building agents (OpenAI)", type: "article", url: "https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf", xp: 30 }
-          ]
+          ],
+          flashcardQuestion: "What distinguishes an 'AI Agent' from a standard conversational LLM?",
+          flashcardAnswer: "A standard LLM just predicts the next token in a static conversation. An AI Agent wraps the LLM in an autonomous loop (like ReAct: Reason and Act) where it is given access to external tools (like calculators, web search, or database queries). The Agent can break a problem down, execute tools to fetch missing data, analyze the tool outputs, and repeat until the goal is achieved."
         }
       ]
     },
