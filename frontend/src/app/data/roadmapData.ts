@@ -53,7 +53,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "How to Become an AI Engineer - Pace Online", type: "article", url: "https://online.pace.edu/articles/computer-science/how-to-become-an-ai-engineer/", xp: 30 },
+            { title: "What Is an AI Engineer? (And What Do They Do?) - 365 Data Science", type: "video", url: "http://www.youtube.com/watch?v=gT1SiZttBDE", xp: 50 },
+            { title: "What is AI Engineering - Telusko", type: "video", url: "http://www.youtube.com/watch?v=cp0_xWxLGaI", xp: 50 },
             { title: "What Is an AI Engineer? | Re:Sourced", type: "article", url: "https://www.resourced.com.au/articles/what-is-an-ai-engineer", xp: 30 }
           ]
         },
@@ -66,8 +67,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "Which Career Path Fits You? - IIT Kharagpur", type: "article", url: "https://online.iitkgp.ac.in/blog/ai-engineer-vs-ml-engineer-career-comparison", xp: 30 },
-            { title: "Core Differences, Skills, and Salary - Simplilearn", type: "article", url: "https://www.simplilearn.com/ai-engineer-vs-ml-engineer-article", xp: 30 }
+            { title: "AI Engineer vs. Machine Learning Engineer - Marina Wyss", type: "video", url: "http://www.youtube.com/watch?v=NmBW49OBeBU", xp: 50 },
+            { title: "Don't Waste 2026 on the Wrong Career - Zen van Riel", type: "video", url: "http://www.youtube.com/watch?v=cqDQV5g7zHo", xp: 50 },
+            { title: "Which Career Path Fits You? - IIT Kharagpur", type: "article", url: "https://online.iitkgp.ac.in/blog/ai-engineer-vs-ml-engineer-career-comparison", xp: 30 }
           ]
         },
         {
@@ -79,9 +81,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "What is the difference between AGI vs AI? - ServiceNow", type: "article", url: "https://www.servicenow.com/ai/what-is-ai-vs-agi.html", xp: 30 },
-            { title: "AI vs AGI vs ASI in 2026 - Kanerika", type: "article", url: "https://kanerika.com/blogs/ai-vs-agi-vs-asi/", xp: 30 },
-            { title: "Understanding the Shift in Future of Intelligence - Medium", type: "article", url: "https://medium.com/@poorvis885/ai-vs-agi-understanding-the-shift-in-the-future-of-intelligence-56302a6fa38f", xp: 30 }
+            { title: "AI vs. AGI: What's the Difference? - AI Global", type: "video", url: "http://www.youtube.com/watch?v=dGdSK4lD1bU", xp: 50 },
+            { title: "The 7 SCARY Stages of AI - Technomics", type: "video", url: "http://www.youtube.com/watch?v=wF5kwCjLCtI", xp: 50 },
+            { title: "What is the difference between AGI vs AI? - ServiceNow", type: "article", url: "https://www.servicenow.com/ai/what-is-ai-vs-agi.html", xp: 30 }
           ]
         },
         {
@@ -93,8 +95,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "Artificial Intelligence Achievement Glossary - Globee Awards", type: "article", url: "https://globeeawards.com/artificial-intelligence-achievement-glossary/", xp: 30 },
-            { title: "Artificial Intelligence - Terminology - TutorialsPoint", type: "article", url: "https://www.tutorialspoint.com/artificial_intelligence/artificial_intelligence_terminology.htm", xp: 30 }
+            { title: "7 AI Terms You Need to Know - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=VSFuqMh4hus", xp: 50 },
+            { title: "Understanding AI Jargon - Gary Explains", type: "video", url: "http://www.youtube.com/watch?v=sqFZaIebSB0", xp: 50 },
+            { title: "Artificial Intelligence - Terminology - TutorialsPoint", inArticle: true, type: "article", url: "https://www.tutorialspoint.com/artificial_intelligence/artificial_intelligence_terminology.htm", xp: 30 }
           ]
         },
         {
@@ -106,8 +109,9 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "AI Engineer Roadmap - roadmap.sh", type: "article", url: "https://roadmap.sh/ai-engineer", xp: 30 },
-            { title: "AI Trainer Job Description Template - Rework", type: "article", url: "https://resources.rework.com/libraries/job-description-templates/ai-trainer", xp: 30 }
+            { title: "AI Engineers - What Do They Do? - Krish Naik", type: "video", url: "http://www.youtube.com/watch?v=y8qRq9PMCh8", xp: 50 },
+            { title: "Should YOU Become An AI Engineer? - CodeHead", type: "video", url: "http://www.youtube.com/watch?v=TQwwK7P_J4I", xp: 50 },
+            { title: "AI Engineer Roadmap - roadmap.sh", type: "article", url: "https://roadmap.sh/ai-engineer", xp: 30 }
           ]
         },
         {
@@ -119,8 +123,8 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           estimatedDuration: "1 hour",
           xp: 50,
           resources: [
-            { title: "AI Engineer Career: Job Description, Salary & Outlook - Arkansas State", type: "article", url: "https://degree.astate.edu/online-programs/undergraduate/bs-digital-technology-design/ai/career-path-salary-outlook/", xp: 30 },
-            { title: "Roles and Responsibilities Industry-Wise - Taggd", type: "article", url: "https://taggd.in/blogs/ai-engineer-job-description-roles-and-responsibilites/", xp: 30 },
+            { title: "What is an AI Engineer? (And what do they do?) - Jay Feng", type: "video", url: "http://www.youtube.com/watch?v=o0OczKvQ_is", xp: 50 },
+            { title: "How to Become an AI Engineer FAST (2026) - Sajjaad Khader", type: "video", url: "http://www.youtube.com/watch?v=aAItDrJ8-rE", xp: 50 },
             { title: "What Does an AI Engineer Do? - Codecademy", type: "article", url: "https://www.codecademy.com/resources/blog/what-does-an-ai-engineer-do", xp: 30 }
           ]
         }
