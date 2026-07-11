@@ -737,7 +737,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Running open-weights models locally and deploying cost-effective custom servers.",
       parentId: "ai-engineer",
       difficulty: "Intermediate",
-      estimatedDuration: "14.5 hours",
+      estimatedDuration: "12.5 hours",
       xp: 700,
       children: [
         {
@@ -823,11 +823,43 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Loading and executing models on hardware constraints.",
           parentId: "opensource-ai",
           difficulty: "Advanced",
-          estimatedDuration: "5 hours",
+          estimatedDuration: "3 hours",
           xp: 250,
           children: [
-            { id: "inference-sdk", title: "Inference SDK", description: "Programmatic text generation pipelines using python libraries.", parentId: "using-os-models", difficulty: "Intermediate", estimatedDuration: "2.5 hours", xp: 90 },
-            { id: "transformers-js", title: "Transformers.js", description: "Executing models completely in-browser via WebGL/WebGPU acceleration.", parentId: "using-os-models", difficulty: "Advanced", estimatedDuration: "2.5 hours", xp: 110 }
+            {
+              id: "inference-sdk",
+              title: "Inference SDK",
+              description: "Programmatic text generation pipelines using python libraries.",
+              parentId: "using-os-models",
+              difficulty: "Intermediate",
+              estimatedDuration: "1.5 hours",
+              xp: 90,
+              resources: [
+                { title: "Hugging Face InferenceClient Documentation", type: "article", url: "https://huggingface.co/docs/huggingface_hub/package_reference/inference_client", xp: 30 },
+                { title: "Hugging Face Inference Providers Guide", type: "article", url: "https://huggingface.co/docs/inference-providers/index", xp: 30 },
+                { title: "Hugging Face Inference API Tutorial (Python)", type: "video", url: "https://www.youtube.com/watch?v=1bylB_x20hI", xp: 50 },
+                { title: "Run Any Hugging Face Model in Python (Inference API)", type: "video", url: "https://www.youtube.com/watch?v=M5y8pA9qDpw", xp: 50 }
+              ],
+              flashcardQuestion: "What is the primary benefit of using the Hugging Face Inference SDK over running models locally?",
+              flashcardAnswer: "The Inference SDK (InferenceClient) allows you to perform serverless inference on over 200,000 models hosted on the Hub via an API, meaning you do not need to download massive model weights or have specialized GPU hardware on your local machine."
+            },
+            {
+              id: "transformers-js",
+              title: "Transformers.js",
+              description: "Executing models completely in-browser via WebGL/WebGPU acceleration.",
+              parentId: "using-os-models",
+              difficulty: "Advanced",
+              estimatedDuration: "1.5 hours",
+              xp: 110,
+              resources: [
+                { title: "Transformers.js Official Documentation", type: "article", url: "https://huggingface.co/docs/transformers.js/index", xp: 30 },
+                { title: "Building a Next.js Application with Transformers.js", type: "article", url: "https://huggingface.co/docs/transformers.js/en/tutorials/next", xp: 30 },
+                { title: "Transformers.js in 100 Seconds", type: "video", url: "https://www.youtube.com/watch?v=Fj-E_wRz8A0", xp: 50 },
+                { title: "Run AI in the Browser with Transformers.js (Full Tutorial)", type: "video", url: "https://www.youtube.com/watch?v=qT5vB5H2eEY", xp: 50 }
+              ],
+              flashcardQuestion: "How does Transformers.js differ from a traditional API-based backend like OpenAI or the Hugging Face Inference API?",
+              flashcardAnswer: "Transformers.js runs the machine learning model directly in the user's web browser using ONNX Runtime (often via WebGL/WebGPU). This means zero server costs, absolute data privacy (data never leaves the browser), and offline capabilities, but it requires downloading model weights to the client."
+            }
           ]
         },
         {
