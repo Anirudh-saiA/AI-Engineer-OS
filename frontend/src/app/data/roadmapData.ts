@@ -290,7 +290,7 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Interacting with hosted foundation models via standard client SDKs.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "13 hours",
+      estimatedDuration: "10 hours",
       xp: 500,
       children: [
         {
@@ -347,16 +347,130 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
           description: "Exploring proprietary and open models across key providers.",
           parentId: "using-pretrained-models",
           difficulty: "Beginner",
-          estimatedDuration: "11 hours",
+          estimatedDuration: "8 hours",
           xp: 300,
           children: [
-            { id: "openai-models", title: "OpenAI Models (GPT-4o, GPT-3.5)", description: "General intelligence standard-bearers.", parentId: "popular-ai-models", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 50 },
-            { id: "anthropic-claude", title: "Anthropic's Claude", description: "Focus on extended context window, code editing, and structural outputs.", parentId: "popular-ai-models", difficulty: "Beginner", estimatedDuration: "2.5 hours", xp: 60 },
-            { id: "google-gemini", title: "Google's Gemini", description: "Native multimodal features and extremely large context windows.", parentId: "popular-ai-models", difficulty: "Beginner", estimatedDuration: "2.5 hours", xp: 60 },
-            { id: "huggingface-models", title: "Hugging Face Models", description: "Open weights ecosystem for self-hosting.", parentId: "popular-ai-models", difficulty: "Intermediate", estimatedDuration: "3 hours", xp: 80 },
-            { id: "mistral-ai", title: "Mistral AI", description: "High-performance modular open-weights models.", parentId: "popular-ai-models", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "cohere-models", title: "Cohere", description: "Text analysis, rerank models, and multilingual search.", parentId: "popular-ai-models", difficulty: "Intermediate", estimatedDuration: "1.5 hours", xp: 50 },
-            { id: "replicate", title: "Replicate", description: "API hosting infrastructure for open-source AI models.", parentId: "popular-ai-models", difficulty: "Beginner", estimatedDuration: "1 hour", xp: 40 }
+            {
+              id: "openai-models",
+              title: "OpenAI Models (GPT-4o, GPT-3.5)",
+              description: "General intelligence standard-bearers.",
+              parentId: "popular-ai-models",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "ChatGPT API Full Course - OpenAI API For Beginners", type: "video", url: "https://www.youtube.com/watch?v=J_OJAwnEuFs", xp: 50 },
+                { title: "OpenAI Official YouTube Channel", type: "video", url: "https://www.youtube.com/@OpenAI/videos", xp: 50 },
+                { title: "OpenAI API Documentation (Model Optimization & Fine-tuning)", type: "article", url: "https://developers.openai.com/api/docs/guides/model-optimization", xp: 30 },
+                { title: "OpenAI Platform Quickstart", type: "article", url: "https://platform.openai.com/docs/quickstart", xp: 30 }
+              ],
+              flashcardQuestion: "What is the primary advantage of OpenAI's GPT-4o model over previous generations?",
+              flashcardAnswer: "GPT-4o is natively multimodal from the ground up, allowing it to process text, audio, and images natively and much faster, whereas previous models often relied on separate models stitched together for different modalities."
+            },
+            {
+              id: "anthropic-claude",
+              title: "Anthropic's Claude",
+              description: "Focus on extended context window, code editing, and structural outputs.",
+              parentId: "popular-ai-models",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 60,
+              resources: [
+                { title: "Claude Code for Beginners Tutorial [Full Course]", type: "video", url: "https://www.youtube.com/watch?v=gh2_PhgZGsM", xp: 50 },
+                { title: "Claude Certified Architect – Foundations Course Guide", type: "video", url: "https://www.youtube.com/watch?v=WpEwatKitWY", xp: 50 },
+                { title: "Claude Batch API & Multi-Pass Review", type: "video", url: "https://www.youtube.com/watch?v=BXs7QoLQxX0", xp: 50 },
+                { title: "Anthropic Official Documentation", type: "article", url: "https://docs.anthropic.com/", xp: 30 },
+                { title: "Claude API Reference", type: "article", url: "https://docs.anthropic.com/claude/reference/getting-started-with-the-api", xp: 30 }
+              ],
+              flashcardQuestion: "What is Anthropic's 'Constitutional AI' approach in the Claude models?",
+              flashcardAnswer: "Constitutional AI is Anthropic's methodology for training helpful and harmless AI assistants without relying entirely on human feedback. It involves giving the model a 'constitution' (a set of ethical rules and principles) which it uses to critique and revise its own generated responses."
+            },
+            {
+              id: "google-gemini",
+              title: "Google's Gemini",
+              description: "Native multimodal features and extremely large context windows.",
+              parentId: "popular-ai-models",
+              difficulty: "Beginner",
+              estimatedDuration: "1.5 hours",
+              xp: 60,
+              resources: [
+                { title: "How to Use Google Gemini Al (Full Tutorial)", type: "video", url: "https://www.youtube.com/watch?v=PDMcpthR88U", xp: 50 },
+                { title: "Google Gemini Complete Beginners Guide 2026", type: "video", url: "https://www.youtube.com/watch?v=jAl9YNnXDKc", xp: 50 },
+                { title: "Google Gemini: PRO Tutorial for Beginners", type: "video", url: "https://www.youtube.com/watch?v=8aRJYpExTfs", xp: 50 },
+                { title: "Google Gemini Documentation", type: "article", url: "https://ai.google.dev/docs", xp: 30 },
+                { title: "Google Gemini API Quickstart", type: "article", url: "https://ai.google.dev/tutorials/quickstart", xp: 30 }
+              ],
+              flashcardQuestion: "What is the defining structural capability of Google's Gemini Pro 1.5 compared to other standard LLMs?",
+              flashcardAnswer: "Its massive context window, capable of processing over 1 to 2 million tokens in a single prompt. This allows developers to upload entire codebases, long books, or hours of video directly into the context."
+            },
+            {
+              id: "huggingface-models",
+              title: "Hugging Face Models",
+              description: "Open weights ecosystem for self-hosting.",
+              parentId: "popular-ai-models",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 80,
+              resources: [
+                { title: "Hugging Face Tutorial for Beginners", type: "video", url: "https://www.youtube.com/watch?v=3xLTD5wSBEs", xp: 50 },
+                { title: "Deploying AI Models with Hugging Face – Hands-On Course", type: "video", url: "https://www.youtube.com/watch?v=R8h_gpSpEVU", xp: 50 },
+                { title: "Hugging Face Documentation", type: "article", url: "https://huggingface.co/docs", xp: 30 },
+                { title: "Hugging Face Transformer Course", type: "article", url: "https://huggingface.co/course/chapter1/1", xp: 30 }
+              ],
+              flashcardQuestion: "Why would an AI Engineer choose to use Hugging Face instead of an API provider like OpenAI or Anthropic?",
+              flashcardAnswer: "Hugging Face provides an open-source ecosystem where developers can download the raw weights of models (like Llama or Mistral). This is crucial for organizations that need complete data privacy, offline capabilities, custom local fine-tuning, and no vendor lock-in."
+            },
+            {
+              id: "mistral-ai",
+              title: "Mistral AI",
+              description: "High-performance modular open-weights models.",
+              parentId: "popular-ai-models",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "Mistral AI Agents | Full Walkthrough", type: "video", url: "https://www.youtube.com/watch?v=oaIBkEdITRQ", xp: 50 },
+                { title: "Mistral AI Official YouTube Channel", type: "video", url: "https://www.youtube.com/@MistralAIOfficial/videos", xp: 50 },
+                { title: "Mistral AI Official Documentation", type: "article", url: "https://docs.mistral.ai/", xp: 30 },
+                { title: "Mistral Platform API Guide", type: "article", url: "https://docs.mistral.ai/platform/endpoints/", xp: 30 }
+              ],
+              flashcardQuestion: "What is the 'Mixture of Experts' (MoE) architecture often associated with Mistral models?",
+              flashcardAnswer: "MoE is an architectural design where a model consists of several sub-networks ('experts'). For any given token, only a small subset of these experts are activated. This allows the model to have a massive total parameter count (high capacity) while remaining fast and compute-efficient during inference."
+            },
+            {
+              id: "cohere-models",
+              title: "Cohere",
+              description: "Text analysis, rerank models, and multilingual search.",
+              parentId: "popular-ai-models",
+              difficulty: "Intermediate",
+              estimatedDuration: "1 hour",
+              xp: 50,
+              resources: [
+                { title: "Model Mondays - Unlocking enterprise value with Cohere", type: "video", url: "https://www.youtube.com/watch?v=7bgLTt1obZI", xp: 50 },
+                { title: "Cohere Official YouTube Channel (NLP Tutorials)", type: "video", url: "https://www.youtube.com/@CohereAI/videos", xp: 50 },
+                { title: "Cohere Documentation", type: "article", url: "https://docs.cohere.com/", xp: 30 },
+                { title: "Cohere LLM University", type: "article", url: "https://llm.university", xp: 30 }
+              ],
+              flashcardQuestion: "What specific enterprise RAG pipeline component is Cohere extremely well-regarded for?",
+              flashcardAnswer: "Cohere is renowned for its Rerank model endpoints. In a standard RAG pipeline, a vector database retrieves the top documents based on similarity, and then a Rerank model re-scores and reorders those documents based on true relevance before sending them to the LLM."
+            },
+            {
+              id: "replicate",
+              title: "Replicate",
+              description: "API hosting infrastructure for open-source AI models.",
+              parentId: "popular-ai-models",
+              difficulty: "Beginner",
+              estimatedDuration: "1 hour",
+              xp: 40,
+              resources: [
+                { title: "Replicate API: Generate Stunning Images (Tutorial)", type: "video", url: "https://www.youtube.com/watch?v=QtDbE1KMGMQ", xp: 50 },
+                { title: "Replicate Official YouTube Channel", type: "video", url: "https://www.youtube.com/@replicatehq/videos", xp: 50 },
+                { title: "Replicate Documentation", type: "article", url: "https://replicate.com/docs", xp: 30 },
+                { title: "Getting Started with Replicate API", type: "article", url: "https://replicate.com/docs/get-started", xp: 30 }
+              ],
+              flashcardQuestion: "What is the core value proposition of Replicate for AI Engineers?",
+              flashcardAnswer: "Replicate provides simple API endpoints to run open-source models (like Llama, Stable Diffusion, or Whisper) without the engineer needing to understand complex GPU provisioning, model hosting, Docker containers, or infrastructure scaling."
+            }
           ]
         }
       ]
