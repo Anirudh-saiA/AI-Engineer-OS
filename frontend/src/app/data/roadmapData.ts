@@ -1625,11 +1625,39 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Harnessing IDE extensions and automation frameworks custom tailored for AI engineering.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "6 hours",
+      estimatedDuration: "3 hours",
       xp: 300,
       children: [
-        { id: "code-editors", title: "AI Code Editors", description: "Utilizing tools like Cursor and VS Code Copilot workspaces.", parentId: "development-tools", difficulty: "Beginner", estimatedDuration: "3 hours", xp: 150 },
-        { id: "completion-tools", title: "Code Completion Tools", description: "Maximizing context awareness, inline completions, and terminal debuggers.", parentId: "development-tools", difficulty: "Beginner", estimatedDuration: "3 hours", xp: 150 }
+        {
+          id: "code-editors",
+          title: "AI Code Editors",
+          description: "Utilizing tools like Cursor and VS Code Copilot workspaces.",
+          parentId: "development-tools",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 150,
+          resources: [
+            { title: "Real-World Developer Reviews of 2026 AI Agents", type: "article", url: "https://www.faros.ai/blog/best-ai-coding-agents-2026", xp: 75 },
+            { title: "Top 5 Best AI Coding Tools For Developers in 2026", type: "video", url: "https://www.youtube.com/watch?v=Mb1IyjA0Rgo", xp: 75 }
+          ],
+          flashcardQuestion: "What is the key advantage of an AI Code Editor over traditional IDEs?",
+          flashcardAnswer: "AI Code Editors integrate LLMs directly into the workspace, allowing for codebase-wide reasoning, automated refactoring, and context-aware file generation."
+        },
+        {
+          id: "completion-tools",
+          title: "Code Completion Tools",
+          description: "Maximizing context awareness, inline completions, and terminal debuggers.",
+          parentId: "development-tools",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 150,
+          resources: [
+            { title: "2026 Developer's Comparison of Code Completion Tools", type: "article", url: "https://www.codewords.ai/blog/ai-code-completion-tools", xp: 75 },
+            { title: "Beyond Autocomplete: Local AI Code Completion Demystified", type: "video", url: "https://www.youtube.com/watch?v=4xcibloh1dw", xp: 75 }
+          ],
+          flashcardQuestion: "How do modern AI code completion tools maintain context?",
+          flashcardAnswer: "They actively parse your open tabs, terminal output, and imported modules to feed a highly relevant prompt to the local or cloud LLM, ensuring the suggestions match your specific project constraints."
+        }
       ]
     }
   ]
