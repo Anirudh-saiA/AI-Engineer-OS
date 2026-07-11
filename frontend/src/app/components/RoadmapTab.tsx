@@ -98,24 +98,31 @@ export default function RoadmapTab({
     return leafChildren.every(child => !!checkedTasks[child.id]);
   };
 
-  // Helper: check if a node is locked (progressive unlock logic)
+  // Helper: check if a node is locked (chapter-by-chapter unlock logic)
   const isNodeLocked = (node: RoadmapNode): boolean => {
     if (!hasStarted) return false; // Don't lock before start so they can explore
-    if (node.id === "intro" || node.parentId === "intro" || node.id === "ai-engineer") return false;
-
-    // If it's a parent node, it is locked if its first child is locked
-    if (node.children && node.children.length > 0) {
-      return isNodeLocked(node.children[0]);
+    
+    // Find the top-level chapter this node belongs to
+    const chapters = AI_ENGINEER_ROADMAP.children || [];
+    let topLevelChapter = chapters.find(c => c.id === node.id);
+    
+    // If not a top-level chapter itself, find which top-level chapter contains it
+    if (!topLevelChapter) {
+      topLevelChapter = chapters.find(c => {
+        const leaves = getLeafNodes(c);
+        return leaves.some(l => l.id === node.id) || c.id === node.parentId;
+      });
     }
 
-    // A node is unlocked if the previous sibling leaf node is completed
-    const leafNodes = getLeafNodes(AI_ENGINEER_ROADMAP);
-    const nodeIdx = leafNodes.findIndex(n => n.id === node.id);
-    if (nodeIdx <= 0) return false;
+    if (!topLevelChapter) return false; // Fallback to unlocked if not found
+    if (topLevelChapter.id === "intro") return false; // Intro chapter is always unlocked
 
-    // Check if the immediately preceding leaf node is completed
-    const previousNode = leafNodes[nodeIdx - 1];
-    return !isNodeCompleted(previousNode);
+    const chapterIdx = chapters.findIndex(c => c.id === topLevelChapter?.id);
+    if (chapterIdx <= 0) return false;
+
+    // The entire chapter (and all its sub-nodes) is unlocked if the PREVIOUS chapter is fully completed
+    const previousChapter = chapters[chapterIdx - 1];
+    return !isNodeCompleted(previousChapter);
   };
 
   // Recursive leaf node extractor

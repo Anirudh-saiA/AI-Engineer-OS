@@ -150,20 +150,124 @@ export const AI_ENGINEER_ROADMAP: RoadmapNode = {
       description: "Core mechanisms under the hood of Large Language Models.",
       parentId: "ai-engineer",
       difficulty: "Beginner",
-      estimatedDuration: "12 hours",
+      estimatedDuration: "26.5 hours",
       xp: 400,
       resources: [
         { title: "Visualizing Transformer Architecture", type: "video", xp: 80 },
         { title: "Transformer Self-Attention Coding Exercise", type: "exercise", xp: 100 }
       ],
       children: [
-        { id: "inference", title: "Inference", description: "How models generate text token by token.", parentId: "llm-fundamentals", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 50 },
-        { id: "training", title: "Training", description: "Pre-training, fine-tuning, and alignment stages.", parentId: "llm-fundamentals", difficulty: "Intermediate", estimatedDuration: "3 hours", xp: 80 },
-        { id: "embeddings-fundamental", title: "Embeddings", description: "Mapping text into high-dimensional vector space.", parentId: "llm-fundamentals", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 70 },
-        { id: "vector-dbs-fundamental", title: "Vector Databases", description: "Indexed stores designed for fast vector similarity search.", parentId: "llm-fundamentals", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-        { id: "rag-fundamental", title: "RAG", description: "Retrieval-Augmented Generation context injection flows.", parentId: "llm-fundamentals", difficulty: "Intermediate", estimatedDuration: "2 hours", xp: 80 },
-        { id: "prompt-eng-fundamental", title: "Prompt Engineering", description: "Techniques to elicit structured, reliable reasoning from LLMs.", parentId: "llm-fundamentals", difficulty: "Beginner", estimatedDuration: "2 hours", xp: 50 },
-        { id: "ai-agents-fundamental", title: "AI Agents", description: "Enabling LLMs with tools, memory loops, and planning capabilities.", parentId: "llm-fundamentals", difficulty: "Advanced", estimatedDuration: "3 hours", xp: 100 }
+        {
+          id: "inference",
+          title: "Inference",
+          description: "How models generate text token by token.",
+          parentId: "llm-fundamentals",
+          difficulty: "Beginner",
+          estimatedDuration: "1.5 hours",
+          xp: 50,
+          resources: [
+            { title: "AI Inference: The Secret to AI's Superpowers - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=XtT5i0ZeHHE", xp: 50 },
+            { title: "Large Language Models explained briefly - 3Blue1Brown", type: "video", url: "http://www.youtube.com/watch?v=LPZh9BOjkQs", xp: 50 },
+            { title: "Why Inference is hard.. - Caleb Writes Code", type: "video", url: "http://www.youtube.com/watch?v=B18zBnjZKmc", xp: 50 },
+            { title: "LLM Inference Guide (Google)", type: "article", url: "https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference", xp: 30 },
+            { title: "LLM Inference Handbook", type: "article", url: "https://bentoml.com/llm/", xp: 30 }
+          ]
+        },
+        {
+          id: "training",
+          title: "Training",
+          description: "Pre-training, fine-tuning, and alignment stages.",
+          parentId: "llm-fundamentals",
+          difficulty: "Intermediate",
+          estimatedDuration: "7.5 hours",
+          xp: 80,
+          resources: [
+            { title: "Train Your Own LLM - freeCodeCamp.org", type: "video", url: "http://www.youtube.com/watch?v=9Ge0sMm65jo", xp: 50 },
+            { title: "LLM Full Course For Data Engineers - Ansh Lamba", type: "video", url: "http://www.youtube.com/watch?v=X8F9JfCUWrs", xp: 50 },
+            { title: "How to Train an LLM on Your Own Data - Decodo", type: "video", url: "http://www.youtube.com/watch?v=syH-T9OSMqk", xp: 50 },
+            { title: "A Practical Guide to LLM Fine Tuning", type: "article", url: "https://www.databricks.com/blog/llm-fine-tuning", xp: 30 },
+            { title: "Fine-tuning LLMs Overview (Google Cloud)", type: "article", url: "https://cloud.google.com/use-cases/fine-tuning-ai-models", xp: 30 }
+          ]
+        },
+        {
+          id: "embeddings-fundamental",
+          title: "Embeddings",
+          description: "Mapping text into high-dimensional vector space.",
+          parentId: "llm-fundamentals",
+          difficulty: "Intermediate",
+          estimatedDuration: "1 hour",
+          xp: 70,
+          resources: [
+            { title: "What are Word Embeddings? - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=wgfSDrqYMJ4", xp: 50 },
+            { title: "Tokens vs Embeddings - Annie Sexton", type: "video", url: "http://www.youtube.com/watch?v=izbifbq3-eI", xp: 50 },
+            { title: "A Guide to LLM Embeddings", type: "article", url: "https://www.couchbase.com/blog/llm-embeddings/", xp: 30 },
+            { title: "What Are LLM Embeddings?", type: "article", url: "https://aisera.com/blog/llm-embeddings/", xp: 30 }
+          ]
+        },
+        {
+          id: "vector-dbs-fundamental",
+          title: "Vector Databases",
+          description: "Indexed stores designed for fast vector similarity search.",
+          parentId: "llm-fundamentals",
+          difficulty: "Intermediate",
+          estimatedDuration: "1.5 hours",
+          xp: 80,
+          resources: [
+            { title: "What is a Vector Database? - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=gl1r1XV0SLw", xp: 50 },
+            { title: "Vector databases are so hot right now - Fireship", type: "video", url: "http://www.youtube.com/watch?v=klTvEwg3oJ4", xp: 50 },
+            { title: "Vector Databases simply explained! - AssemblyAI", type: "video", url: "http://www.youtube.com/watch?v=dN0lsF2cvm4", xp: 50 },
+            { title: "Vector databases and LLMs", type: "article", url: "https://www.instaclustr.com/education/open-source-ai/vector-databases-and-llms-better-together/", xp: 30 },
+            { title: "Vector Database for LLM Use Cases", type: "article", url: "https://cloudian.com/guides/ai-infrastructure/vector-database-for-llm-use-cases-and-notable-dbs-in-2026/", xp: 30 }
+          ]
+        },
+        {
+          id: "rag-fundamental",
+          title: "RAG",
+          description: "Retrieval-Augmented Generation context injection flows.",
+          parentId: "llm-fundamentals",
+          difficulty: "Intermediate",
+          estimatedDuration: "1.5 hours",
+          xp: 80,
+          resources: [
+            { title: "What is Retrieval-Augmented Generation (RAG)? - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=T-D1OfcDW1MRAG", xp: 50 },
+            { title: "RAG Explained For Beginners - KodeKloud", type: "video", url: "http://www.youtube.com/watch?v=_HQ2H_0Ayy0", xp: 50 },
+            { title: "Introduction To Understanding RAG - Krish Naik", type: "video", url: "http://www.youtube.com/watch?v=fZM3oX4xEyg", xp: 50 },
+            { title: "RAG Complete Guide", type: "article", url: "https://www.datacamp.com/blog/what-is-retrieval-augmented-generation-rag", xp: 30 },
+            { title: "What is RAG?", type: "article", url: "https://aws.amazon.com/what-is/retrieval-augmented-generation/", xp: 30 }
+          ]
+        },
+        {
+          id: "prompt-eng-fundamental",
+          title: "Prompt Engineering",
+          description: "Techniques to elicit structured, reliable reasoning from LLMs.",
+          parentId: "llm-fundamentals",
+          difficulty: "Beginner",
+          estimatedDuration: "12 hours",
+          xp: 50,
+          resources: [
+            { title: "Prompt Engineering Full Course 2026 - Simplilearn", type: "video", url: "http://www.youtube.com/watch?v=DvhFcIRRXyI", xp: 50 },
+            { title: "Prompt Engineering Full Course - Tech With Tim", type: "video", url: "http://www.youtube.com/watch?v=2BpCk4d2Cc0", xp: 50 },
+            { title: "Learn PROMPT ENGINEERING from Scratch - Digital Skills", type: "video", url: "http://www.youtube.com/watch?v=dUulqgLqPBk", xp: 50 },
+            { title: "Prompt engineering: A guide to improving LLM performance", type: "article", url: "https://circleci.com/blog/prompt-engineering/", xp: 30 },
+            { title: "Prompt Engineering Guide", type: "article", url: "https://github.com/dair-ai/prompt-engineering-guide", xp: 30 }
+          ]
+        },
+        {
+          id: "ai-agents-fundamental",
+          title: "AI Agents",
+          description: "Enabling LLMs with tools, memory loops, and planning capabilities.",
+          parentId: "llm-fundamentals",
+          difficulty: "Advanced",
+          estimatedDuration: "1.5 hours",
+          xp: 100,
+          resources: [
+            { title: "AI Agents, Clearly Explained - Jeff Su", type: "video", url: "http://www.youtube.com/watch?v=FwOTs4UxQS4", xp: 50 },
+            { title: "AI Agents vs. LLMs - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=I9z-nrk9cw0", xp: 50 },
+            { title: "What is OpenClaw? Inside AI Agents - IBM Technology", type: "video", url: "http://www.youtube.com/watch?v=L7FF8Zgab3M", xp: 50 },
+            { title: "LLM agents: The ultimate guide", type: "article", url: "https://www.superannotate.com/blog/llm-agents", xp: 30 },
+            { title: "A practical guide to building agents (OpenAI)", type: "article", url: "https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf", xp: 30 }
+          ]
+        }
       ]
     },
     {
