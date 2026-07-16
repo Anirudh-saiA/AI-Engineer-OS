@@ -234,6 +234,25 @@ def get_user_profile(db: Session = Depends(get_db), current_user: dict = Depends
     streak_val = streak_record.current_streak if streak_record else 1
     longest_val = streak_record.longest_streak if streak_record else 1
  
+    # 6.1 Automatically log a daily platform visit if one doesn't exist for today
+    today_str = datetime.datetime.utcnow().date().isoformat()
+    visit_activity = db.query(models.UserDailyActivity).filter(
+        models.UserDailyActivity.user_id == uid,
+        models.UserDailyActivity.activity_date == today_str
+    ).first()
+    
+    if not visit_activity:
+        log_user_activity(
+            db=db,
+            uid=uid,
+            activity_type="resource",
+            title="Daily AIOS Platform Visit",
+            duration_mins=5,
+            date_str=today_str,
+            xp_award=5
+        )
+        db.commit()
+
     # 6.5 Fetch study activity calendar dates
     active_days_set = set()
     
