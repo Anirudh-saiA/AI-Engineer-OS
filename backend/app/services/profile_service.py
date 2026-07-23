@@ -138,19 +138,8 @@ def simulate_ai_roadmap(data: schemas.OnboardingSubmit) -> dict:
     first_status = "active"
 
     # Stage 1: Foundations or Version Control Setup
-    if not data.experience_used_git:
-        nodes.append({
-            "node_id": "version-control-sandboxing",
-            "title": "Version Control & Isolated Dev Sandboxing",
-            "description": "Establish a bulletproof setup using Git, local volume mounts, and isolated Docker network nodes.",
-            "status": first_status,
-            "tasks": [
-                "Install Git, register username, and configure ssh key pairs",
-                "Create first local git repo, stage files, and push to GitHub",
-                "Write multi-stage Dockerfiles mounting local terminal files"
-            ]
-        })
-        first_status = "locked"
+    # Git requirement disabled so developers immediately enter their chosen track.
+
 
     # Stage 2: Language Mastery (Python/JS Core)
     if "python" in data.interest_areas or data.python_level <= 40:

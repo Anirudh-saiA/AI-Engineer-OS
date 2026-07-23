@@ -1,6 +1,7 @@
 import React from "react";
 import ActivityHeatmap from "./ActivityHeatmap";
 import { Map, ArrowRight, Sparkles, BookOpen, ChevronRight } from "lucide-react";
+import { AI_ENGINEER_ROADMAP, RoadmapNode as DetailedRoadmapNode } from "../data/roadmapData";
 
 interface RoadmapSubNode {
   id: string;
@@ -85,19 +86,32 @@ export default function DashboardTab({
   setSelectedRoadmapTrack,
   staticRoadmaps,
   setActiveTab,
+  checkedTasks,
 }: DashboardTabProps) {
 
   const hasStarted = roadmap && roadmap.length > 0;
 
-  // Active node from roadmap
-  const activeNode = roadmap?.find((node: any) => node.status === "active") || roadmap?.[0] || null;
+  // Calculate progress using the detailed AI_ENGINEER_ROADMAP and checkedTasks
+  const getLeafNodes = (node: DetailedRoadmapNode): DetailedRoadmapNode[] => {
+    const leaves: DetailedRoadmapNode[] = [];
+    const recurse = (n: DetailedRoadmapNode) => {
+      if (!n.children || n.children.length === 0) {
+        leaves.push(n);
+      } else {
+        n.children.forEach(recurse);
+      }
+    };
+    recurse(node);
+    return leaves;
+  };
 
-  // Progress calculation
-  const totalActiveTasks = activeNode?.tasks?.length || 0;
-  const completedActiveTasks = activeNode?.tasks?.filter((task: string) =>
-    profileData?.completed_tasks?.includes(`${activeNode.node_id}:${task}`)
-  ).length || 0;
-  const activePercent = totalActiveTasks > 0 ? Math.round((completedActiveTasks / totalActiveTasks) * 100) : 0;
+  const allLeafs = getLeafNodes(AI_ENGINEER_ROADMAP);
+  const totalRoadmapTasks = allLeafs.length;
+  const completedRoadmapTasks = allLeafs.filter(l => !!checkedTasks[l.id]).length;
+  const activePercent = totalRoadmapTasks > 0 ? Math.round((completedRoadmapTasks / totalRoadmapTasks) * 100) : 0;
+
+  // Find the first uncompleted leaf node to show as the "active" task
+  const nextUncompletedNode = allLeafs.find(l => !checkedTasks[l.id]);
 
   const currentTrack = AVAILABLE_TRACKS.find(t => t.id === selectedRoadmapTrack) || AVAILABLE_TRACKS[0];
   const completedTasks = profileData?.completed_tasks?.length || 0;
@@ -134,16 +148,16 @@ export default function DashboardTab({
             </div>
 
             <h2 className="text-xl font-black text-gray-900 leading-tight mb-1">
-              {activeNode?.title || "Continue your path"}
+              {nextUncompletedNode?.title || "AI Engineer Bootcamp"}
             </h2>
             <p className="text-sm text-gray-500 leading-relaxed max-w-xl mb-6">
-              {activeNode?.description || "Keep going — you're making great progress."}
+              {nextUncompletedNode?.description || "Keep going — you're making great progress."}
             </p>
 
             {/* Progress */}
             <div className="mb-6">
               <div className="flex justify-between items-center text-sm mb-2">
-                <span className="text-gray-600 font-semibold">Module Progress</span>
+                <span className="text-gray-600 font-semibold">Track Progress</span>
                 <span className="font-black text-orange-500 text-base">{activePercent}%</span>
               </div>
               <div className="w-full h-2.5 bg-orange-100 rounded-full overflow-hidden">
@@ -153,7 +167,7 @@ export default function DashboardTab({
                 />
               </div>
               <p className="text-gray-400 text-xs mt-2">
-                {completedActiveTasks} of {totalActiveTasks} tasks completed
+                {completedRoadmapTasks} of {totalRoadmapTasks} track tasks completed
               </p>
             </div>
 
